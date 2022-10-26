@@ -2,6 +2,8 @@ import Base: zero, one, +, -, *, /, //, ^,==, inv, iszero, isone,convert, show,r
 
 struct NTL_INIT_zz_p end # type for init
 const _init_zz_p=NTL_INIT_zz_p()
+const zz_p_Max=typemax(Int)
+const zz_p_Min=2;
 """
 struct zz_p{T} is the type of finite fields
 
@@ -13,8 +15,9 @@ struct zz_p{T} is the type of finite fields
 mutable struct zz_p{T}
     _rep::Int 
     function zz_p{T}() where {T} 
-        new(0)
+        new(0::Int)
     end
+    # If we know a is representable
     function zz_p{T}(a::Int, ::NTL_INIT_zz_p) where {T} 
         new(a)
     end
@@ -23,16 +26,25 @@ mutable struct zz_p{T}
     end
 end
 
-## info of type zz_p{T}
+
+## template
 """
 Generate the type zz_p{T} of prime fields
 
     ## Examples:
     julia> zz_p(3)
+    julia> zz_p{3} # they are equivalent
 """
 function zz_p(a::Int)
     return zz_p{a}
 end
+## info of type zz_p
+function info(::Type{zz_p})
+    return Dict(
+        "Discript"=>"This module is a prime field with small p", "zz_p_Max"=>zz_p_Max,
+        "zz_p_Min"=>zz_p_Min)
+end
+## info of type zz_p{T}
 function modulus(::Type{zz_p{T}}) where {T}
     return T
 end
@@ -42,6 +54,14 @@ end
 function one(::Type{zz_p{T}}) where {T}
     return zz_p{T}(1, _init_zz_p)
 end
+function info(::Type{zz_p{T}}) where {T}
+    return Dict("modulus"=>modulus(zz_p{T}), "zero"=>zero(zz_p{T}), "one"=>one(zz_p{T}))
+end
+## info of instance of zz_p{T}
+function info(a::zz_p{T}) where {T}
+    return Dict("reprentation"=>a._rep, "field"=>"zz_"*string(T))
+end
+
 ## convert
 function convert(::Type{zz_p{T}}, a::Int) where {T}
     return zz_p{T}(a)
@@ -49,10 +69,7 @@ end
 function convert(::Type{Int}, a::zz_p{T}) where {T}
     return a._rep
 end
-## representation
-function modulus(::Type{zz_p{T}}) where {T}
-    return T
-end
+## swap
 @inline function swap!(x::zz_p{T}, y::zz_p{T}) where {T}
     z = x._rep;x._rep = y._rep; y._rep =z; 
     nothing
@@ -88,7 +105,7 @@ function add!(z::zz_p{T} , x::zz_p{T}, y::zz_p{T}) where {T}
 end
 function add(x::zz_p{T}, y::zz_p{T}) where {T}
     Z=AddMod(x._rep,y._rep, T)
-    return zz_p{T}(Z, _init_zz_p)
+    return zz_p{T}(Z, _init_zz_p) # since we don't need to check whether Z is within 0 .. p-1
 end
 +(x::zz_p{T}, y::zz_p{T}) where {T} = add(x,y) 
 add(x::zz_p{T}, Y::Int) where {T} = add(x,convert(zz_p{T},Y))
@@ -153,6 +170,9 @@ end
 *(X::Int, y::zz_p{T}) where {T} = mul(convert(zz_p{T},X), y)
 
 
+# ***************************************************************
+#                          Inverse
+# ***************************************************************
 ## inv 
 # 1/a mod n
 function InvMod(a::Int, n::Int)::Int
@@ -207,25 +227,23 @@ function rand(::Type{zz_p{T}}) where {T}
     return zz_p{T}(rand(Int))
 end
 
-## power x = a^e
-function PowerMod(a::Int, e::Int , n::Int)
-   if e < 0
-      return InvMod(PowerMod(a,-e,n),n)
-   end
-    x::Int = 1;
-    y::Int = a;
-    while (e != 0)
-        if (e & 1) != 0 
-                x = MulMod(x, y, n)
-        end
-        y = MulMod(y, y, n);
-        e = e >> 1;
-    end
-   return x;
-end
+## power x = a^e in zz_p
 
-## show
-show(io::IO, x::zz_p{T}) where {T} = print(io, "zz_", T, "(", x._rep ,")" )
+function PowerMod(a::Int, e::Int , n::Int)
+    if e < 0
+        return InvMod(PowerMod(a,-e,n),n)
+    end
+        x::Int = 1;
+        y::Int = a;
+        while (e != 0)
+            if (e & 1) != 0 
+                    x = MulMod(x, y, n)
+            end
+            y = MulMod(y, y, n);
+            e = e >> 1;
+        end
+    return x;
+end
 
 @inline function power!(z::zz_p{T}, x::zz_p{T}, e::Int) where {T}
     z._rep= PowerMod(x._rep, e, T)
@@ -238,4 +256,9 @@ end
 end
 
 ^(x::zz_p{T}, e::Int) where {T} = power(x,e)
+
+
+## show
+show(io::IO, x::zz_p{T}) where {T} = print(io, "zz_", T, "(", x._rep ,")" )
+
 

@@ -1,6 +1,6 @@
 # ntl.jl
 ## number theory library for julia-lang
-This library aim to tranplant the C++ libary NTL to julia-lang.
+This library aim to tranplant the C++ libary NTL to pure julia-lang codes.
 
 ## Documents
 - [zz_p.jl] Create the type zz_p{T} corresponding to the class **zz_p** of NTL.
