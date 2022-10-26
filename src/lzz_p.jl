@@ -108,9 +108,8 @@ function add(x::zz_p{T}, y::zz_p{T}) where {T}
     return zz_p{T}(Z, _init_zz_p) # since we don't need to check whether Z is within 0 .. p-1
 end
 +(x::zz_p{T}, y::zz_p{T}) where {T} = add(x,y) 
-add(x::zz_p{T}, Y::Int) where {T} = add(x,convert(zz_p{T},Y))
-add(X::Int, y::zz_p{T}) where {T} = add(convert(zz_p{T},X),y)
-
++(x::zz_p{T}, Y::Int) where {T} = add(x,convert(zz_p{T},Y))
++(X::Int, y::zz_p{T}) where {T} = add(convert(zz_p{T},X),y)
 
 # ***************************************************************
 #                          Subtraction
@@ -217,16 +216,18 @@ end
     return x._rep == y._rep
 end
 @inline function ==(x::zz_p{T}, Y::Int) where {T}
-    return x._rep == Y
+    return x._rep == zz_p{T}(Y)
 end
 @inline function ==(X::Int, y::zz_p{T}) where {T}
-    return X == y._rep
+    return zz_p{T}(X) == y._rep
 end
 ## random numbers
 function rand(::Type{zz_p{T}}) where {T}
     return zz_p{T}(rand(Int))
 end
-
+function rand(::Type{zz_p{T}}, k::Int) where {T}
+    return zz_p{T}.(rand(Int,k))
+end
 ## power x = a^e in zz_p
 
 function PowerMod(a::Int, e::Int , n::Int)
