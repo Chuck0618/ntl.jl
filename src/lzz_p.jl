@@ -4,6 +4,9 @@ struct NTL_INIT_zz_p end # type for init
 const _init_zz_p=NTL_INIT_zz_p()
 const zz_p_Max=typemax(Int)
 const zz_p_Min=2;
+
+# 还需要写一个T不在正常范围内的报错代码！
+
 """
 struct zz_p{T} is the type of finite fields
 
@@ -71,7 +74,7 @@ function convert(::Type{Int}, a::zz_p{T}) where {T}
 end
 ## swap
 @inline function swap!(x::zz_p{T}, y::zz_p{T}) where {T}
-    z = x._rep;x._rep = y._rep; y._rep =z; 
+    x,y = y,x ;
     nothing
 end
 
@@ -86,10 +89,6 @@ end
 @inline function sp_CorrectExcess(a::Int, n::Int)
    return a-n >= 0 ? a-n : a
 end
-@inline function sp_CorrectDeficit(a::Int, n::Int)
-   return a >= 0 ? a : a+n
-end
-
 
 ## add
 @inline function AddMod0(a::Int,b::Int, n::Int)::Int
@@ -114,6 +113,10 @@ end
 # ***************************************************************
 #                          Subtraction
 # ***************************************************************
+@inline function sp_CorrectDeficit(a::Int, n::Int)
+    return a >= 0 ? a : a+n
+ end
+
 @inline function SubMod0(a::Int,b::Int, n::Int)::Int
     return mod(a-b, n)
  end
@@ -135,10 +138,14 @@ end
 
 ## negate
 # x = -a
+@inline function NegateMod0(a::Int, n::Int)::Int
+    return mod((0-a) , n)
+end
+
 @inline function NegateMod(a::Int, n::Int)::Int
     # mod((0- a) , n)
-      return SubMod(0, a, n)
-   end
+      return n-a;
+end
 function negate!(x::zz_p{T}, a::zz_p{T}) where {T}
     x._rep=NegateMod(a._rep,T)
     return x
