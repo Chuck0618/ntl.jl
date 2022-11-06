@@ -1,4 +1,5 @@
 import Base: zero, one, +, -, *, /, //, ^,==, inv, iszero, isone,convert, show,rand
+import Prime: isprime
 
 struct NTL_INIT_zz_p end # type for init
 const _init_zz_p=NTL_INIT_zz_p()
@@ -6,6 +7,18 @@ const zz_p_Max=typemax(Int)
 const zz_p_Min=2;
 
 # 还需要写一个T不在正常范围内的报错代码！
+
+struct zz_p_prime 
+    _prime::Int
+    function zz_p_prime(a::Int)
+        new(a)
+    end
+end
+function convert(a::Int,::zz_p_prime)
+    # test prime ??
+    return zz_p_prime(a)
+end
+
 
 """
 struct zz_p{T} is the type of finite fields
@@ -29,6 +42,12 @@ mutable struct zz_p{T}
     end
 end
 
+function zz_p(T::Int)
+    if T > 1 && isprime(T)
+    return zz_p{T}
+    end
+    error("The parameter is NOT a prime!")
+end
 
 ## template
 """
