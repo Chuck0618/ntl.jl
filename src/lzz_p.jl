@@ -1,13 +1,12 @@
 import Base: zero, one, +, -, *, /, //, ^,==, inv, iszero, isone,convert, show,rand
-import Prime: isprime
+import Primes: isprime
 
 struct NTL_INIT_zz_p end # type for init
 const _init_zz_p=NTL_INIT_zz_p()
 const zz_p_Max=typemax(Int)
 const zz_p_Min=2;
 
-# 还需要写一个T不在正常范围内的报错代码！
-
+# 备用素数type 
 struct zz_p_prime 
     _prime::Int
     function zz_p_prime(a::Int)
