@@ -230,7 +230,11 @@ end
 /(x::zz_p{T}, Y::Int) where {T} = div(x, convert(zz_p{T},Y))
 /(X::Int, y::zz_p{T}) where {T} = div(convert(zz_p{T},X), y)
 
-## comparison
+
+#***************************************************************
+#                          comparison
+#***************************************************************
+
 @inline function iszero(x::zz_p{T}) where {T}
     return x._rep == 0
 end
@@ -253,8 +257,12 @@ end
 function rand(::Type{zz_p{T}}, k::Int) where {T}
     return zz_p{T}.(rand(Int,k))
 end
-## power x = a^e in zz_p
 
+
+#***************************************************************
+#                          power
+#***************************************************************
+## power x = a^e in zz_p
 function PowerMod(a::Int, e::Int , n::Int)
     if e < 0
         return InvMod(PowerMod(a,-e,n),n)
@@ -283,8 +291,11 @@ end
 
 ^(x::zz_p{T}, e::Int) where {T} = power(x,e)
 
-
+#***************************************************************
+#                          iostream
+#***************************************************************
 ## show
 show(io::IO, x::zz_p{T}) where {T} = print(io, "zz_", T, "(", x._rep ,")" )
+show(io::IO, ::Type{zz_p{T}}) where {T} = print(io, "Finite Field: zz_", modulus(zz_p{T}))
 
 
