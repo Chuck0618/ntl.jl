@@ -1,4 +1,5 @@
 include("lzz_p.jl")
+
 import Base: setindex!, getindex, zero, one, copy,>>, <<
 
 
@@ -41,29 +42,15 @@ mutable struct zz_pX{T}
     end
 end
 
+#creat type 
+function zz_pX(T::Int)
+    return zz_pX{T};
+end
+
 
 convert(::Type{zz_pX{T}}, X::Int) where {T} = zz_pX{T}(X)
 convert(::Type{zz_pX{T}}, X::zz_p{T}) where {T} = zz_pX{T}(X)
 
-"""
-show(io::IO, p::zz_pX{T}, x::Symbol) 
-
-show the polynomial p in variable x
-julia> p = zz_pX{7}([1,2,3])
-julia> show(stdout, p, :x)
-"""
-function show(io::IO, p::zz_pX{T}, sym::Symbol) where {T}
-    coef = p._rep
-    print(io, coef[1])
-    x = string(sym)
-    len = length(p._rep)
-    for i = 2:len
-        if !iszero(coef[i])
-        print(io, "+", coef[i], "*", x, "^", i-1)
-        end
-    end
-    return nothing
-end
 function normalize!(p::zz_pX{T})::zz_pX{T} where {T}
     r = p._rep
     m= length(r)
@@ -85,6 +72,10 @@ function coeff(p::zz_pX{T}, i::Int) where {T}
         return p._rep[i+1]
     end
     return zz_p{T}(0)
+end
+
+function coeff(p::zz_pX{T}) where {T}
+    return p._rep;
 end
 
 function zero(::Type{zz_pX{T}}) where {T}
@@ -266,3 +257,32 @@ add(x::zz_pX{T},Y::Int) where {T} = add(x,convert(zz_pX{T},Y))
 #                          Multiplication
 # ***************************************************************
 
+
+
+
+#***************************************************************
+#                          iostream
+#***************************************************************
+## show
+
+"""
+show(io::IO, p::zz_pX{T}, x::Symbol) 
+
+show the polynomial p in variable x
+julia> p = zz_pX{7}([1,2,3])
+julia> show(stdout, p, :x)
+"""
+function show(io::IO, p::zz_pX{T}, sym::Symbol=:X) where {T}
+    coef = p._rep
+    print(io, coef[1])
+    x = string(sym)
+    len = length(p._rep)
+    for i = 2:len
+        if !iszero(coef[i])
+        print(io, "+", coef[i], "*", x, "^", i-1)
+        end
+    end
+    return nothing
+end
+ 
+show(io::IO, ::Type{zz_pX{T}}) where {T} = print(io, "Polynomial Ring over Finite Field: zz_", modulus(zz_p{T}))

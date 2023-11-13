@@ -2,7 +2,7 @@ import Base: zero, one, +, -, *, /, //, ^,==, inv, iszero, isone,convert, show,r
 import Primes: isprime
 
 struct NTL_INIT_zz_p end # type for init
-const _init_zz_p=NTL_INIT_zz_p()
+const _init_zz_p_nocheck=NTL_INIT_zz_p()
 const zz_p_Max=begin# maximal prime number for package
     i = typemax(Int) 
     while(true)
@@ -85,7 +85,7 @@ function zero(::Type{zz_p{T}}) where {T}
     return zz_p{T}(0)
 end
 function one(::Type{zz_p{T}}) where {T}
-    return zz_p{T}(1, _init_zz_p)
+    return zz_p{T}(1, _init_zz_p_nocheck)
 end
 function info(::Type{zz_p{T}}) where {T}
     return Dict("modulus"=>modulus(zz_p{T}), "zero"=>zero(zz_p{T}), "one"=>one(zz_p{T}))
@@ -128,13 +128,13 @@ end
     r = a+b;
     return sp_CorrectExcess(r, n)
  end
-function add!(z::zz_p{T} , x::zz_p{T}, y::zz_p{T}) where {T}
-    z._rep = AddMod(x._rep,y._rep, T)
-    return z
-end
+# function add!(z::zz_p{T} , x::zz_p{T}, y::zz_p{T}) where {T}
+#     z._rep = AddMod(x._rep,y._rep, T)
+#     return z
+# end
 function add(x::zz_p{T}, y::zz_p{T}) where {T}
     Z=AddMod(x._rep,y._rep, T)
-    return zz_p{T}(Z, _init_zz_p) # since we don't need to check whether Z is within 0 .. p-1
+    return zz_p{T}(Z, _init_zz_p_nocheck) # since we don't need to check whether Z is within 0 .. p-1
 end
 +(x::zz_p{T}, y::zz_p{T}) where {T} = add(x,y) 
 +(x::zz_p{T}, Y::Int) where {T} = add(x,convert(zz_p{T},Y))
@@ -160,7 +160,7 @@ function sub!(z::zz_p{T} , x::zz_p{T}, y::zz_p{T}) where {T}
 end
 function sub(x::zz_p{T}, y::zz_p{T}) where {T}
     Z=SubMod(x._rep,y._rep, T)
-    return zz_p{T}(Z, _init_zz_p)
+    return zz_p{T}(Z, _init_zz_p_nocheck)
 end
 -(x::zz_p{T}, y::zz_p{T}) where {T} = sub(x,y)
 -(x::zz_p{T}, Y::Int) where {T} = sub(x,convert(zz_p{T},Y))
@@ -182,7 +182,7 @@ function negate!(x::zz_p{T}, a::zz_p{T}) where {T}
 end
 function negate(a::zz_p{T}) where {T} 
     Z = NegateMod(a._rep,T)
-    return zz_p{T}(Z, _init_zz_p)
+    return zz_p{T}(Z, _init_zz_p_nocheck)
 end
 -(a::zz_p{T}) where {T} = negate(a)
 
@@ -198,7 +198,7 @@ function mul!(z::zz_p{T} , x::zz_p{T}, y::zz_p{T}) where {T}
 end
 function mul(x::zz_p{T}, y::zz_p{T}) where {T}
     Z=MulMod(x._rep,y._rep, T)
-    return zz_p{T}(Z, _init_zz_p)
+    return zz_p{T}(Z, _init_zz_p_nocheck)
 end
 
 *(x::zz_p{T}, y::zz_p{T}) where {T} = mul(x,y)
@@ -226,7 +226,7 @@ function inv!(z::zz_p{T}, x::zz_p{T}) where {T}
 end
 function inv(x::zz_p{T}) where {T}
     Z = InvMod(x._rep, T)
-    return zz_p{T}(Z, _init_zz_p)
+    return zz_p{T}(Z, _init_zz_p_nocheck)
 end
 
 ##div
@@ -236,7 +236,7 @@ function div!(z::zz_p{T} , x::zz_p{T}, y::zz_p{T}) where {T}
 end
 function div(x::zz_p{T}, y::zz_p{T}) where {T}
     Z=MulMod(x._rep, InvMod(y._rep, T), T)
-    return zz_p{T}(Z, _init_zz_p)
+    return zz_p{T}(Z, _init_zz_p_nocheck)
 end
 /(x::zz_p{T}, y::zz_p{T}) where {T} = div(x,y)
 /(x::zz_p{T}, Y::Int) where {T} = div(x, convert(zz_p{T},Y))
@@ -298,7 +298,7 @@ end
 
 @inline function power(x::zz_p{T}, e::Int) where {T}
     Z= PowerMod(x._rep, e, T)
-    return zz_p{T}(Z, _init_zz_p)
+    return zz_p{T}(Z, _init_zz_p_nocheck)
 end
 
 ^(x::zz_p{T}, e::Int) where {T} = power(x,e)
