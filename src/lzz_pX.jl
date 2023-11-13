@@ -84,6 +84,9 @@ end
 function one(::Type{zz_pX{T}}) where {T}
     return zz_pX{T}(1)
 end
+```
+return the polynomial X
+```
 function setX(::Type{zz_pX{T}}) where {T}
     zz_pX{T}([0,1],ntl_init_zz_pX)
 end
