@@ -78,29 +78,6 @@ function coeff(p::zz_pX{T}) where {T}
     return p._rep;
 end
 
-function zero(::Type{zz_pX{T}}) where {T}
-    return zz_pX{T}(0)
-end
-function one(::Type{zz_pX{T}}) where {T}
-    return zz_pX{T}(1)
-end
-```
-return the polynomial X
-```
-function setX(::Type{zz_pX{T}}) where {T}
-    zz_pX{T}([0,1],ntl_init_zz_pX)
-end
-
-@inline function isX(x::zz_pX{T}) where {T}
-   return (deg(x) == 1) && isone(x._rep[2]) && iszero(x._rep[1]);
-end
-@inline function iszero(x::zz_pX{T}) where {T}
-    return (deg(x)== 0) && iszero(x._rep[1]) 
-end
-@inline function isone(x::zz_pX{T}) where {T}
-    return (deg(x)== 0) && isone(x._rep[1]) 
-end
-
 function GetCoeff!(x::zz_p{T}, p::zz_pX{T}, i::Int) where {T}
     x._rep = coeff(p,i)._rep
 end
@@ -289,3 +266,34 @@ function show(io::IO, p::zz_pX{T}, sym::Symbol=:X) where {T}
 end
  
 show(io::IO, ::Type{zz_pX{T}}) where {T} = print(io, "Polynomial Ring over Finite Field: zz_", modulus(zz_p{T}))
+
+
+
+
+
+#***************************************************************
+#                         simple elements
+#***************************************************************
+
+function zero(::Type{zz_pX{T}}) where {T}
+    return zz_pX{T}(0)
+end
+function one(::Type{zz_pX{T}}) where {T}
+    return zz_pX{T}(1)
+end
+```
+return the polynomial X
+```
+function setX(::Type{zz_pX{T}}) where {T}
+    zz_pX{T}([0,1],ntl_init_zz_pX)
+end
+
+@inline function isX(x::zz_pX{T}) where {T}
+   return (deg(x) == 1) && isone(x._rep[2]) && iszero(x._rep[1]);
+end
+@inline function iszero(x::zz_pX{T}) where {T}
+    return (deg(x)== 0) && iszero(x._rep[1]) 
+end
+@inline function isone(x::zz_pX{T}) where {T}
+    return (deg(x)== 0) && isone(x._rep[1]) 
+end

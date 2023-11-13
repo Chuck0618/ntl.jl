@@ -1,4 +1,5 @@
 + coeff(zz_pX{T}, i ::Int)::zz_p{T}
++ coeff(zz_pX{T})
 
 Get the coefficient of x^i. 
 
