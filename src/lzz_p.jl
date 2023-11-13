@@ -3,8 +3,18 @@ import Primes: isprime
 
 struct NTL_INIT_zz_p end # type for init
 const _init_zz_p=NTL_INIT_zz_p()
-const zz_p_Max=typemax(Int)
-const zz_p_Min=2;
+const zz_p_Max=begin# maximal prime number for package
+    i = typemax(Int) 
+    while(true)
+    global i;
+    if(isprime(i))
+        break; 
+    end;
+    i = i-1;
+    end
+    i
+end
+const zz_p_Min=2; # minimal prime number, clearly 2
 
 # 备用素数type 
 struct zz_p_prime 
@@ -41,12 +51,7 @@ mutable struct zz_p{T}
     end
 end
 
-function zz_p(T::Int)
-    if T > 1 && isprime(T)
-    return zz_p{T}
-    end
-    error("The parameter is NOT a prime!")
-end
+
 
 ## template
 """
@@ -56,9 +61,16 @@ Generate the type zz_p{T} of prime fields
     julia> zz_p(3)
     julia> zz_p{3} # they are equivalent
 """
-function zz_p(a::Int)
-    return zz_p{a}
+function zz_p(T::Int)
+    if T > 1 && isprime(T)
+    return zz_p{T}
+    end
+    error("The parameter is NOT a prime!")
 end
+
+# ***************************************************************
+#                          Information and Conversion
+# ***************************************************************
 ## info of type zz_p
 function info(::Type{zz_p})
     return Dict(
