@@ -31,7 +31,7 @@ mutable struct Int4
         new(c)
     end
 end
-function Base.+(a::Int4, b::Int4)
+function +(a::Int4, b::Int4)
     c= a.rep+b.rep;
     c>Int4Max ? c-Int4size : c
 end
