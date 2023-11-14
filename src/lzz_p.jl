@@ -122,9 +122,9 @@ end
 end
 
 ## add
-@inline function AddMod0(a::Int,b::Int, n::Int)::Int
-    return Int(mod(Int128(a)+Int128(b),n))
- end
+# @inline function AddMod0(a::Int,b::Int, n::Int)::Int
+#     return Int(mod(Int128(a)+Int128(b),n))
+#  end
 @inline function AddMod(a::Int,b::Int, n::Int)::Int
     r = a+b;
     return sp_CorrectExcess(r, n)
