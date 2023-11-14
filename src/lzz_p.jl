@@ -32,6 +32,7 @@ end
 """
 struct zz_p{T} is the type of finite fields
 
+    
     ## Examples:
     julia> zz_p{7} # The type of finite fields of cardinality 7
     julia> zz_p{3}(4) # Element 4 in zz_p{3} which equals 1 in zz_p{3}

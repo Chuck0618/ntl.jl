@@ -14,6 +14,25 @@ end
 struct NTL_INIT_zz_pX end
 ntl_init_zz_pX = NTL_INIT_zz_pX()
 
+"""
+/************************************************************
+ zz_pX
+
+The class zz_pX implements polynomial arithmetic modulo p.
+Polynomials are represented as vec_zz_p.
+If f is a zz_pX, then f._rep is a vec_zz_p.
+
+The zero polynomial is represented as a zero length vector.
+If f._rep = [1,2,3,4], then it representeds the polynomial:
+`1 x^0 + 2 x^1 + 3 x^2 + 4 x^3`
+
+The leading coefficient is always non-zero, which is normalized by 
+the function normalize!().
+The member f.rep is public, so the vector representation is fully
+accessible.
+Use the member function normalize() to strip leading zeros.
+**************************************************************/
+"""
 mutable struct zz_pX{T}
     _rep::vec_zz_p{T}
     function zz_pX{T}(X::Int) where {T}

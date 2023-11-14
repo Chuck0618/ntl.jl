@@ -7,4 +7,8 @@ This library aim to tranplant the C++ libary NTL to pure julia-lang codes.
 - [zz_pX.jl] Create the type zz_pX{T} correponding to the class **zz_pX** of NTL.
 
 ## Example
-``julia>zz_7 = zz_T{7}``
+```julia
+zz_7 = zz_p(7) # define the field zz_7
+println(zz_7(1)+zz_7(4))
+
+```
