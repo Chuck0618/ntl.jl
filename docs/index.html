@@ -1,0 +1,617 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Documentation for NTL.jl: modular arithmetic, number theory, polynomials, extension fields, matrices, LLL, and NTT.">
+  <link rel="icon" href="data:,">
+  <title>NTL.jl — Exact mathematical core for Julia</title>
+  <style>
+    :root {
+      --paper: oklch(97.8% 0.002 90);
+      --ink: oklch(18% 0.004 90);
+      --secondary: oklch(40% 0.006 90);
+      --faint: oklch(66% 0.008 150);
+      --line: oklch(18% 0.004 90 / 0.16);
+      --grid-line: oklch(18% 0.004 90 / 0.045);
+      --dark-surface: oklch(20% 0.004 90);
+      --dark-ink: oklch(96% 0.006 90);
+      --font-ui: "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+      --font-body: Georgia, "Times New Roman", serif;
+      --font-code: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background-color: var(--paper);
+      background-image:
+        linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+      background-size: calc((100vw - 34px) / 90) 100%, 100% 32px;
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+    ::selection { color: var(--dark-ink); background: var(--dark-surface); }
+    a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 4px; }
+    a:hover { text-decoration: none; }
+    a:focus-visible { outline: 2px solid var(--ink); outline-offset: 5px; }
+    code, pre, kbd { font-family: var(--font-code); }
+    :not(pre) > code {
+      font-size: 0.88em;
+      overflow-wrap: anywhere;
+      border-bottom: 1px solid var(--line);
+    }
+    .page { width: min(100%, 1600px); margin: 0 auto; padding: 0 24px; }
+    .masthead {
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--font-ui);
+      font-size: 14px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .brand { font-weight: 700; text-decoration: none; }
+    .masthead-meta { color: var(--secondary); text-align: right; }
+
+    .hero, .workspace {
+      display: grid;
+      grid-template-columns: repeat(90, minmax(0, 1fr));
+    }
+    .hero { padding: 72px 0 64px; border-bottom: 1px solid var(--line); }
+    .hero-copy { grid-column: 1 / 55; }
+    .hero-demo { grid-column: 59 / 91; align-self: end; }
+    .kicker, .section-label, .code-caption, .api-tag {
+      font-family: var(--font-code);
+      font-size: 12px;
+      line-height: 1.4;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .kicker { margin: 0 0 24px; color: var(--secondary); }
+    h1, h2, h3 {
+      font-family: var(--font-ui);
+      font-weight: 700;
+      letter-spacing: -0.035em;
+    }
+    h1 { max-width: 12ch; margin: 0; font-size: clamp(48px, 6.2vw, 92px); line-height: 0.95; }
+    .lede { max-width: 62ch; margin: 32px 0 0; font-size: 21px; line-height: 1.5; }
+    .hero-facts { margin: 32px 0 0; padding: 0; list-style: none; font-family: var(--font-ui); }
+    .hero-facts li { display: flex; gap: 16px; padding: 8px 0; border-top: 1px solid var(--line); }
+    .hero-facts li:last-child { border-bottom: 1px solid var(--line); }
+    .hero-facts strong { min-width: 112px; font-family: var(--font-code); font-size: 12px; letter-spacing: 0.04em; }
+
+    .code-panel { background: var(--dark-surface); color: var(--dark-ink); }
+    .code-caption { padding: 12px 16px; border-bottom: 1px solid oklch(96% 0.006 90 / 0.22); color: var(--dark-ink); }
+    pre {
+      margin: 0;
+      padding: 20px;
+      overflow-x: auto;
+      font-size: 14px;
+      line-height: 1.65;
+      tab-size: 4;
+    }
+    pre code { font-family: inherit; }
+
+    .workspace { padding-bottom: 80px; }
+    .sidebar { grid-column: 1 / 20; padding: 40px 28px 40px 0; }
+    .sidebar-inner { position: sticky; top: 24px; }
+    .sidebar h2 { margin: 0 0 16px; font-size: 13px; letter-spacing: 0.05em; text-transform: uppercase; }
+    .toc { margin: 0; padding: 0; list-style: none; font-family: var(--font-ui); font-size: 15px; }
+    .toc a {
+      display: block;
+      min-height: 40px;
+      padding: 9px 8px;
+      border-top: 1px solid var(--line);
+      text-decoration: none;
+    }
+    .toc li:last-child a { border-bottom: 1px solid var(--line); }
+    .toc a:hover, .toc a:focus-visible { color: var(--dark-ink); background: var(--dark-surface); }
+    main { grid-column: 24 / 84; min-width: 0; }
+    section { padding: 56px 0; border-bottom: 1px solid var(--line); }
+    section:first-child { padding-top: 40px; }
+    .section-heading { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 24px; align-items: start; }
+    .section-label { color: var(--secondary); padding-top: 8px; }
+    h2 { margin: 0; font-size: clamp(30px, 3.4vw, 48px); line-height: 1.05; }
+    h3 { margin: 36px 0 12px; font-size: 22px; line-height: 1.2; }
+    .section-content { margin-left: 144px; max-width: 72ch; }
+    .section-content > :first-child { margin-top: 24px; }
+    p { margin: 16px 0; }
+    ul, ol { padding-left: 22px; }
+    li + li { margin-top: 8px; }
+    .note { padding: 16px 0 16px 20px; border-left: 1px solid var(--ink); }
+    .note strong { font-family: var(--font-ui); }
+
+    .mapping { margin-top: 28px; border-top: 1px solid var(--ink); }
+    .mapping-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+      gap: 24px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .mapping-row > :first-child { font-family: var(--font-code); font-size: 14px; overflow-wrap: anywhere; }
+    .mapping-row > :last-child { margin: 0; }
+
+    .table-wrap { width: 100%; margin-top: 28px; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-family: var(--font-ui); font-size: 15px; line-height: 1.5; }
+    th { padding: 12px 12px 12px 0; border-bottom: 1px solid var(--ink); text-align: left; font-family: var(--font-code); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
+    td { padding: 14px 12px 14px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+    td:first-child { width: 34%; font-family: var(--font-code); font-size: 13px; overflow-wrap: anywhere; }
+
+    .algorithm { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 24px; padding: 20px 0; border-top: 1px solid var(--line); }
+    .algorithm:last-child { border-bottom: 1px solid var(--line); }
+    .algorithm h3 { margin: 0; font-size: 18px; letter-spacing: -0.01em; }
+    .algorithm p { margin: 0; }
+    .file-tree { white-space: pre; }
+    .status-line { display: flex; flex-wrap: wrap; gap: 8px 24px; margin: 24px 0; font-family: var(--font-code); font-size: 13px; }
+    .status-line span { padding-top: 8px; border-top: 1px solid var(--ink); }
+    .footer {
+      display: grid;
+      grid-template-columns: repeat(90, minmax(0, 1fr));
+      padding: 32px 0 48px;
+      font-family: var(--font-ui);
+      font-size: 14px;
+      color: var(--secondary);
+    }
+    .footer > :first-child { grid-column: 1 / 45; }
+    .footer > :last-child { grid-column: 55 / 91; text-align: right; }
+
+    @media (max-width: 1000px) {
+      .hero-copy { grid-column: 1 / 58; }
+      .hero-demo { grid-column: 60 / 91; }
+      main { grid-column: 24 / 91; }
+      .section-content { margin-left: 0; }
+      .section-heading { grid-template-columns: 100px minmax(0, 1fr); }
+    }
+    @media (max-width: 760px) {
+      body { background-size: 24px 100%, 100% 32px; font-size: 16px; }
+      .page { padding: 0 16px; }
+      .masthead { min-height: 64px; align-items: flex-start; flex-direction: column; justify-content: center; gap: 2px; }
+      .masthead-meta { text-align: left; }
+      .hero, .workspace, .footer { display: block; }
+      .hero { padding: 48px 0; }
+      h1 { font-size: 48px; }
+      .lede { font-size: 19px; }
+      .hero-demo { margin-top: 36px; }
+      .sidebar { padding: 24px 0 0; }
+      .sidebar-inner { position: static; }
+      .toc { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+      main { width: 100%; }
+      section { padding: 44px 0; }
+      .section-heading { display: block; }
+      .section-label { display: block; padding: 0 0 12px; }
+      .mapping-row, .algorithm { grid-template-columns: 1fr; gap: 8px; }
+      .hero-facts strong { min-width: 96px; }
+      .footer > :last-child { text-align: left; margin-top: 8px; }
+      pre { padding: 16px; font-size: 12px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+    }
+    @media print {
+      body { background: none; }
+      .sidebar { display: none; }
+      .hero, main, section { display: block; width: 100%; }
+      .code-panel { color: var(--ink); background: var(--paper); border: 1px solid var(--ink); }
+      .code-caption { color: var(--ink); border-bottom-color: var(--ink); }
+      a { text-decoration: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+  <header class="masthead">
+    <a class="brand" href="#top">NTL.jl / exact core toolkit</a>
+    <div class="masthead-meta">Version 0.7.0 · Julia 1.9+ · No C++ dependency</div>
+  </header>
+
+  <div id="top" class="hero">
+    <div class="hero-copy">
+      <p class="kicker">A functional Julia reimplementation of NTL's mathematical core</p>
+      <h1>Exact arithmetic. One coherent toolkit.</h1>
+      <p class="lede">Machine-word and arbitrary-precision modular arithmetic, polynomial factorization, binary fields, extension fields, exact matrices, LLL, and NTT—all connected by reusable Julia parents rather than isolated C++-style global contexts.</p>
+      <ul class="hero-facts">
+        <li><strong>Coverage</strong><span>8 computational areas, 13 source files</span></li>
+        <li><strong>Verified</strong><span>4,335,143 passing assertions on Julia 1.11.7</span></li>
+        <li><strong>Included</strong><span>8 runnable workflows and this offline reference</span></li>
+      </ul>
+    </div>
+    <div class="hero-demo code-panel">
+      <div class="code-caption">One generic factorization engine</div>
+      <pre><code>using NTL, Random
+
+F = zzp(97)
+x = xpoly(F)
+f = (x + 1)^3 * (x^2 + x + 1)
+
+fac = factor(f; rng=MersenneTwister(1))
+@assert reconstruct(fac) == f</code></pre>
+    </div>
+  </div>
+
+  <div class="workspace">
+    <nav class="sidebar" aria-label="Documentation navigation">
+      <div class="sidebar-inner">
+        <h2>Contents</h2>
+        <ol class="toc">
+          <li><a href="#capabilities">Capabilities</a></li>
+          <li><a href="#beginner-zzp">Start with zzp</a></li>
+          <li><a href="#install">Install and verify</a></li>
+          <li><a href="#number-theory">Number theory</a></li>
+          <li><a href="#polynomials">Polynomials and fields</a></li>
+          <li><a href="#matrix-lattice">Matrices and LLL</a></li>
+          <li><a href="#transforms">NTT and convolution</a></li>
+          <li><a href="#api">API index</a></li>
+          <li><a href="#verification">Verification</a></li>
+          <li><a href="#acceleration">Acceleration</a></li>
+          <li><a href="#boundaries">Boundaries</a></li>
+        </ol>
+      </div>
+    </nav>
+
+    <main>
+      <section id="capabilities">
+        <div class="section-heading"><span class="section-label">01 / Tour</span><h2>A connected mathematical core</h2></div>
+        <div class="section-content">
+          <p>The design is layered: scalar parents feed dense polynomials; polynomials define extension fields; every field can reuse the same matrix elimination, extension-field polynomial, and NTT infrastructure where mathematically applicable.</p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>NTL counterpart</th><th>Implemented Julia functionality</th></tr></thead>
+              <tbody>
+                <tr><td>ZZ</td><td><code>BigInt</code> plus primality, factorization, random primes, CRT, modular roots, discrete logarithms, and primitive roots.</td></tr>
+                <tr><td>lzz_p</td><td><code>zzp{p}</code>: overflow-safe machine-word prime-field arithmetic, standard random arrays, and vector helpers.</td></tr>
+                <tr><td>ZZ_p</td><td><code>F = ZZP(n)</code>: arbitrary-precision modular rings with explicit parents, including nonprime moduli for ring arithmetic.</td></tr>
+                <tr><td>ZZ_pX / zz_pX</td><td><code>ModPoly</code>: arithmetic, division, XGCD, composition, interpolation, truncated inverse, modular powering, factorization, and irreducibility.</td></tr>
+                <tr><td>GF2 / GF2X</td><td>XOR/AND field arithmetic and bit-packed binary polynomials using <code>BigInt</code> bits and carry-less multiplication.</td></tr>
+                <tr><td>ZZ_pE / zzpE / GF2E</td><td><code>extension_field</code>: inversion, powering, trace, norm, random elements, and polynomial coefficients over the extension.</td></tr>
+                <tr><td>mat_*</td><td>Determinant, RREF, rank, inverse, linear solving, and nullspace over every supported field.</td></tr>
+                <tr><td>LLL</td><td>Exact rational Gram–Schmidt and LLL reduction with the unimodular transformation matrix.</td></tr>
+                <tr><td>FFT-related layer</td><td>Primitive roots, radix-two Cooley–Tukey NTT, inverse NTT, and linear convolution.</td></tr>
+                <tr><td>ZZX, basic layer</td><td><code>poly(BigInt, ...)</code> supports dense integer-coefficient construction, arithmetic, and evaluation.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="beginner-zzp">
+        <div class="section-heading"><span class="section-label">Start / zzp</span><h2>Your first prime field: <code>zzp</code></h2></div>
+        <div class="section-content">
+          <p><code>zzp</code> is the easiest entry point into NTL.jl. It represents arithmetic modulo a machine-word prime <code>p</code>. Think of <code>zzp{7}</code> as the finite field containing exactly seven elements, written with representatives <code>0,1,2,3,4,5,6</code>.</p>
+          <h3>Four words worth knowing</h3>
+          <div class="mapping">
+            <div class="mapping-row"><span>modulus</span><span>The prime <code>p</code> that defines the field. It is also the field characteristic.</span></div>
+            <div class="mapping-row"><span>element</span><span>A residue class modulo <code>p</code>. For example, <code>8</code> and <code>1</code> denote the same element modulo 7.</span></div>
+            <div class="mapping-row"><span>representative</span><span>The canonical integer stored in <code>0:p-1</code>. Use <code>rep(a)</code> or <code>Int(a)</code> to inspect it.</span></div>
+            <div class="mapping-row"><span>parent</span><span>The field to which an element belongs. For <code>zzp</code>, the parent is the type <code>zzp{p}</code> itself.</span></div>
+          </div>
+
+          <h3>Construct, calculate, and read the output</h3>
+          <div class="code-panel">
+            <div class="code-caption">A complete first session</div>
+            <pre><code>using NTL
+
+F = zzp(7)       # F is zzp{7}
+a = F(10)        # 10 mod 7 = 3
+b = F(-1)        # -1 mod 7 = 6
+
+println(a)       # zzp{7}(3)
+println(a + b)   # zzp{7}(2)
+println(a * b)   # zzp{7}(4)
+println(a / b)   # zzp{7}(4), because 3*inv(6) = 18 = 4 mod 7
+
+@assert rep(a) == 3
+@assert Int(a) == 3
+@assert modulus(a) == 7
+@assert a * inv(a) == one(F)
+@assert a^0 == one(F)</code></pre>
+          </div>
+          <p>The displayed form <code>zzp{7}(3)</code> therefore means “the element with representative 3 in the field modulo 7.” Integer operands are reduced automatically, so <code>a+20</code> and <code>2a</code> are valid.</p>
+
+          <h3>Iterate over every field element</h3>
+          <p>A <code>zzp</code> field is a finite Julia iterator. Elements are produced in canonical order, beginning with zero and ending with <code>p-1</code>.</p>
+          <div class="code-panel">
+            <div class="code-caption">Iteration, collection, and summation</div>
+            <pre><code>F = zzp{5}
+
+for a in F
+    println(a)
+end
+
+@assert [rep(a) for a in F] == [0,1,2,3,4]
+@assert collect(F) == F.([0,1,2,3,4])
+@assert length(F) == 5
+@assert first(F) == F(0)
+@assert last(F) == F(4)
+@assert sum(F) == F(10)</code></pre>
+          </div>
+          <p class="note"><strong>Large fields.</strong> Iteration is lazy and does not allocate a vector. <code>collect(F)</code> does allocate <code>p</code> elements, so do not collect a very large field merely to test its size; use <code>length(F)</code> instead.</p>
+
+          <h3>Choose <code>zzp</code> or <code>ZZP</code></h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Need</th><th>Recommended parent</th></tr></thead>
+              <tbody>
+                <tr><td>Small, prime modulus fitting in <code>Int</code></td><td><code>F = zzp(p)</code>. Fast machine-word storage, type-level modulus, and finite-field iteration.</td></tr>
+                <tr><td>Arbitrarily large modulus</td><td><code>F = ZZP(n)</code>. BigInt storage and an explicit runtime parent.</td></tr>
+                <tr><td>Composite modulus for ring arithmetic</td><td><code>ZZP(n)</code>. Addition and multiplication work; only units have inverses. <code>zzp</code> deliberately rejects composite moduli.</td></tr>
+                <tr><td>Enumerate all elements</td><td><code>zzp(p)</code>. Iteration is defined only for the machine-word prime-field parent.</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>Beginner checklist and common errors</h3>
+          <ul>
+            <li><code>zzp(15)</code> throws <code>ArgumentError</code> because 15 is composite. Use <code>ProbPrime(p)</code> when you need a Boolean primality check first.</li>
+            <li><code>F(2)</code> is zero when <code>F=zzp(2)</code>. Construction always reduces modulo the field modulus.</li>
+            <li>Division or a negative power requires a nonzero denominator/base. <code>inv(zero(F))</code> throws <code>DomainError</code>.</li>
+            <li>Different moduli are different parents. Do not add <code>zzp{7}(1)</code> to <code>zzp{11}(1)</code> without explicitly choosing the mathematics you intend.</li>
+            <li>Use <code>iszero(a)</code>, <code>isone(a)</code>, <code>zero(F)</code>, and <code>one(F)</code> rather than relying on visual output.</li>
+          </ul>
+
+          <h3>Core <code>zzp</code> API</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Entry point</th><th>Beginner-friendly meaning</th></tr></thead>
+              <tbody>
+                <tr><td>zzp(p), zzp{p}(a)</td><td>Validate a prime field and construct reduced elements.</td></tr>
+                <tr><td>rep(a), Int(a)</td><td>Read the canonical integer representative.</td></tr>
+                <tr><td>modulus(F), characteristic(F)</td><td>Read the prime modulus/characteristic.</td></tr>
+                <tr><td>zero(F), one(F), iszero(a), isone(a)</td><td>Field identities and identity tests.</td></tr>
+                <tr><td>+, -, *, /, inv, ^</td><td>Ordinary field arithmetic; negative powers use inversion.</td></tr>
+                <tr><td>rand(F), rand(rng,F,n)</td><td>Uniform random elements, including seeded reproducible arrays.</td></tr>
+                <tr><td>for a in F, collect(F)</td><td>Traverse all elements in representative order.</td></tr>
+                <tr><td>AddMod, SubMod, MulMod, InvMod, PowerMod</td><td>Lower-level modular functions for users who need direct <code>Int</code> representatives.</td></tr>
+                <tr><td>info(F)</td><td>Inspect modulus, zero, one, and storage metadata.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="install">
+        <div class="section-heading"><span class="section-label">02 / Run</span><h2>Install and reproduce the checks</h2></div>
+        <div class="section-content">
+          <p>Use Julia 1.9 or later. Runtime code depends only on the <code>Random</code> standard library. The test target additionally uses <code>Test</code>. No NTL installation, C++ compiler, binary artifact, or third-party Julia package is needed.</p>
+          <div class="code-panel">
+            <div class="code-caption">Shell — from NTLJulia/</div>
+            <pre><code>julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.test()'
+julia --project=. examples/04_number_theory.jl
+julia --project=. examples/05_polynomial_factorization.jl
+julia --project=. examples/08_ntt_convolution.jl</code></pre>
+          </div>
+          <h3>First computation</h3>
+          <div class="code-panel">
+            <div class="code-caption">Julia</div>
+            <pre><code>using NTL
+
+F = ZZP(big(10)^60 + 37)  # Arbitrary-precision modulus
+a = F(-1)
+@assert a^2 == one(F)
+
+G = zzp(101)             # Machine-word prime field
+A = G.([2 3 1; 4 1 5; 3 7 2])
+b = G.([1, 2, 3])
+@assert A * solve(A, b) == b</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <section id="number-theory">
+        <div class="section-heading"><span class="section-label">03 / ZZ</span><h2>Arbitrary-precision number theory</h2></div>
+        <div class="section-content">
+          <p><code>ProbPrime</code> is deterministic for signed machine integers and uses fixed Miller–Rabin witnesses for larger integers. <code>FactorInt</code> combines primality testing with Brent's batch-GCD variant of Pollard rho. The output is a sorted vector of <code>(prime, exponent)</code> pairs.</p>
+          <div class="code-panel">
+            <div class="code-caption">examples/04_number_theory.jl — excerpt</div>
+            <pre><code>n = big(2)^89 - 1
+@assert ProbPrime(n)
+
+fac = FactorInt(big(99991) * big(10007))
+@assert prod(p^e for (p,e) in fac; init=BigInt(1)) == big(99991)*big(10007)
+
+x, M = CRT([2,3,2], [3,5,7])
+@assert (x,M) == (23,105)
+
+r = SqrRootMod(10, 13)
+@assert r !== nothing &amp;&amp; r^2 % 13 == 10
+
+g = PrimitiveRoot(97)
+y = powermod(g, 42, 97)
+@assert powermod(g, DiscreteLog(g,y,97), 97) == y</code></pre>
+          </div>
+          <div class="mapping">
+            <div class="mapping-row"><span>GenPrime(bits)</span><span>Random probable prime with an exact requested bit length.</span></div>
+            <div class="mapping-row"><span>RandomBits / RandomLen / RandomBnd</span><span>Seeded <code>AbstractRNG</code> support for reproducible arbitrary-precision random integers.</span></div>
+            <div class="mapping-row"><span>SqrRootMod</span><span>Tonelli–Shanks for odd primes, with characteristic-two and nonresidue cases.</span></div>
+            <div class="mapping-row"><span>DiscreteLog</span><span>Baby-step/giant-step logarithms in prime-field multiplicative groups.</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="polynomials">
+        <div class="section-heading"><span class="section-label">04 / Polynomials</span><h2>From Euclidean arithmetic to factorization</h2></div>
+        <div class="section-content">
+          <p>Coefficients are stored from low degree to high degree, and trailing zeros are normalized. The zero polynomial has degree <code>-1</code>. Constructors accept any supported parent, including an extension-field object.</p>
+          <div class="code-panel">
+            <div class="code-caption">Factorization over F_97</div>
+            <pre><code>F = zzp(97)
+x = xpoly(F)
+f = (x+1)^3 * (x^2+x+1) * (x^4+3x+5)
+fac = factor(f; rng=MersenneTwister(2026))
+
+@assert reconstruct(fac) == f
+@assert all(is_irreducible(g) for (g,m) in fac.factors)
+
+m = BuildIrred(F, 6)
+a = PowerMod(x+1, big(10)^100, m)</code></pre>
+          </div>
+          <h3>Binary polynomials and extension fields</h3>
+          <div class="code-panel">
+            <div class="code-caption">GF(2^8) with the AES polynomial</div>
+            <pre><code>x = GF2X(2)  # bit i stores coefficient x^i
+m = x^8 + x^4 + x^3 + x + 1
+E = GF2E(m)
+a = gen(E) + 1
+
+@assert cardinality(E) == 256
+@assert a^255 == one(E)
+@assert a * inv(a) == one(E)</code></pre>
+          </div>
+          <div class="note"><strong>Generic extension-field polynomials.</strong> <code>xpoly(E)</code> creates another polynomial layer over an extension. The same arithmetic and finite-field factorization algorithms then operate on <code>ExtensionElem</code> coefficients.</div>
+        </div>
+      </section>
+
+      <section id="matrix-lattice">
+        <div class="section-heading"><span class="section-label">05 / Exact linear algebra</span><h2>Matrices and LLL with checkable invariants</h2></div>
+        <div class="section-content">
+          <p>Field matrices use pivoting and Gauss–Jordan elimination. Integer determinants use fraction-free Bareiss elimination. LLL uses exact rational Gram–Schmidt data, size reduction, and the Lovász condition.</p>
+          <div class="code-panel">
+            <div class="code-caption">examples/07_matrix_lattice.jl — excerpt</div>
+            <pre><code>F = zzp(101)
+A = F.([2 3 1; 4 1 5; 3 7 2])
+b = F.([1,2,3])
+@assert A * solve(A,b) == b
+@assert A * matrix_inverse(A) == F.([1 0 0; 0 1 0; 0 0 1])
+
+A0 = BigInt[1 1 1; -1 0 2; 3 5 6]
+reduced = lll(A0)
+B, U = reduced.basis, reduced.transform
+@assert U * A0 == B
+@assert abs(det_exact(U)) == 1</code></pre>
+          </div>
+          <p>LLL accepts full-rank integer row bases. The returned transformation makes the result independently checkable without relying on approximate floating-point reconstruction.</p>
+        </div>
+      </section>
+
+      <section id="transforms">
+        <div class="section-heading"><span class="section-label">06 / NTT</span><h2>Primitive roots and fast convolution</h2></div>
+        <div class="section-content">
+          <p>The radix-two transform requires a power-of-two length <code>n</code> dividing <code>p-1</code>. <code>ntt_convolve</code> chooses the next power of two for the linear-convolution length and throws a clear error if the selected field cannot support it.</p>
+          <div class="code-panel">
+            <div class="code-caption">examples/08_ntt_convolution.jl</div>
+            <pre><code>F = zzp(257)       # 257-1 = 256
+omega = root_of_unity(32, F)
+a = rand(MersenneTwister(2026), F, 32)
+@assert intt(ntt(a)) == a
+
+u = rand(MersenneTwister(7), F, 100)
+v = rand(MersenneTwister(8), F, 80)
+@assert ntt_convolve(u,v) == convolve(u,v)</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <section id="api">
+        <div class="section-heading"><span class="section-label">07 / API</span><h2>Grouped function index</h2></div>
+        <div class="section-content">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Layer</th><th>Principal entry points</th></tr></thead>
+              <tbody>
+                <tr><td>Machine fields</td><td><code>zzp, rep, modulus, zero, one, inv, power, AddMod, SubMod, MulMod, InvMod, PowerMod</code></td></tr>
+                <tr><td>Big modular rings</td><td><code>ZZP, ZZPField, ZZ_p, parent, cardinality, rand, VectorConv</code></td></tr>
+                <tr><td>Primes and integers</td><td><code>ProbPrime, MillerWitness, NextPrime, PrevPrime, GenPrime, RandomBits, RandomLen, RandomBnd</code></td></tr>
+                <tr><td>Number theory</td><td><code>FactorInt, EulerPhi, CRT, SqrRootMod, DiscreteLog, PrimitiveRoot</code></td></tr>
+                <tr><td>Polynomial basics</td><td><code>poly, xpoly, field, coeff, coefficients, degree, LeadCoeff, setcoeff!, monic</code></td></tr>
+                <tr><td>Polynomial algorithms</td><td><code>DivRem, GCD, XGCD, derivative, evaluate, compose, interpolate, MulTrunc, InvTrunc, MulMod, PowerMod</code></td></tr>
+                <tr><td>Factorization</td><td><code>SquareFreeDecomp, DistinctDegreeDecomp, EqualDegreeSplit, factor, reconstruct, is_irreducible, BuildIrred, FindRoots</code></td></tr>
+                <tr><td>Binary layer</td><td><code>GF2, GF2X, bits, weight, NumBits, NumBytes, random_GF2X, BuildIrredGF2X</code></td></tr>
+                <tr><td>Extensions</td><td><code>extension_field, GF2E, zech_field, ZechElem, gen, defining_polynomial, extension_degree, cardinality, trace, norm, extension_element</code></td></tr>
+                <tr><td>Acceleration</td><td><code>poly_mul, fft_convolve, set_polynomial_acceleration!, polynomial_acceleration</code></td></tr>
+                <tr><td>Matrices</td><td><code>det, det_exact, rref, rank, solve, matrix_inverse, nullspace</code></td></tr>
+                <tr><td>Lattice</td><td><code>gram_schmidt_exact, lll(mode=:fast, verify=true), lll(mode=:exact), LLL</code></td></tr>
+                <tr><td>Transforms</td><td><code>primitive_root, root_of_unity, ntt, intt, convolve, ntt_convolve</code></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="verification">
+        <div class="section-heading"><span class="section-label">08 / Proof</span><h2>Verification built into the package</h2></div>
+        <div class="section-content">
+          <p>The original prime-field suite remains unchanged and passing. New tests exercise each added algorithm with mathematical identities and independent reference computations where practical.</p>
+          <div class="status-line"><span>4,335,143 assertions passed</span><span>8 examples executed</span><span>Julia 1.11.7 verified</span></div>
+          <div class="mapping">
+            <div class="mapping-row"><span>Scalar arithmetic</span><span>Exhaustive small-modulus comparison with independent <code>BigInt</code> results and overflow-boundary tests.</span></div>
+            <div class="mapping-row"><span>Polynomials</span><span>Division identity, XGCD identity, inverse identities, factor reconstruction, irreducibility, roots with multiplicity, and p-th-power branches.</span></div>
+            <div class="mapping-row"><span>Matrices</span><span><code>A*x=b</code>, inverse products, determinant identities, RREF pivots, and nullspace annihilation.</span></div>
+            <div class="mapping-row"><span>LLL</span><span>Transformation identity, unimodular determinant, size-reduction bounds, and Lovász inequalities.</span></div>
+            <div class="mapping-row"><span>NTT</span><span>Round-trip equality and direct schoolbook-versus-transform convolution comparison.</span></div>
+          </div>
+          <h3>Eight executable workflows</h3>
+          <p><code>01_basic_arithmetic.jl</code>, <code>02_vectors_and_random.jl</code>, <code>03_linear_system.jl</code>, <code>04_number_theory.jl</code>, <code>05_polynomial_factorization.jl</code>, <code>06_extension_gf2.jl</code>, <code>07_matrix_lattice.jl</code>, and <code>08_ntt_convolution.jl</code>.</p>
+        </div>
+      </section>
+
+      <section id="acceleration">
+        <div class="section-heading"><span class="section-label">09 / Speed</span><h2>Optional polynomial acceleration</h2></div>
+        <div class="section-content">
+          <p>Acceleration is enabled by default. It selects Karatsuba for medium degrees and NTT for large supported prime fields; the original schoolbook remains available as an explicit opt-out. If the required NTT length does not divide <code>p-1</code>, the implementation falls back to Karatsuba.</p>
+          <div class="code-panel"><div class="code-caption">Default acceleration and original fallback</div><pre><code>using NTL
+
+set_polynomial_acceleration!(true)
+@assert polynomial_acceleration()
+
+F = zzp(998244353)
+f = random_poly(F, 600)
+g = random_poly(F, 600)
+result = poly_mul(f, g)
+
+set_polynomial_acceleration!(false)</code></pre></div>
+          <h3>Compare each path</h3>
+          <div class="code-panel"><div class="code-caption">Explicit method selection</div><pre><code>reference = poly_mul(f, g; method=:schoolbook)
+@assert poly_mul(f, g; method=:karatsuba) == reference
+@assert poly_mul(f, g; method=:ntt) == reference
+@assert poly_mul(f, g; method=:auto) == reference</code></pre></div>
+          <p>The machine-word NTT kernel uses in-place radix-two butterflies with cached roots and raw representatives. This avoids repeated modulus checks and temporary field objects in the hot loop.
+          <h3>Default acceleration versus C++ NTL</h3>
+          <div class="table-wrap"><table><thead><tr><th>Operation</th><th>Before optimization</th><th>Default acceleration</th></tr></thead><tbody>
+            <tr><td>Polynomial multiplication</td><td>1037.62× slower</td><td>23.08× slower</td></tr>
+            <tr><td>NTT convolution</td><td>310.83× slower</td><td>6.83× slower</td></tr>
+            <tr><td>Factorization</td><td>130.76× slower</td><td>65.56× slower</td></tr>
+            <tr><td>Determinant</td><td>226.66× slower</td><td>12.26× slower</td></tr>
+          </tbody></table></div></p>
+          <div class="table-wrap"><table><thead><tr><th>Case</th><th>Schoolbook</th><th>Accelerated</th><th>Speedup</th></tr></thead><tbody>
+            <tr><td>deg 999, p=101, Karatsuba</td><td>111.56 ms</td><td>5.76 ms</td><td>19.4×</td></tr>
+            <tr><td>deg 999, p=998244353, NTT</td><td>111.35 ms</td><td>1.25 ms</td><td>89.4×</td></tr>
+            <tr><td>deg 1999, p=998244353, NTT</td><td>450.10 ms</td><td>2.64 ms</td><td>170.6×</td></tr>
+          </tbody></table></div>
+        </div>
+      </section>
+
+      <section id="boundaries">
+        <div class="section-heading"><span class="section-label">09 / Scope</span><h2>What is—and is not—claimed</h2></div>
+        <div class="section-content">
+          <p>This is a broad, independently tested mathematical core, not a line-for-line or performance-complete replacement for every NTL module.</p>
+          <ul>
+            <li>No C++ ABI compatibility and no attempt to reproduce NTL's global context stack. Parents and Julia type parameters carry the mathematical context instead.</li>
+            <li><code>RR</code>, <code>quad_float</code>, and <code>xdouble</code> are not reimplemented; Julia's <code>BigFloat</code> is the recommended arbitrary-precision real layer.</li>
+            <li>Hermite normal form, full integer-polynomial factorization, Schnorr–Euchner/BKZ reduction, and NTL's platform-specific SIMD or assembly optimizations are not included in version 0.7.0.</li>
+            <li>The exact LLL implementation prioritizes reproducibility and correctness for modest bases, not NTL's highly tuned large-basis throughput.</li>
+            <li>Polynomial acceleration is enabled by default; schoolbook can be selected explicitly or restored with set_polynomial_acceleration!(false).</li>
+          </ul>
+          <p class="note"><strong>Evaluation principle.</strong> Every advertised workflow is runnable from the delivered package. The test command and examples are the demonstration, rather than screenshots of unverified output.</p>
+          <h3>Upstream scope references</h3>
+          <p><a href="https://libntl.org/doc/tour-modules.html">NTL module tour</a> · <a href="https://libntl.org/doc/ZZ_pXFactoring.cpp.html">Polynomial factorization</a> · <a href="https://libntl.org/doc/LLL.cpp.html">LLL interface</a></p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <footer class="footer">
+    <div>NTL.jl · Exact mathematical core · Version 0.7.0</div>
+    <div><a href="#top">Return to top</a></div>
+  </footer>
+</div>
+</body>
+</html>
