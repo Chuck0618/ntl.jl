@@ -277,6 +277,7 @@ include("matrix_lattice_transform.jl")
 include("acceleration.jl")
 include("lll_fast.jl")
 include("zech.jl")
+include("elliptic.jl")
 
 
 @testset "zzp finite-field iteration" begin

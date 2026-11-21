@@ -65,7 +65,7 @@ Replace `/path/to/NTLJulia` with the directory that contains `Project.toml`.
 julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.test()'
 ```
 
-The current suite contains **4,335,143 passing assertions**. Runtime code depends only on Julia's `Random` standard library; `Test` is used only by the test target.
+The current suite contains **4,335,151 passing assertions**. Runtime code depends only on Julia's `Random` standard library; `Test` is used only by the test target.
 
 ### HTML documentation
 
@@ -427,6 +427,49 @@ Use `extension_element(a)` to return to the ordinary polynomial extension repres
 - The extension order must satisfy `q <= 65535`.
 - A primitive multiplicative generator is required. `zech_field` searches for one automatically; an explicitly supplied non-generator is rejected.
 
+## Elliptic-curve point counting
+
+For the cubic
+
+\[
+E: y^2 = x^3 + 2x + 3
+\]
+
+NTL.jl can count projective points over \(\mathbb F_{5^k}\). The implementation counts the point at infinity as well as all affine solutions. It uses the Euler criterion to decide whether the right-hand side is a square, avoiding a full \(q^2\) search for larger fields.
+
+```julia
+using NTL
+
+elliptic(x, y) = y^2 - x^3 - 2x - 3
+
+function count_points_fast(F)
+    q = cardinality(F)
+    affine = 0
+    for x in all_elements(F)
+        rhs = x^3 + 2x + 3
+        if iszero(rhs)
+            affine += 1
+        elseif rhs^div(q - 1, 2) == one(rhs)
+            affine += 2
+        end
+    end
+    (affine = affine, projective = affine + 1)
+end
+```
+
+For small fields, the fast method is checked against exhaustive enumeration of all \((x,y)\) pairs. Current results are:
+
+| \(k\) | \(q=5^k\) | Affine points | Projective points |
+|---:|---:|---:|---:|
+| 1 | 5 | 6 | 7 |
+| 2 | 25 | 24 | 25 |
+| 3 | 125 | 126 | 127 |
+| 4 | 625 | 624 | 625 |
+| 5 | 3125 | 3126 | 3127 |
+| 6 | 15625 | 15624 | 15625 |
+
+The helper `all_elements(F)` is defined in the example and enumerates every field element. The complete example is `examples/13_elliptic_curve.jl`. It constructs \(\mathbb F_{5^k}\) with irreducible polynomials and prints both affine and projective counts. The cubic is singular in characteristic five because \(4\cdot2^3+27\cdot3^2=275\equiv0\pmod5\), but the point count is still well-defined.
+
 ## Matrices and exact linear algebra
 
 The generic matrix routines work over supported fields.
@@ -635,7 +678,8 @@ NTLJulia/
 │   ├── 09_polynomial_acceleration.jl
 │   ├── 10_generalized_fft.jl
 │   ├── 11_fast_lll.jl
-│   └── 12_zech_extension.jl
+│   ├── 12_zech_extension.jl
+│   └── 13_elliptic_curve.jl
 └── test/
     ├── runtests.jl
     ├── zzp_numtheory.jl
@@ -671,6 +715,7 @@ julia --project=. examples/01_basic_arithmetic.jl
 | `10_generalized_fft.jl` | Generalized FFT and exact coefficient reconstruction |
 | `11_fast_lll.jl` | Fast and exact LLL modes with verification |
 | `12_zech_extension.jl` | Zech elements, inverse, powers, and `muladd` |
+| `13_elliptic_curve.jl` | Elliptic-curve point counting over \(\mathbb F_{5^k}\), including the point at infinity |
 
 ## Comparison with C++ NTL
 
