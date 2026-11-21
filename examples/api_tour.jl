@@ -191,7 +191,8 @@ facg = factor((g + 1)^3 * (g^2 + g + 1)^2)
 # Extension fields --------------------------------------------------------------
 E = extension_field(P, x^2 + 2)
 @assert E isa ExtensionField
-@assert ExtensionElem === ZZpE # Legacy alias retained for compatibility.
+@assert ExtensionElem === ZZpE # Descriptive and NTL-facing names for the same type.
+@assert ZZpE(E, gen(E)) == gen(E) # Retain the NTL-facing constructor spelling.
 @assert base_field(E) == P
 @assert defining_polynomial(E) == x^2 + 2
 @assert extension_degree(E) == 2
@@ -209,15 +210,15 @@ E = extension_field(P, x^2 + 2)
 @assert one(gen(E)) == one(E)
 @assert oneunit(gen(E)) == one(E)
 @test_throws DomainError inv(zero(E))
-@assert ZZpE(E, [1, 1]) == E([1, 1])
-@assert ZZpE(E, 2) == E(2)
-@assert ZZpE(E, x^3 + 1) == E(x^3 + 1)
-@assert degree(rep(ZZpE(E, x^3 + 1))) < extension_degree(E)
-@assert ZZpE(E, gen(E)) == gen(E)
-@assert ZZpE(E, gen(E)) isa ZZpE
+@assert ExtensionElem(E, [1, 1]) == E([1, 1])
+@assert ExtensionElem(E, 2) == E(2)
+@assert ExtensionElem(E, x^3 + 1) == E(x^3 + 1)
+@assert degree(rep(ExtensionElem(E, x^3 + 1))) < extension_degree(E)
+@assert ExtensionElem(E, gen(E)) == gen(E)
+@assert ExtensionElem(E, gen(E)) isa ExtensionElem
 
-a = ZZpE(E, [1, 2]) # 1 + 2t, where t = gen(E) and t^2 = -2
-b = ZZpE(E, [2, 1])
+a = E([1, 2]) # 1 + 2t, where t = gen(E) and t^2 = -2
+b = E([2, 1])
 @assert coefficients(rep(a)) == P.([1, 2])
 @assert a + b == E([3, 3])
 @assert a - b == E([-1, 1])
@@ -228,7 +229,7 @@ b = ZZpE(E, [2, 1])
 @assert a / b == a * inv(b)
 @assert power(a, 3) == a^3
 @assert a^(-2) == inv(a)^2
-@assert rand(MersenneTwister(13), E) isa ZZpE
+@assert rand(MersenneTwister(13), E) isa ExtensionElem
 @assert length(rand(MersenneTwister(14), E, 2)) == 2
 u = xpoly(E)
 @assert evaluate(u^2 + a, zero(E)) == a
@@ -250,7 +251,7 @@ z = ZechElem(Z, Z._generator)
 @assert extension_degree(Z) == 2
 @assert cardinality(Z) == cardinality(E)
 @assert extension_field(Z) == E
-@assert extension_element(z) isa ZZpE
+@assert extension_element(z) isa ExtensionElem
 @assert length(Z) == cardinality(Z)
 @assert length(collect(Z)) == cardinality(Z)
 @assert iszero(zero(Z))

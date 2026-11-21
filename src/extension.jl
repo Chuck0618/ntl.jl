@@ -1,6 +1,6 @@
 # Finite-field extensions ------------------------------------------------------
 
-export ExtensionField, ZZpE, ExtensionElem, extension_field, GF2E
+export ExtensionField, ExtensionElem, ZZpE, extension_field, GF2E
 export base_field, defining_polynomial, extension_degree, cardinality, gen
 export trace, norm
 
@@ -19,8 +19,9 @@ const _unsafe_extension_rep = _UnsafeExtensionRep()
 
 An element of an `ExtensionField`, represented by a polynomial reduced modulo
 the defining polynomial. Use `E = extension_field(F, m)` to build the parent,
-then `ZZpE(E, [a0, a1, ...])`, `ZZpE(E, a)`, or `E(p)` to construct elements.
-Coefficient vectors are ordered from low degree to high degree.
+then normally construct elements with `E([a0, a1, ...])`, `E(a)`, or `E(p)`.
+`ExtensionElem` is the descriptive alias for this type; `ZZpE` is the
+NTL-facing spelling. Coefficient vectors run from low degree to high degree.
 """
 struct ZZpE{T,F} <: Number
     _parent::ExtensionField{T,F}
@@ -75,6 +76,7 @@ ZZpE(E::ExtensionField, c::AbstractVector) = E(c)
 ZZpE(E::ExtensionField, c::Number) = E(c)
 ZZpE(E::ExtensionField, a::ZZpE) = E(a)
 
+"""Descriptive alias for `ZZpE`; ordinary construction can simply use `E(...)`."""
 const ExtensionElem = ZZpE
 
 parent(a::ZZpE) = a._parent

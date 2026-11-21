@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Complete NTL.jl 0.8.0 manual: README, ZZpE guide, API reference, benchmarks, and executable examples.">
+  <meta name="description" content="Complete NTL.jl 0.8.0 manual: README, beginner-first extension-field guide, API reference, benchmarks, and executable examples.">
   <link rel="icon" href="data:,">
   <title>NTL.jl 0.8.0 — Complete Manual and API Tour</title>
   <style>
@@ -248,22 +248,23 @@
     <div class="hero-copy">
       <p class="kicker">Exact arithmetic, documented from first construction to verification</p>
       <h1>The complete NTL.jl manual.</h1>
-      <p class="lede">The full project README, a detailed polynomial-representation guide to <code>ZZpE</code>, performance comparisons, mathematical limitations, and an executable call for every exported interface.</p>
+      <p class="lede">The full project README, a beginner-first extension-field guide using <code>E(...)</code> and <code>ExtensionElem</code>, performance comparisons, mathematical limitations, and an executable call for every exported interface.</p>
       <ul class="hero-facts">
         <li><strong>Verified</strong><span>4,335,165 passing assertions on Julia 1.11.7</span></li>
         <li><strong>Coverage</strong><span>136 exported names demonstrated in one API tour</span></li>
-        <li><strong>Included</strong><span>README + ZZpE guide + full tour source + API index</span></li>
+        <li><strong>Included</strong><span>README + extension guide + full tour source + API index</span></li>
       </ul>
     </div>
     <div class="hero-demo code-panel">
-      <div class="code-caption">ZZpE: a reduced polynomial representative</div>
+      <div class="code-caption">Construct extension elements through their parent</div>
       <pre><code>using NTL
 F = zzp(5)
 X = xpoly(F)
 E = extension_field(F, X^2 + 2)
 t = gen(E)
-a = ZZpE(E, [1, 2])  # 1 + 2t
+a = E([1, 2])  # 1 + 2t
 
+@assert a isa ExtensionElem
 @assert t^2 == E(3)
 @assert a^2 == E([3, 4])
 @assert trace(a) == F(2)
@@ -273,9 +274,7 @@ a = ZZpE(E, [1, 2])  # 1 + 2t
   </div>
   <div class="workspace">
     <nav class="sidebar" aria-label="Manual navigation">
-      <div class="sidebar-inner">
-        <h2>Contents</h2>
-        <div id="TOC" role="doc-toc"><ul>
+      <div class="sidebar-inner"><h2>Contents</h2><div id="TOC" role="doc-toc"><ul>
 <li><a href="#ntl.jl">NTL.jl</a>
 <ul>
 <li><a href="#contents">Contents</a></li>
@@ -289,8 +288,7 @@ field</a></li>
 <li><a href="#multiplication-and-acceleration">Multiplication and
 acceleration</a></li>
 <li><a href="#gf2-and-gf2x">GF2 and GF2X</a></li>
-<li><a href="#extension-fields-and-zzpe">Extension fields and
-<code>ZZpE</code></a></li>
+<li><a href="#extension-fields">Extension fields</a></li>
 <li><a href="#zech-fields-for-fast-small-field-arithmetic">Zech fields
 for fast small-field arithmetic</a></li>
 <li><a href="#elliptic-curve-point-counting">Elliptic-curve point
@@ -322,8 +320,7 @@ index</a></li>
 <li><a href="#d.-documentation-and-verification-checklist">D.
 Documentation and verification checklist</a></li>
 </ul></li>
-</ul></div>
-      </div>
+</ul></div></div>
     </nav>
     <main id="main"><h1 id="ntl.jl">NTL.jl</h1>
 <p><strong>A pure-Julia toolkit for exact finite-field arithmetic,
@@ -333,9 +330,9 @@ algebra, generalized FFT, and lattice reduction.</strong></p>
 clone. It is designed to be approachable for new Julia users while
 providing efficient, tested implementations for research and
 teaching.</p>
-<p>Version: <strong>0.8.0</strong><br />
-Tested with: <strong>Julia 1.11.7</strong><br />
-Compatibility target: <strong>Julia 1.9+</strong></p>
+<p>Version: <strong>0.8.0</strong><br> Tested with: <strong>Julia
+1.11.7</strong><br> Compatibility target: <strong>Julia
+1.9+</strong></p>
 <h2 id="contents">Contents</h2>
 <ul>
 <li><a href="#why-ntljl">Why NTL.jl?</a></li>
@@ -348,8 +345,7 @@ field</a></li>
 <li><a href="#multiplication-and-acceleration">Multiplication and
 acceleration</a></li>
 <li><a href="#gf2-and-gf2x">GF2 and GF2X</a></li>
-<li><a href="#extension-fields-and-zzpe">Extension fields and
-ZZpE</a></li>
+<li><a href="#extension-fields">Extension fields</a></li>
 <li><a href="#zech-fields-for-fast-small-field-arithmetic">Zech fields
 for fast small-field arithmetic</a></li>
 <li><a href="#matrices-and-exact-linear-algebra">Matrices and exact
@@ -549,10 +545,10 @@ a = ZZp(R, 17)
 @assert a isa ZZp
 @assert a == R(5)
 @assert rep(a) == 5</code></pre>
-<p>Likewise, the canonical extension-element name is
-<strong><code>ZZpE</code></strong>, without an underscore.
-<code>ExtensionElem === ZZpE</code> remains available for older
-scripts.</p>
+<p>For extension fields, prefer the parent call <code>E(c)</code> in
+ordinary code. <code>ExtensionElem</code> provides a descriptive type
+name when an explicit annotation improves readability; the NTL naming
+correspondence is explained below.</p>
 <h2 id="everyday-operations">Everyday operations</h2>
 <h3 id="construction-and-metadata">Construction and metadata</h3>
 <pre class="julia"><code>F = zzp(97)
@@ -792,8 +788,7 @@ fac = factor((x + 1)^3 * (x^2 + x + 1)^2)
 <code>XGCD</code>, <code>MulMod</code>, <code>PowerMod</code>,
 <code>factor</code>, <code>is_irreducible</code>, and
 <code>BuildIrredGF2X</code>.</p>
-<h2 id="extension-fields-and-zzpe">Extension fields and
-<code>ZZpE</code></h2>
+<h2 id="extension-fields">Extension fields</h2>
 <h3 id="the-mathematical-model">The mathematical model</h3>
 <p><code>extension_field(F, m)</code> constructs the quotient
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>E</mi><mo>=</mo><mi>F</mi><mrow><mo stretchy="true" form="prefix">[</mo><mi>X</mi><mo stretchy="true" form="postfix">]</mo></mrow><mi>/</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>m</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>X</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">E=F[X]/(m(X))</annotation></semantics></math>.
@@ -813,11 +808,14 @@ so
 in <code>E</code>;</li>
 <li>every element has a unique representative
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>a</mi><mn>0</mn></msub><mo>+</mo><msub><mi>a</mi><mn>1</mn></msub><mi>t</mi><mo>+</mo><mi>⋯</mi><mo>+</mo><msub><mi>a</mi><mrow><mi>d</mi><mo>−</mo><mn>1</mn></mrow></msub><msup><mi>t</mi><mrow><mi>d</mi><mo>−</mo><mn>1</mn></mrow></msup></mrow><annotation encoding="application/x-tex">a_0+a_1t+\cdots+a_{d-1}t^{d-1}</annotation></semantics></math>;</li>
-<li><code>ZZpE</code> is the element type, while
+<li><code>ExtensionElem</code> is the element type, while
 <code>ExtensionField</code> is the parent type.</li>
 </ul>
-<p>The canonical name is <code>ZZpE</code>, not <code>ZZ_pE</code>. The
-old Julia name <code>ExtensionElem</code> is a compatibility alias:
+<p>Everyday code normally does not need to name the element type: use
+<code>E(...)</code>. When an explicit descriptive type name helps, use
+<code>ExtensionElem</code>. For readers comparing with C++ NTL,
+<code>ZZpE</code> is the NTL-facing spelling corresponding to C++
+<code>ZZ_pE</code>; both names denote exactly the same Julia type:
 <code>ExtensionElem === ZZpE</code>.</p>
 <h3 id="construct-a-field-and-its-elements">Construct a field and its
 elements</h3>
@@ -841,18 +839,19 @@ m = X^2 + 2
 E = extension_field(F, m)  # Check irreducibility and build the parent.
 t = gen(E)                 # t is the image of X.
 
-a = ZZpE(E, [1, 2])        # 1 + 2t: coefficients are low degree first.
+a = E([1, 2])               # 1 + 2t: coefficients are low degree first.
 b = E(1 + 3X)              # Polynomial input is reduced modulo m.
 c = E(4)                   # A scalar becomes a constant extension element.
 
 @assert E isa ExtensionField
-@assert a isa ZZpE
+@assert a isa ExtensionElem
 @assert a == 1 + 2t
 @assert b == 1 + 3t
 @assert c == E([4])
-@assert ZZpE(E, a) == a
-@assert ZZpE(E, X^3 + 1) == E(X^3 + 1)
-@assert degree(rep(ZZpE(E, X^3 + 1))) &lt; extension_degree(E)
+@assert E(a) == a
+@assert ExtensionElem(E, [1, 2]) == a  # Optional descriptive type spelling.
+p = E(X^3 + 1)             # Polynomial input is reduced before storage.
+@assert degree(rep(p)) &lt; extension_degree(E)
 @assert t^2 == E(3)</code></pre>
 <p>There are three equivalent everyday construction styles:</p>
 <div class="table-wrap"><table>
@@ -873,7 +872,7 @@ c = E(4)                   # A scalar becomes a constant extension element.
 polynomial, or compatible extension element</td>
 </tr>
 <tr class="even">
-<td><code>ZZpE(E, c)</code></td>
+<td><code>ExtensionElem(E, c)</code></td>
 <td>Explicit element-type spelling for scalars, coefficient vectors,
 polynomials, and extension elements</td>
 </tr>
@@ -884,10 +883,11 @@ polynomials, and extension elements</td>
 </tr>
 </tbody>
 </table></div>
-<p>For polynomial input, <code>E(p)</code> and <code>ZZpE(E, p)</code>
-are equivalent and always reduce <code>p</code> modulo the defining
-polynomial. Coefficient vectors are converted to the base field and
-normalized; they do not need to have exactly <code>d</code> entries.</p>
+<p>For polynomial input, <code>E(p)</code> and
+<code>ExtensionElem(E, p)</code> are equivalent and always reduce
+<code>p</code> modulo the defining polynomial. Coefficient vectors are
+converted to the base field and normalized; they do not need to have
+exactly <code>d</code> entries.</p>
 <h3 id="inspect-the-representation">Inspect the representation</h3>
 <p><code>rep(a)</code> is a reduced <code>ModPoly</code>,
 <strong>not</strong> an integer and not a Zech logarithm. Its
@@ -973,7 +973,7 @@ Multiplication first multiplies the polynomial representatives and then
 reduces modulo <code>m</code>. Inversion uses the polynomial extended
 Euclidean algorithm. Powers use modular square-and-multiply; negative
 exponents invert first.</p>
-<pre class="julia"><code>d = ZZpE(E, [2, 1])       # 2 + t
+<pre class="julia"><code>d = E([2, 1])              # 2 + t
 
 @assert a + d == E([3, 3])
 @assert a - d == E([-1, 1])
@@ -1019,7 +1019,7 @@ NTL.jl computes the absolute trace and norm by</p>
 \operatorname{N}_{E/F}(a)=a^{(q^d-1)/(q-1)}.
 </annotation></semantics></math></p>
 <p>Both return a <strong>base-field element</strong>, not a
-<code>ZZpE</code>.</p>
+<code>ExtensionElem</code>.</p>
 <pre class="julia"><code>@assert a^5 == E([1, 3])       # Frobenius conjugate of 1 + 2t
 @assert trace(a) == F(2)
 @assert norm(a) == F(4)
@@ -1040,16 +1040,16 @@ powers; norm uses modular exponentiation.</p>
 u = rand(rng, E)
 v = rand(rng, E, 4)
 
-@assert u isa ZZpE
+@assert u isa ExtensionElem
 @assert parent(u) == E
 @assert length(v) == 4
 @assert all(parent(w) == E for w in v)</code></pre>
 <p>A random extension element is produced by sampling a polynomial of
 degree below <code>d</code> and reducing it in <code>E</code>. Supplying
 an explicit RNG makes experiments reproducible.</p>
-<h3 id="polynomials-whose-coefficients-are-zzpe">Polynomials whose
-coefficients are <code>ZZpE</code></h3>
-<p><code>ZZpE</code> is a first-class coefficient type for
+<h3 id="polynomials-whose-coefficients-are-extensionelem">Polynomials
+whose coefficients are <code>ExtensionElem</code></h3>
+<p><code>ExtensionElem</code> is a first-class coefficient type for
 <code>ModPoly</code>. This enables extension-field polynomials without a
 separate C++-style global context.</p>
 <pre class="julia"><code>Y = xpoly(E)
@@ -1067,8 +1067,8 @@ over an extension exactly as over a prime field.</p>
 <h3 id="binary-extensions-use-the-same-element-model">Binary extensions
 use the same element model</h3>
 <p><code>GF2E(m)</code> is a convenience constructor for an extension of
-<code>GF2</code>; its elements also use <code>ZZpE</code> with a
-<code>GF2</code> base field.</p>
+<code>GF2</code>; its elements also use <code>ExtensionElem</code> with
+a <code>GF2</code> base field.</p>
 <pre class="julia"><code>g = GF2X(2)
 aes_modulus = g^8 + g^4 + g^3 + g + 1
 @assert is_irreducible(aes_modulus)
@@ -1076,7 +1076,7 @@ aes_modulus = g^8 + g^4 + g^3 + g + 1
 B = GF2E(aes_modulus)
 z = gen(B) + 1
 
-@assert gen(B) isa ZZpE
+@assert gen(B) isa ExtensionElem
 @assert cardinality(B) == 256
 @assert z^255 == one(B)
 @assert z * inv(z) == one(B)</code></pre>
@@ -1087,7 +1087,7 @@ gives
 <pre class="julia"><code>B4 = GF2E(g^2 + g + 1)
 @assert cardinality(B4) == 4
 @assert gen(B4)^3 == one(B4)</code></pre>
-<h3 id="zzpe-or-zechelem"><code>ZZpE</code> or
+<h3 id="extensionelem-or-zechelem"><code>ExtensionElem</code> or
 <code>ZechElem</code>?</h3>
 <p>Both represent elements of the same mathematical extension, but their
 storage and fast operations differ.</p>
@@ -1105,15 +1105,15 @@ storage and fast operations differ.</p>
 <tbody>
 <tr class="odd">
 <td>Inspect coefficients, defining polynomials, trace, or norm</td>
-<td><code>ZZpE</code> through <code>extension_field</code></td>
+<td><code>ExtensionElem</code> through <code>extension_field</code></td>
 </tr>
 <tr class="even">
 <td>Build polynomials over the extension</td>
-<td><code>ZZpE</code></td>
+<td><code>ExtensionElem</code></td>
 </tr>
 <tr class="odd">
 <td>Work in a large extension</td>
-<td><code>ZZpE</code></td>
+<td><code>ExtensionElem</code></td>
 </tr>
 <tr class="even">
 <td>Repeated multiplication, inversion, and powers in a small
@@ -1127,8 +1127,8 @@ extension</td>
 </tbody>
 </table></div>
 <p>The Zech representation stores discrete logarithms and is limited to
-fields of order at most 65,535. <code>ZZpE</code> stores polynomial
-representatives and has no such field-order table limit.</p>
+fields of order at most 65,535. <code>ExtensionElem</code> stores
+polynomial representatives and has no such field-order table limit.</p>
 <h2 id="zech-fields-for-fast-small-field-arithmetic">Zech fields for
 fast small-field arithmetic</h2>
 <p>A Zech field is a discrete-log representation of the same extension
@@ -1590,22 +1590,23 @@ fields</h3>
 </thead>
 <tbody>
 <tr class="odd">
-<td><code>ExtensionField</code>, <code>ZZpE</code></td>
-<td>Extension parent and canonical polynomial-represented element
-types</td>
+<td><code>ExtensionField</code>, <code>ExtensionElem</code></td>
+<td>Extension parent and descriptive polynomial-represented element
+type</td>
 </tr>
 <tr class="even">
 <td><code>extension_field(F,m; check=true)</code></td>
 <td>Checked polynomial quotient extension</td>
 </tr>
 <tr class="odd">
-<td><code>E(c)</code>, <code>ZZpE(E,c)</code></td>
+<td><code>E(c)</code>, <code>ExtensionElem(E,c)</code></td>
 <td>Construct scalars, coefficient vectors, polynomials through
 <code>E</code>, or copy elements</td>
 </tr>
 <tr class="even">
 <td><code>GF2E(m)</code></td>
-<td>Binary extension using the same <code>ZZpE</code> element model</td>
+<td>Binary extension using the same <code>ExtensionElem</code> element
+model</td>
 </tr>
 <tr class="odd">
 <td><code>gen(E)</code></td>
@@ -1641,7 +1642,7 @@ polynomial</td>
 </tr>
 <tr class="even">
 <td><code>xpoly(E)</code>, <code>poly(E,c)</code></td>
-<td>Polynomials with <code>ZZpE</code> coefficients</td>
+<td>Polynomials with <code>ExtensionElem</code> coefficients</td>
 </tr>
 <tr class="odd">
 <td><code>zech_field(E)</code></td>
@@ -1649,7 +1650,7 @@ polynomial</td>
 </tr>
 <tr class="even">
 <td><code>extension_element(a)</code></td>
-<td>Convert a Zech element back to <code>ZZpE</code></td>
+<td>Convert a Zech element back to <code>ExtensionElem</code></td>
 </tr>
 </tbody>
 </table></div>
@@ -1695,7 +1696,7 @@ polynomial</td>
 │   ├── polynomial.jl       # Dense polynomials and factorization
 │   ├── polynomial_mul.jl   # Schoolbook, Karatsuba, and acceleration strategies
 │   ├── binary.jl           # GF2 and bit-packed GF2X
-│   ├── extension.jl        # ExtensionField and ZZpE polynomial representatives
+│   ├── extension.jl        # ExtensionField and ExtensionElem polynomial representatives
 │   ├── zech.jl             # Isbits Zech representation and tables
 │   ├── matrix.jl           # Determinants, RREF, solving, rank, nullspace
 │   ├── lattice.jl          # Original exact LLL implementation
@@ -1737,7 +1738,7 @@ users.</p>
 <p><strong>Complete API coverage:</strong> <a
 href="../examples/api_tour.jl"><code>examples/api_tour.jl</code></a>
 contains at least one executable call for every exported NTL.jl
-interface. It also includes a dedicated <code>ZZpE</code> block covering
+interface. It also includes a dedicated extension-field block covering
 construction, representation, arithmetic, inversion, powers, random
 elements, and polynomials over an extension. Run it with:</p>
 <pre class="bash"><code>julia --project=. examples/api_tour.jl</code></pre>
@@ -1812,7 +1813,7 @@ including the point at infinity</td>
 </tr>
 <tr class="even">
 <td><code>api_tour.jl</code></td>
-<td>Every exported interface, including the complete <code>ZZpE</code>
+<td>Every exported interface, including the complete extension-field
 workflow</td>
 </tr>
 </tbody>
@@ -2088,9 +2089,9 @@ root, run:</p>
 <pre class="bash"><code>julia --project=. examples/api_tour.jl</code></pre>
 <p>A successful run ends with
 <code>API tour completed successfully.</code> The tour covers all
-<strong>136 exported names</strong>, including the two compatibility
-aliases, and checks results with assertions rather than merely printing
-them.</p>
+<strong>136 exported names</strong>, including compatibility and
+NTL-facing aliases, and checks results with assertions rather than
+merely printing them.</p>
 <h2 id="b.-complete-executable-api-tour">B. Complete executable API
 tour</h2>
 <pre class="julia"><code>using NTL
@@ -2286,7 +2287,8 @@ facg = factor((g + 1)^3 * (g^2 + g + 1)^2)
 # Extension fields --------------------------------------------------------------
 E = extension_field(P, x^2 + 2)
 @assert E isa ExtensionField
-@assert ExtensionElem === ZZpE # Legacy alias retained for compatibility.
+@assert ExtensionElem === ZZpE # Descriptive and NTL-facing names for the same type.
+@assert ZZpE(E, gen(E)) == gen(E) # Retain the NTL-facing constructor spelling.
 @assert base_field(E) == P
 @assert defining_polynomial(E) == x^2 + 2
 @assert extension_degree(E) == 2
@@ -2304,15 +2306,15 @@ E = extension_field(P, x^2 + 2)
 @assert one(gen(E)) == one(E)
 @assert oneunit(gen(E)) == one(E)
 @test_throws DomainError inv(zero(E))
-@assert ZZpE(E, [1, 1]) == E([1, 1])
-@assert ZZpE(E, 2) == E(2)
-@assert ZZpE(E, x^3 + 1) == E(x^3 + 1)
-@assert degree(rep(ZZpE(E, x^3 + 1))) &lt; extension_degree(E)
-@assert ZZpE(E, gen(E)) == gen(E)
-@assert ZZpE(E, gen(E)) isa ZZpE
+@assert ExtensionElem(E, [1, 1]) == E([1, 1])
+@assert ExtensionElem(E, 2) == E(2)
+@assert ExtensionElem(E, x^3 + 1) == E(x^3 + 1)
+@assert degree(rep(ExtensionElem(E, x^3 + 1))) &lt; extension_degree(E)
+@assert ExtensionElem(E, gen(E)) == gen(E)
+@assert ExtensionElem(E, gen(E)) isa ExtensionElem
 
-a = ZZpE(E, [1, 2]) # 1 + 2t, where t = gen(E) and t^2 = -2
-b = ZZpE(E, [2, 1])
+a = E([1, 2]) # 1 + 2t, where t = gen(E) and t^2 = -2
+b = E([2, 1])
 @assert coefficients(rep(a)) == P.([1, 2])
 @assert a + b == E([3, 3])
 @assert a - b == E([-1, 1])
@@ -2323,7 +2325,7 @@ b = ZZpE(E, [2, 1])
 @assert a / b == a * inv(b)
 @assert power(a, 3) == a^3
 @assert a^(-2) == inv(a)^2
-@assert rand(MersenneTwister(13), E) isa ZZpE
+@assert rand(MersenneTwister(13), E) isa ExtensionElem
 @assert length(rand(MersenneTwister(14), E, 2)) == 2
 u = xpoly(E)
 @assert evaluate(u^2 + a, zero(E)) == a
@@ -2345,7 +2347,7 @@ z = ZechElem(Z, Z._generator)
 @assert extension_degree(Z) == 2
 @assert cardinality(Z) == cardinality(E)
 @assert extension_field(Z) == E
-@assert extension_element(z) isa ZZpE
+@assert extension_element(z) isa ExtensionElem
 @assert length(Z) == cardinality(Z)
 @assert length(collect(Z)) == cardinality(Z)
 @assert iszero(zero(Z))
@@ -2436,7 +2438,7 @@ GF2XFactorization, BuildIrredGF2X, to_modpoly, from_modpoly</td>
 </tr>
 <tr class="odd">
 <td><code>extension.jl</code></td>
-<td>ExtensionField, ZZpE, ExtensionElem, extension_field, GF2E,
+<td>ExtensionField, ExtensionElem, ZZpE, extension_field, GF2E,
 base_field, defining_polynomial, extension_degree, cardinality, gen,
 trace, norm</td>
 </tr>
@@ -2496,18 +2498,19 @@ Julia 1.9 or later and tested with Julia 1.11.7.</li>
 assertions</strong>.</li>
 <li>Every exported name occurs in at least one executable example in
 <code>api_tour.jl</code>.</li>
-<li>The dedicated <code>ZZpE</code> section includes nine code blocks
-covering parent construction, scalar/vector/polynomial element
-construction, canonical representatives, metadata, arithmetic,
-inversion, powers, trace, norm, random arrays, polynomials over an
-extension, and binary fields.</li>
-<li><code>ZZpE(E, p)</code> and <code>E(p)</code> both reduce polynomial
-input before storing it; the regression suite checks this invariant over
-<code>zzp</code>, <code>ZZP</code>, and <code>GF2</code> base
-fields.</li>
-<li>New code should use <code>ZZp</code> and <code>ZZpE</code>.
-<code>ZZ_p === ZZp</code> and <code>ExtensionElem === ZZpE</code> are
-documented compatibility aliases.</li>
+<li>The extension-field guide uses <code>E(...)</code> for ordinary
+construction and <code>ExtensionElem</code> for explicit descriptive
+type checks. Its nine code blocks cover parent construction,
+scalar/vector/polynomial input, canonical representatives, metadata,
+arithmetic, inversion, powers, trace, norm, random arrays, polynomials
+over an extension, and binary fields.</li>
+<li><code>E(p)</code> and <code>ExtensionElem(E, p)</code> both reduce
+polynomial input before storing it; the regression suite checks this
+invariant over <code>zzp</code>, <code>ZZP</code>, and <code>GF2</code>
+base fields.</li>
+<li>The NTL-facing element name is documented only where it clarifies
+the correspondence with C++ NTL; it is not needed in everyday Julia
+code.</li>
 <li>This page is self-contained: equations use MathML, styling is
 embedded, and no web framework or network connection is required.</li>
 </ul></main>
