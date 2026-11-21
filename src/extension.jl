@@ -1,6 +1,6 @@
 # Finite-field extensions ------------------------------------------------------
 
-export ExtensionField, ExtensionElem, extension_field, GF2E
+export ExtensionField, ZZpE, ExtensionElem, extension_field, GF2E
 export base_field, defining_polynomial, extension_degree, cardinality, gen
 export trace, norm
 
@@ -10,11 +10,29 @@ struct ExtensionField{T,F}
     _modulus::ModPoly{T,F}
 end
 
-"""An element of an `ExtensionField`, represented by a reduced polynomial."""
-struct ExtensionElem{T,F} <: Number
+# Internal marker: only the parent call may construct an already reduced rep.
+struct _UnsafeExtensionRep end
+const _unsafe_extension_rep = _UnsafeExtensionRep()
+
+"""
+    ZZpE{T,F} <: Number
+
+An element of an `ExtensionField`, represented by a polynomial reduced modulo
+the defining polynomial. Use `E = extension_field(F, m)` to build the parent,
+then `ZZpE(E, [a0, a1, ...])`, `ZZpE(E, a)`, or `E(p)` to construct elements.
+Coefficient vectors are ordered from low degree to high degree.
+"""
+struct ZZpE{T,F} <: Number
     _parent::ExtensionField{T,F}
     _rep::ModPoly{T,F}
+    function ZZpE{T,F}(parent::ExtensionField{T,F}, rep::ModPoly{T,F},
+                       ::_UnsafeExtensionRep) where {T,F}
+        new{T,F}(parent, rep)
+    end
 end
+
+@inline _raw_extension(E::ExtensionField{T,F}, p::ModPoly{T,F}) where {T,F} =
+    ZZpE{T,F}(E, p, _unsafe_extension_rep)
 
 """Build an extension parent and optionally verify that `m` is irreducible."""
 function extension_field(F, m::ModPoly; check::Bool = true)
@@ -47,25 +65,31 @@ isequal(E::ExtensionField, G::ExtensionField) = E == G
 
 function (E::ExtensionField)(p::ModPoly)
     field(p) == base_field(E) || throw(ArgumentError("coefficient parent mismatch"))
-    ExtensionElem(E, rem(p, defining_polynomial(E)))
+    _raw_extension(E, rem(p, defining_polynomial(E)))
 end
 (E::ExtensionField)(c::AbstractVector) = E(poly(base_field(E), c))
 (E::ExtensionField)(c::Number) = E(poly(base_field(E), c))
-(E::ExtensionField)(a::ExtensionElem) = parent(a) == E ? a : throw(ArgumentError("extension parent mismatch"))
+(E::ExtensionField)(a::ZZpE) = parent(a) == E ? a : throw(ArgumentError("extension parent mismatch"))
+ZZpE(E::ExtensionField, p::ModPoly) = E(p)
+ZZpE(E::ExtensionField, c::AbstractVector) = E(c)
+ZZpE(E::ExtensionField, c::Number) = E(c)
+ZZpE(E::ExtensionField, a::ZZpE) = E(a)
 
-parent(a::ExtensionElem) = a._parent
-rep(a::ExtensionElem) = a._rep
-base_field(a::ExtensionElem) = base_field(parent(a))
-modulus(a::ExtensionElem) = defining_polynomial(parent(a))
-characteristic(a::ExtensionElem) = characteristic(parent(a))
+const ExtensionElem = ZZpE
+
+parent(a::ZZpE) = a._parent
+rep(a::ZZpE) = a._rep
+base_field(a::ZZpE) = base_field(parent(a))
+modulus(a::ZZpE) = defining_polynomial(parent(a))
+characteristic(a::ZZpE) = characteristic(parent(a))
 zero(E::ExtensionField) = E(poly(base_field(E), 0))
 one(E::ExtensionField) = E(poly(base_field(E), 1))
 oneunit(E::ExtensionField) = one(E)
-zero(a::ExtensionElem) = zero(parent(a))
-one(a::ExtensionElem) = one(parent(a))
-oneunit(a::ExtensionElem) = one(a)
-iszero(a::ExtensionElem) = iszero(rep(a))
-isone(a::ExtensionElem) = isone(rep(a))
+zero(a::ZZpE) = zero(parent(a))
+one(a::ZZpE) = one(parent(a))
+oneunit(a::ZZpE) = one(a)
+iszero(a::ZZpE) = iszero(rep(a))
+isone(a::ZZpE) = isone(rep(a))
 
 """Return the image of the polynomial indeterminate in the extension."""
 gen(E::ExtensionField) = E(xpoly(base_field(E)))
@@ -73,42 +97,42 @@ gen(E::ExtensionField) = E(xpoly(base_field(E)))
 function show(io::IO, E::ExtensionField)
     print(io, "ExtensionField(", base_field(E), ", ", defining_polynomial(E), ")")
 end
-show(io::IO, a::ExtensionElem) = print(io, "ExtensionElem(", parent(a), ", ", rep(a), ")")
+show(io::IO, a::ZZpE) = print(io, "ZZpE(", parent(a), ", ", rep(a), ")")
 
-function _check_extension_parents(a::ExtensionElem, b::ExtensionElem)
+function _check_extension_parents(a::ZZpE, b::ZZpE)
     parent(a) == parent(b) || throw(ArgumentError("extension parents differ"))
     parent(a)
 end
-+(a::ExtensionElem, b::ExtensionElem) = (_check_extension_parents(a, b); parent(a)(rep(a) + rep(b)))
--(a::ExtensionElem, b::ExtensionElem) = (_check_extension_parents(a, b); parent(a)(rep(a) - rep(b)))
--(a::ExtensionElem) = parent(a)(-rep(a))
-*(a::ExtensionElem, b::ExtensionElem) = (_check_extension_parents(a, b); parent(a)(MulMod(rep(a), rep(b), defining_polynomial(parent(a)))))
-sqr(a::ExtensionElem) = a * a
++(a::ZZpE, b::ZZpE) = (_check_extension_parents(a, b); parent(a)(rep(a) + rep(b)))
+-(a::ZZpE, b::ZZpE) = (_check_extension_parents(a, b); parent(a)(rep(a) - rep(b)))
+-(a::ZZpE) = parent(a)(-rep(a))
+*(a::ZZpE, b::ZZpE) = (_check_extension_parents(a, b); parent(a)(MulMod(rep(a), rep(b), defining_polynomial(parent(a)))))
+sqr(a::ZZpE) = a * a
 
-+(a::ExtensionElem, c::Number) = a + parent(a)(c)
-+(c::Number, a::ExtensionElem) = parent(a)(c) + a
--(a::ExtensionElem, c::Number) = a - parent(a)(c)
--(c::Number, a::ExtensionElem) = parent(a)(c) - a
-*(a::ExtensionElem, c::Number) = a * parent(a)(c)
-*(c::Number, a::ExtensionElem) = parent(a)(c) * a
++(a::ZZpE, c::Number) = a + parent(a)(c)
++(c::Number, a::ZZpE) = parent(a)(c) + a
+-(a::ZZpE, c::Number) = a - parent(a)(c)
+-(c::Number, a::ZZpE) = parent(a)(c) - a
+*(a::ZZpE, c::Number) = a * parent(a)(c)
+*(c::Number, a::ZZpE) = parent(a)(c) * a
 
-function inv(a::ExtensionElem)
+function inv(a::ZZpE)
     iszero(a) && throw(DomainError(a, "zero is not invertible"))
     parent(a)(InvMod(rep(a), defining_polynomial(parent(a))))
 end
-/(a::ExtensionElem, b::ExtensionElem) = a * inv(b)
-/(a::ExtensionElem, c::Number) = a / parent(a)(c)
-/(c::Number, a::ExtensionElem) = parent(a)(c) / a
+/(a::ZZpE, b::ZZpE) = a * inv(b)
+/(a::ZZpE, c::Number) = a / parent(a)(c)
+/(c::Number, a::ZZpE) = parent(a)(c) / a
 
-function power(a::ExtensionElem, e::Integer)
+function power(a::ZZpE, e::Integer)
     parent(a)(PowerMod(rep(a), e, defining_polynomial(parent(a))))
 end
-^(a::ExtensionElem, e::Integer) = power(a, e)
+^(a::ZZpE, e::Integer) = power(a, e)
 
-==(a::ExtensionElem, b::ExtensionElem) = parent(a) == parent(b) && rep(a) == rep(b)
-isequal(a::ExtensionElem, b::ExtensionElem) = a == b
-==(a::ExtensionElem, c::Number) = a == parent(a)(c)
-==(c::Number, a::ExtensionElem) = a == c
+==(a::ZZpE, b::ZZpE) = parent(a) == parent(b) && rep(a) == rep(b)
+isequal(a::ZZpE, b::ZZpE) = a == b
+==(a::ZZpE, c::Number) = a == parent(a)(c)
+==(c::Number, a::ZZpE) = a == c
 
 Random.rand(E::ExtensionField) = rand(Random.default_rng(), E)
 function Random.rand(rng::AbstractRNG, E::ExtensionField)
@@ -127,7 +151,7 @@ Random.rand(E::ExtensionField, dims::Dims) = rand(Random.default_rng(), E, dims)
 Random.rand(E::ExtensionField, d::Integer, dims::Integer...) = rand(Random.default_rng(), E, (d, dims...))
 
 """Absolute trace from an extension to its base field."""
-function trace(a::ExtensionElem)
+function trace(a::ZZpE)
     E = parent(a)
     q = cardinality(base_field(E))
     d = extension_degree(E)
@@ -142,7 +166,7 @@ function trace(a::ExtensionElem)
 end
 
 """Absolute norm from an extension to its base field."""
-function norm(a::ExtensionElem)
+function norm(a::ZZpE)
     E = parent(a)
     q = cardinality(base_field(E))
     d = extension_degree(E)

@@ -35,7 +35,7 @@ cardinality(F::ZechField) = length(F._exp) + 1
 extension_degree(F::ZechField) = extension_degree(F._extension)
 extension_field(F::ZechField) = F._extension
 
-function _v_of(a::ExtensionElem)
+function _v_of(a::ZZpE)
     f = rep(a)
     p = Int(characteristic(a))
     v = 0
@@ -61,7 +61,7 @@ function _extension_elements(E::ExtensionField)
     (E(collect(c)) for c in Iterators.product(ntuple(_ -> F, d)...))
 end
 
-function _multiplicative_order(a::ExtensionElem, q::Int)
+function _multiplicative_order(a::ZZpE, q::Int)
     y = one(a)
     for k in 1:(q - 1)
         y *= a
@@ -82,7 +82,7 @@ function _find_generator(E::ExtensionField, q::Int)
     error("no primitive element found")
 end
 
-function _check_generator(a::ExtensionElem, q::Int)
+function _check_generator(a::ZZpE, q::Int)
     iszero(a) && throw(ArgumentError("zero cannot be a multiplicative generator"))
     _multiplicative_order(a, q) == q - 1 || throw(ArgumentError("the supplied element is not primitive"))
     factors = FactorInt(q - 1)

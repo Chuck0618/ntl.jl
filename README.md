@@ -4,8 +4,8 @@
 
 NTL.jl is inspired by C++ NTL, but it is not a wrapper or an API clone. It is designed to be approachable for new Julia users while providing efficient, tested implementations for research and teaching.
 
-Version: **0.7.0**  
-Tested with: **Julia 1.11.7**  
+Version: **0.8.0**<br>
+Tested with: **Julia 1.11.7**<br>
 Compatibility target: **Julia 1.9+**
 
 ## Contents
@@ -18,7 +18,7 @@ Compatibility target: **Julia 1.9+**
 - [Polynomials](#polynomials)
 - [Multiplication and acceleration](#multiplication-and-acceleration)
 - [GF2 and GF2X](#gf2-and-gf2x)
-- [Extension fields](#extension-fields)
+- [Extension fields and ZZpE](#extension-fields-and-zzpe)
 - [Zech fields for fast small-field arithmetic](#zech-fields-for-fast-small-field-arithmetic)
 - [Matrices and exact linear algebra](#matrices-and-exact-linear-algebra)
 - [LLL lattice reduction](#lll-lattice-reduction)
@@ -65,7 +65,7 @@ Replace `/path/to/NTLJulia` with the directory that contains `Project.toml`.
 julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.test()'
 ```
 
-The current suite contains **4,335,151 passing assertions**. Runtime code depends only on Julia's `Random` standard library; `Test` is used only by the test target.
+The current suite contains **4,335,165 passing assertions**. Runtime code depends only on Julia's `Random` standard library; `Test` is used only by the test target.
 
 ### HTML documentation
 
@@ -167,14 +167,34 @@ result = lll(A)  # fast by default, with exact verification
 ### `zzp` versus `ZZP`
 
 ```julia
+using Test
+
 F = zzp(101)             # machine-word prime field
 R = ZZP(12)              # arbitrary-precision modular ring
 
 @assert R(5) * R(5) == R(1)
-@assert_throws DomainError inv(R(6))
+@test_throws DomainError inv(R(6))
 ```
 
 `zzp` deliberately requires a prime modulus. `ZZP` also permits composite moduli, but only units are invertible.
+
+The three names in the arbitrary-precision interface have different roles:
+
+- `ZZP(n)` constructs a reusable parent of type `ZZPField`;
+- `ZZp` is the element type, and `ZZp(R, a)` constructs an element directly;
+- `ZZ_p` is retained only as a compatibility alias for `ZZp`; new code should use `ZZp`.
+
+```julia
+R = ZZP(12)
+a = ZZp(R, 17)
+
+@assert R isa ZZPField
+@assert a isa ZZp
+@assert a == R(5)
+@assert rep(a) == 5
+```
+
+Likewise, the canonical extension-element name is **`ZZpE`**, without an underscore. `ExtensionElem === ZZpE` remains available for older scripts.
 
 ## Everyday operations
 
@@ -357,39 +377,232 @@ fac = factor((x + 1)^3 * (x^2 + x + 1)^2)
 
 Useful functions include `bits`, `weight`, `NumBits`, `NumBytes`, `DivRem`, `XGCD`, `MulMod`, `PowerMod`, `factor`, `is_irreducible`, and `BuildIrredGF2X`.
 
-## Extension fields
+## Extension fields and `ZZpE`
 
-`extension_field(F, m)` constructs `F[x]/(m)`. The default constructor checks irreducibility.
+### The mathematical model
+
+`extension_field(F, m)` constructs the quotient \(E=F[X]/(m(X))\). By default it verifies that `m` is irreducible, so the quotient is a field. If \(F=\mathbb F_q\) and \(\deg m=d\), then:
+
+- \(E\cong\mathbb F_{q^d}\) and `cardinality(E) == q^d`;
+- `t = gen(E)` is the image of \(X\), so \(m(t)=0\) in `E`;
+- every element has a unique representative \(a_0+a_1t+\cdots+a_{d-1}t^{d-1}\);
+- `ZZpE` is the element type, while `ExtensionField` is the parent type.
+
+The canonical name is `ZZpE`, not `ZZ_pE`. The old Julia name `ExtensionElem` is a compatibility alias: `ExtensionElem === ZZpE`.
+
+### Construct a field and its elements
+
+The following example builds \(\mathbb F_{25}=\mathbb F_5[t]\), where \(t^2=-2=3\). The polynomial \(X^2+2\) is irreducible over \(\mathbb F_5\).
 
 ```julia
-F = zzp(5)
-m = xpoly(F)^2 + 2
-E = extension_field(F, m)
-t = gen(E)
+using NTL
+using Random
+using Test
 
+F = zzp(5)
+X = xpoly(F)
+m = X^2 + 2
+@assert is_irreducible(m)
+
+E = extension_field(F, m)  # Check irreducibility and build the parent.
+t = gen(E)                 # t is the image of X.
+
+a = ZZpE(E, [1, 2])        # 1 + 2t: coefficients are low degree first.
+b = E(1 + 3X)              # Polynomial input is reduced modulo m.
+c = E(4)                   # A scalar becomes a constant extension element.
+
+@assert E isa ExtensionField
+@assert a isa ZZpE
+@assert a == 1 + 2t
+@assert b == 1 + 3t
+@assert c == E([4])
+@assert ZZpE(E, a) == a
+@assert ZZpE(E, X^3 + 1) == E(X^3 + 1)
+@assert degree(rep(ZZpE(E, X^3 + 1))) < extension_degree(E)
 @assert t^2 == E(3)
-@assert cardinality(E) == 25
-@assert t * inv(t) == one(E)
-@assert norm(t) == F(2)
-@assert trace(t) == F(0)
 ```
 
-For a binary example, `GF2E` is available:
+There are three equivalent everyday construction styles:
+
+| Construction | Meaning |
+|---|---|
+| `E(c)` | General parent call: accepts a scalar, coefficient vector, polynomial, or compatible extension element |
+| `ZZpE(E, c)` | Explicit element-type spelling for scalars, coefficient vectors, polynomials, and extension elements |
+| `gen(E)` | The distinguished generator \(t=X\pmod m\) |
+
+For polynomial input, `E(p)` and `ZZpE(E, p)` are equivalent and always reduce `p` modulo the defining polynomial. Coefficient vectors are converted to the base field and normalized; they do not need to have exactly `d` entries.
+
+### Inspect the representation
+
+`rep(a)` is a reduced `ModPoly`, **not** an integer and not a Zech logarithm. Its coefficient vector is stored from low degree to high degree and may be shorter than `d` when high coefficients are zero. Use `coeff(rep(a), i)` when you need a fixed coefficient position, because out-of-range coefficients read as zero.
 
 ```julia
-x = GF2X(2)
-aes_modulus = x^8 + x^4 + x^3 + x + 1
+@assert parent(a) == E
+@assert base_field(a) == F
+@assert base_field(E) == F
+@assert modulus(a) == m
+@assert modulus(E) == m
+@assert defining_polynomial(E) == m
+@assert characteristic(a) == 5
+@assert extension_degree(E) == 2
+@assert degree(E) == 2
+@assert cardinality(E) == 25
+
+@assert degree(rep(a)) <= 1
+@assert coeff(rep(a), 0) == F(1)
+@assert coeff(rep(a), 1) == F(2)
+@assert coeff(rep(a), 2) == F(0)
+@assert coefficients(rep(a)) == F.([1, 2])
+```
+
+| Interface | Result for an element or parent |
+|---|---|
+| `parent(a)` | The `ExtensionField` parent |
+| `rep(a)` | The canonical reduced polynomial representative |
+| `base_field(E)` or `base_field(a)` | The underlying coefficient field |
+| `defining_polynomial(E)` or `modulus(a)` | The monic defining polynomial |
+| `extension_degree(E)` or `degree(E)` | The degree \(d\) |
+| `cardinality(E)` | The field order \(q^d\), as an arbitrary-precision integer |
+| `characteristic(E)` or `characteristic(a)` | The characteristic \(p\) |
+| `zero(E)`, `one(E)` | Additive and multiplicative identities |
+| `iszero(a)`, `isone(a)` | Identity tests |
+
+### Addition, multiplication, division, and powers
+
+Addition and subtraction operate coefficient by coefficient. Multiplication first multiplies the polynomial representatives and then reduces modulo `m`. Inversion uses the polynomial extended Euclidean algorithm. Powers use modular square-and-multiply; negative exponents invert first.
+
+```julia
+d = ZZpE(E, [2, 1])       # 2 + t
+
+@assert a + d == E([3, 3])
+@assert a - d == E([-1, 1])
+@assert -a == E([-1, -2])
+@assert a * d == E(rem(rep(a) * rep(d), m))
+@assert sqr(a) == a * a
+
+# Directly, (1 + 2t)^2 = 3 + 4t because t^2 = 3 in F_5.
+@assert a^2 == E([3, 4])
+
+@assert a * inv(a) == one(E)
+@assert a / d == a * inv(d)
+@assert a^(-3) == inv(a)^3
+@assert power(a, 17) == a^17
+
+# Integer and base-field scalars are embedded as constant polynomials.
+@assert a + 2 == E([3, 2])
+@assert 3a == E([3, 1])
+@assert a * F(2) == E([2, 4])
+```
+
+Division by zero and inversion of zero throw `DomainError`. Operands belonging to different extension parents are not mixed implicitly.
+
+```julia
+@test_throws DomainError inv(zero(E))
+
+E2 = extension_field(F, X^2 + 3)
+@test_throws ArgumentError a + E2([1, 2])
+@test_throws ArgumentError extension_field(F, X^2 + 1) # Reducible over F_5.
+```
+
+The advanced keyword `check = false` skips the irreducibility test. It is intended only for users who deliberately want a polynomial quotient ring; field-only claims and inverses are not guaranteed when `m` is reducible.
+
+### Frobenius, trace, and norm
+
+For \(q=|F|\) and \(d=[E:F]\), the Frobenius map is \(a\mapsto a^q\). NTL.jl computes the absolute trace and norm by
+
+\[
+\operatorname{Tr}_{E/F}(a)=\sum_{i=0}^{d-1}a^{q^i},
+\qquad
+\operatorname{N}_{E/F}(a)=a^{(q^d-1)/(q-1)}.
+\]
+
+Both return a **base-field element**, not a `ZZpE`.
+
+```julia
+@assert a^5 == E([1, 3])       # Frobenius conjugate of 1 + 2t
+@assert trace(a) == F(2)
+@assert norm(a) == F(4)
+@assert E(trace(a)) == a + a^5
+@assert E(norm(a)) == a * a^5
+
+@assert trace(t) == F(0)
+@assert norm(t) == F(2)
+```
+
+For an element of degree \(d\) over a machine-word prime field, addition costs \(O(d)\) coefficient operations. Multiplication and inversion inherit the dense-polynomial multiplication and XGCD costs. Trace uses Frobenius powers; norm uses modular exponentiation.
+
+### Random elements and arrays
+
+```julia
+rng = MersenneTwister(2026)
+u = rand(rng, E)
+v = rand(rng, E, 4)
+
+@assert u isa ZZpE
+@assert parent(u) == E
+@assert length(v) == 4
+@assert all(parent(w) == E for w in v)
+```
+
+A random extension element is produced by sampling a polynomial of degree below `d` and reducing it in `E`. Supplying an explicit RNG makes experiments reproducible.
+
+### Polynomials whose coefficients are `ZZpE`
+
+`ZZpE` is a first-class coefficient type for `ModPoly`. This enables extension-field polynomials without a separate C++-style global context.
+
+```julia
+Y = xpoly(E)
+h = Y^2 + a*Y + d
+
+@assert field(h) == E
+@assert evaluate(h, zero(E)) == d
+
+q, r = DivRem(h, Y + 1)
+@assert q * (Y + 1) + r == h
+@assert GCD((Y + 1)^2, Y + 1) == Y + 1
+```
+
+Use `factor`, `FindRoots`, `interpolate`, and the other generic polynomial algorithms over an extension exactly as over a prime field.
+
+### Binary extensions use the same element model
+
+`GF2E(m)` is a convenience constructor for an extension of `GF2`; its elements also use `ZZpE` with a `GF2` base field.
+
+```julia
+g = GF2X(2)
+aes_modulus = g^8 + g^4 + g^3 + g + 1
 @assert is_irreducible(aes_modulus)
 
-E = GF2E(aes_modulus)
-a = gen(E) + 1
+B = GF2E(aes_modulus)
+z = gen(B) + 1
 
-@assert cardinality(E) == 256
-@assert a^255 == one(E)
-@assert a * inv(a) == one(E)
+@assert gen(B) isa ZZpE
+@assert cardinality(B) == 256
+@assert z^255 == one(B)
+@assert z * inv(z) == one(B)
 ```
 
-`trace` and `norm` return values in the base field.
+For a minimal binary example, \(t^2+t+1=0\) gives \(\mathbb F_4\):
+
+```julia
+B4 = GF2E(g^2 + g + 1)
+@assert cardinality(B4) == 4
+@assert gen(B4)^3 == one(B4)
+```
+
+### `ZZpE` or `ZechElem`?
+
+Both represent elements of the same mathematical extension, but their storage and fast operations differ.
+
+| Need | Recommended representation |
+|---|---|
+| Inspect coefficients, defining polynomials, trace, or norm | `ZZpE` through `extension_field` |
+| Build polynomials over the extension | `ZZpE` |
+| Work in a large extension | `ZZpE` |
+| Repeated multiplication, inversion, and powers in a small extension | `ZechElem` through `zech_field` |
+| Convert a Zech result back to polynomial form | `extension_element(z)` |
+
+The Zech representation stores discrete logarithms and is limited to fields of order at most 65,535. `ZZpE` stores polynomial representatives and has no such field-order table limit.
 
 ## Zech fields for fast small-field arithmetic
 
@@ -610,6 +823,10 @@ y = powermod(g, 42, 97)
 | `InvMod`, `InvModStatus` | Inverse or a nonthrowing status result |
 | `PowerMod` | Binary modular powering with negative-exponent support |
 | `muladd(x,y,z)` | Fused `x*y+z` |
+| `ZZP(n)` | Construct an arbitrary-precision modular parent |
+| `ZZPField`, `ZZp` | Parent and element types; `ZZp(R,a)` is direct element construction |
+| `rep`, `parent`, `modulus`, `characteristic` | Canonical representative and parent metadata |
+| `rand`, `VectorRandom`, `VectorConv` | Random elements and vector conversion |
 
 ### Polynomial acceleration
 
@@ -626,15 +843,20 @@ y = powermod(g, 42, 97)
 
 | Function | Purpose |
 |---|---|
-| `extension_field(F,m)` | Polynomial quotient extension |
-| `GF2E(m)` | Binary extension |
-| `gen(E)` | Polynomial indeterminate in the extension |
-| `defining_polynomial(E)` | Defining polynomial |
-| `extension_degree(E)` | Extension degree |
-| `cardinality(E)` | Number of elements |
+| `ExtensionField`, `ZZpE` | Extension parent and canonical polynomial-represented element types |
+| `extension_field(F,m; check=true)` | Checked polynomial quotient extension |
+| `E(c)`, `ZZpE(E,c)` | Construct scalars, coefficient vectors, polynomials through `E`, or copy elements |
+| `GF2E(m)` | Binary extension using the same `ZZpE` element model |
+| `gen(E)` | Image of the polynomial indeterminate in the extension |
+| `base_field`, `defining_polynomial`, `parent`, `rep` | Parent and representation metadata |
+| `extension_degree(E)`, `degree(E)` | Extension degree |
+| `cardinality(E)` | Number of elements, \(q^d\) |
+| `+`, `-`, `*`, `/`, `inv`, `power`, `^` | Extension arithmetic with reduction modulo the defining polynomial |
+| `rand(rng,E)`, `rand(rng,E,n)` | Random extension elements and arrays |
 | `trace(a)`, `norm(a)` | Absolute trace and norm to the base field |
+| `xpoly(E)`, `poly(E,c)` | Polynomials with `ZZpE` coefficients |
 | `zech_field(E)` | Build a small-field discrete-log representation |
-| `extension_element(a)` | Convert a Zech element back to an ordinary extension element |
+| `extension_element(a)` | Convert a Zech element back to `ZZpE` |
 
 ### Matrix and lattice functions
 
@@ -659,7 +881,7 @@ NTLJulia/
 │   ├── polynomial.jl       # Dense polynomials and factorization
 │   ├── polynomial_mul.jl   # Schoolbook, Karatsuba, and acceleration strategies
 │   ├── binary.jl           # GF2 and bit-packed GF2X
-│   ├── extension.jl        # Polynomial extension fields
+│   ├── extension.jl        # ExtensionField and ZZpE polynomial representatives
 │   ├── zech.jl             # Isbits Zech representation and tables
 │   ├── matrix.jl           # Determinants, RREF, solving, rank, nullspace
 │   ├── lattice.jl          # Original exact LLL implementation
@@ -679,7 +901,8 @@ NTLJulia/
 │   ├── 10_generalized_fft.jl
 │   ├── 11_fast_lll.jl
 │   ├── 12_zech_extension.jl
-│   └── 13_elliptic_curve.jl
+│   ├── 13_elliptic_curve.jl
+│   └── api_tour.jl          # At least one executable call for every exported API
 └── test/
     ├── runtests.jl
     ├── zzp_numtheory.jl
@@ -688,7 +911,9 @@ NTLJulia/
     ├── matrix_lattice_transform.jl
     ├── acceleration.jl
     ├── lll_fast.jl
-    └── zech.jl
+    ├── zech.jl
+    ├── elliptic.jl
+    └── naming.jl            # Canonical names and compatibility aliases
 ```
 
 The public API is grouped by mathematical role rather than by C++ header names, so the implementation is easier to navigate for new users.
@@ -699,6 +924,12 @@ Run any example with:
 
 ```bash
 julia --project=. examples/01_basic_arithmetic.jl
+```
+
+**Complete API coverage:** [`examples/api_tour.jl`](examples/api_tour.jl) contains at least one executable call for every exported NTL.jl interface. It also includes a dedicated `ZZpE` block covering construction, representation, arithmetic, inversion, powers, random elements, and polynomials over an extension. Run it with:
+
+```bash
+julia --project=. examples/api_tour.jl
 ```
 
 | Script | Demonstrates |
@@ -716,6 +947,7 @@ julia --project=. examples/01_basic_arithmetic.jl
 | `11_fast_lll.jl` | Fast and exact LLL modes with verification |
 | `12_zech_extension.jl` | Zech elements, inverse, powers, and `muladd` |
 | `13_elliptic_curve.jl` | Elliptic-curve point counting over \(\mathbb F_{5^k}\), including the point at infinity |
+| `api_tour.jl` | Every exported interface, including the complete `ZZpE` workflow |
 
 ## Comparison with C++ NTL
 

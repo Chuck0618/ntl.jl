@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Documentation for NTL.jl: modular arithmetic, number theory, polynomials, extension fields, matrices, LLL, and NTT.">
+  <meta name="description" content="Complete NTL.jl 0.8.0 manual: README, ZZpE guide, API reference, benchmarks, and executable examples.">
   <link rel="icon" href="data:,">
-  <title>NTL.jl — Exact mathematical core for Julia</title>
+  <title>NTL.jl 0.8.0 — Complete Manual and API Tour</title>
   <style>
     :root {
       --paper: oklch(97.8% 0.002 90);
@@ -205,412 +205,2316 @@
       .code-caption { color: var(--ink); border-bottom-color: var(--ink); }
       a { text-decoration: none; }
     }
-  </style>
+
+
+    /* Pandoc manual layout: retain the package's original offline-document style. */
+    .sidebar #TOC > ul { margin: 0; padding: 0; list-style: none; }
+    .sidebar #TOC ul ul { padding-left: 10px; }
+    .sidebar #TOC li { margin: 0; }
+    .sidebar #TOC a { display: block; padding: 7px 8px; border-top: 1px solid var(--line); color: var(--secondary); font-family: var(--font-ui); font-size: 13px; line-height: 1.35; text-decoration: none; }
+    .sidebar #TOC a:hover { color: var(--dark-ink); background: var(--dark-surface); }
+    main > h1 { max-width: none; margin: 0 0 32px; font-size: clamp(42px, 5vw, 68px); line-height: 1; }
+    main > h1:not(:first-child) { margin-top: 72px; padding-top: 48px; border-top: 1px solid var(--ink); }
+    main h2 { margin: 64px 0 24px; padding-top: 32px; border-top: 1px solid var(--line); font-size: clamp(28px, 3vw, 42px); line-height: 1.1; }
+    main h3 { margin-top: 36px; }
+    main h4 { font-family: var(--font-ui); }
+    main > p, main > ul, main > ol, main > table, main > .sourceCode, main > pre { max-width: 84ch; }
+    main .sourceCode { margin: 22px 0; }
+    main pre { background: var(--dark-surface); color: var(--dark-ink); }
+    main pre code { display: block; min-width: max-content; }
+    main table { margin: 24px 0; }
+    main th, main td { min-width: 100px; }
+    main td:first-child { width: 30%; }
+    main blockquote { margin-left: 0; padding-left: 20px; border-left: 1px solid var(--ink); }
+    main math { font-size: 1.05em; }
+    .doc-note { color: var(--secondary); }
+    .appendix-index td:first-child { width: 22%; }
+    .appendix-index td:last-child { font-family: var(--font-code); font-size: 12px; overflow-wrap: anywhere; }
+    @media (max-width: 760px) {
+      main > h1 { font-size: 42px; }
+      main h2 { margin-top: 48px; }
+      .sidebar #TOC { max-height: 320px; overflow-y: auto; margin-bottom: 24px; }
+      main pre code { min-width: 0; }
+    }
+</style>
 </head>
 <body>
-  <div class="page">
+<div class="page">
   <header class="masthead">
-    <a class="brand" href="#top">NTL.jl / exact core toolkit</a>
-    <div class="masthead-meta">Version 0.7.0 · Julia 1.9+ · No C++ dependency</div>
+    <a class="brand" href="#top">NTL.jl / complete manual</a>
+    <div class="masthead-meta">Version 0.8.0 · Julia 1.9+ · Pure Julia · Offline reference</div>
   </header>
-
   <div id="top" class="hero">
     <div class="hero-copy">
-      <p class="kicker">A functional Julia reimplementation of NTL's mathematical core</p>
-      <h1>Exact arithmetic. One coherent toolkit.</h1>
-      <p class="lede">Machine-word and arbitrary-precision modular arithmetic, polynomial factorization, binary fields, extension fields, exact matrices, LLL, and NTT—all connected by reusable Julia parents rather than isolated C++-style global contexts.</p>
+      <p class="kicker">Exact arithmetic, documented from first construction to verification</p>
+      <h1>The complete NTL.jl manual.</h1>
+      <p class="lede">The full project README, a detailed polynomial-representation guide to <code>ZZpE</code>, performance comparisons, mathematical limitations, and an executable call for every exported interface.</p>
       <ul class="hero-facts">
-        <li><strong>Coverage</strong><span>8 computational areas, 13 source files</span></li>
-        <li><strong>Verified</strong><span>4,335,143 passing assertions on Julia 1.11.7</span></li>
-        <li><strong>Included</strong><span>8 runnable workflows and this offline reference</span></li>
+        <li><strong>Verified</strong><span>4,335,165 passing assertions on Julia 1.11.7</span></li>
+        <li><strong>Coverage</strong><span>136 exported names demonstrated in one API tour</span></li>
+        <li><strong>Included</strong><span>README + ZZpE guide + full tour source + API index</span></li>
       </ul>
     </div>
     <div class="hero-demo code-panel">
-      <div class="code-caption">One generic factorization engine</div>
-      <pre><code>using NTL, Random
+      <div class="code-caption">ZZpE: a reduced polynomial representative</div>
+      <pre><code>using NTL
+F = zzp(5)
+X = xpoly(F)
+E = extension_field(F, X^2 + 2)
+t = gen(E)
+a = ZZpE(E, [1, 2])  # 1 + 2t
 
-F = zzp(97)
+@assert t^2 == E(3)
+@assert a^2 == E([3, 4])
+@assert trace(a) == F(2)
+@assert norm(a) == F(4)
+@assert a * inv(a) == one(E)</code></pre>
+    </div>
+  </div>
+  <div class="workspace">
+    <nav class="sidebar" aria-label="Manual navigation">
+      <div class="sidebar-inner">
+        <h2>Contents</h2>
+        <div id="TOC" role="doc-toc"><ul>
+<li><a href="#ntl.jl">NTL.jl</a>
+<ul>
+<li><a href="#contents">Contents</a></li>
+<li><a href="#why-ntljl">Why NTL.jl?</a></li>
+<li><a href="#installation">Installation</a></li>
+<li><a href="#a-five-minute-start">A five-minute start</a></li>
+<li><a href="#choosing-the-right-field">Choosing the right
+field</a></li>
+<li><a href="#everyday-operations">Everyday operations</a></li>
+<li><a href="#polynomials">Polynomials</a></li>
+<li><a href="#multiplication-and-acceleration">Multiplication and
+acceleration</a></li>
+<li><a href="#gf2-and-gf2x">GF2 and GF2X</a></li>
+<li><a href="#extension-fields-and-zzpe">Extension fields and
+<code>ZZpE</code></a></li>
+<li><a href="#zech-fields-for-fast-small-field-arithmetic">Zech fields
+for fast small-field arithmetic</a></li>
+<li><a href="#elliptic-curve-point-counting">Elliptic-curve point
+counting</a></li>
+<li><a href="#matrices-and-exact-linear-algebra">Matrices and exact
+linear algebra</a></li>
+<li><a href="#lll-lattice-reduction">LLL lattice reduction</a></li>
+<li><a href="#ntt-and-generalized-fft">NTT and generalized FFT</a></li>
+<li><a href="#number-theory">Number theory</a></li>
+<li><a href="#important-api-reference">Important API reference</a></li>
+<li><a href="#project-architecture">Project architecture</a></li>
+<li><a href="#examples-and-tests">Examples and tests</a></li>
+<li><a href="#comparison-with-c-ntl">Comparison with C++ NTL</a></li>
+<li><a href="#comparison-with-galoisfieldsjl">Comparison with
+GaloisFields.jl</a></li>
+<li><a href="#design-principles">Design principles</a></li>
+<li><a href="#limitations">Limitations</a></li>
+<li><a href="#faq-for-beginners">FAQ for beginners</a></li>
+<li><a href="#contributing">Contributing</a></li>
+</ul></li>
+<li><a href="#documentation-appendices">Documentation appendices</a>
+<ul>
+<li><a href="#a.-run-the-complete-api-tour">A. Run the complete API
+tour</a></li>
+<li><a href="#b.-complete-executable-api-tour">B. Complete executable
+API tour</a></li>
+<li><a href="#c.-exported-interface-index">C. Exported-interface
+index</a></li>
+<li><a href="#d.-documentation-and-verification-checklist">D.
+Documentation and verification checklist</a></li>
+</ul></li>
+</ul></div>
+      </div>
+    </nav>
+    <main id="main"><h1 id="ntl.jl">NTL.jl</h1>
+<p><strong>A pure-Julia toolkit for exact finite-field arithmetic,
+number theory, polynomial computation, extension fields, exact linear
+algebra, generalized FFT, and lattice reduction.</strong></p>
+<p>NTL.jl is inspired by C++ NTL, but it is not a wrapper or an API
+clone. It is designed to be approachable for new Julia users while
+providing efficient, tested implementations for research and
+teaching.</p>
+<p>Version: <strong>0.8.0</strong><br />
+Tested with: <strong>Julia 1.11.7</strong><br />
+Compatibility target: <strong>Julia 1.9+</strong></p>
+<h2 id="contents">Contents</h2>
+<ul>
+<li><a href="#why-ntljl">Why NTL.jl?</a></li>
+<li><a href="#installation">Installation</a></li>
+<li><a href="#a-five-minute-start">A five-minute start</a></li>
+<li><a href="#choosing-the-right-field">Choosing the right
+field</a></li>
+<li><a href="#everyday-operations">Everyday operations</a></li>
+<li><a href="#polynomials">Polynomials</a></li>
+<li><a href="#multiplication-and-acceleration">Multiplication and
+acceleration</a></li>
+<li><a href="#gf2-and-gf2x">GF2 and GF2X</a></li>
+<li><a href="#extension-fields-and-zzpe">Extension fields and
+ZZpE</a></li>
+<li><a href="#zech-fields-for-fast-small-field-arithmetic">Zech fields
+for fast small-field arithmetic</a></li>
+<li><a href="#matrices-and-exact-linear-algebra">Matrices and exact
+linear algebra</a></li>
+<li><a href="#lll-lattice-reduction">LLL lattice reduction</a></li>
+<li><a href="#ntt-and-generalized-fft">NTT and generalized FFT</a></li>
+<li><a href="#number-theory">Number theory</a></li>
+<li><a href="#important-api-reference">Important API reference</a></li>
+<li><a href="#project-architecture">Project architecture</a></li>
+<li><a href="#examples-and-tests">Examples and tests</a></li>
+<li><a href="#comparison-with-c-ntl">Comparison with C++ NTL</a></li>
+<li><a href="#comparison-with-galoisfieldsjl">Comparison with
+GaloisFields.jl</a></li>
+<li><a href="#design-principles">Design principles</a></li>
+<li><a href="#limitations">Limitations</a></li>
+<li><a href="#faq-for-beginners">FAQ for beginners</a></li>
+<li><a href="#contributing">Contributing</a></li>
+</ul>
+<h2 id="why-ntljl">Why NTL.jl?</h2>
+<p>NTL.jl offers a coherent set of exact-mathematics tools rather than a
+loose collection of types.</p>
+<ul>
+<li><strong>Pure Julia:</strong> no C++ compiler, NTL installation,
+binary artifact, or external Julia package is required for core
+functionality.</li>
+<li><strong>Exact arithmetic:</strong> canonical residues, BigInt
+coefficients, exact polynomial operations, and verifiable lattice
+transformations.</li>
+<li><strong>Beginner-friendly parents:</strong> <code>zzp{p}</code>
+stores a prime modulus in the type, while <code>ZZPField</code> and
+extension fields use explicit runtime parents.</li>
+<li><strong>Fast when appropriate:</strong> machine-word multiplication,
+Karatsuba, generalized FFT, Zech discrete-log tables, and fast LLL with
+exact verification.</li>
+<li><strong>Safe fallbacks:</strong> original schoolbook multiplication
+and exact LLL remain available. Fast paths never change mathematical
+results.</li>
+<li><strong>Tested invariants:</strong> arithmetic is checked against
+independent BigInt calculations, polynomial identities, factor
+reconstruction, matrix identities, LLL conditions, and direct
+convolution.</li>
+</ul>
+<p>The package includes more than finite fields. It also supports
+integer factorization, modular square roots, discrete logarithms,
+primitive roots, polynomial factorization, matrices, NTT, and LLL.</p>
+<h2 id="installation">Installation</h2>
+<h3 id="from-a-local-checkout">From a local checkout</h3>
+<pre class="julia"><code>using Pkg
+Pkg.develop(path = &quot;/path/to/NTLJulia&quot;)
+using NTL</code></pre>
+<p>Replace <code>/path/to/NTLJulia</code> with the directory that
+contains <code>Project.toml</code>.</p>
+<h3 id="run-the-complete-test-suite">Run the complete test suite</h3>
+<pre class="bash"><code>julia --project=. -e &#39;using Pkg; Pkg.instantiate(); Pkg.test()&#39;</code></pre>
+<p>The current suite contains <strong>4,335,165 passing
+assertions</strong>. Runtime code depends only on Julia’s
+<code>Random</code> standard library; <code>Test</code> is used only by
+the test target.</p>
+<h3 id="html-documentation">HTML documentation</h3>
+<p>Open <code>docs/index.html</code> in a browser. The documentation is
+self-contained and can be read offline.</p>
+<h2 id="a-five-minute-start">A five-minute start</h2>
+<h3 id="create-and-use-a-prime-field">1. Create and use a prime
+field</h3>
+<pre class="julia"><code>using NTL
+
+F = zzp(101)        # F is zzp{101}
+a = F(120)          # 120 mod 101 = 19
+b = F(-1)           # -1 mod 101 = 100
+
+println(a + b)      # zzp{101}(18)
+println(a * b)      # zzp{101}(24)
+println(a / b)      # division in F_101
+println(a^-1)       # inverse using gcdx and sign correction
+println(a^1000)     # fast binary power
+
+@assert rep(a) == 19
+@assert Int(a) == 19
+@assert modulus(a) == 101
+@assert characteristic(F) == 101
+@assert a * inv(a) == one(F)
+@assert zero(F) == F(0)
+@assert one(F) == F(1)</code></pre>
+<p>Every field element stores a canonical representative in
+<code>0:p-1</code>.</p>
+<h3 id="iterate-over-a-small-field">2. Iterate over a small field</h3>
+<pre class="julia"><code>for x in zzp{5}
+    println(x)
+end
+
+@assert length(zzp{5}) == 5
+@assert collect(zzp{5}) == zzp{5}.([0, 1, 2, 3, 4])</code></pre>
+<p>Elements are produced in canonical order, from <code>0</code> through
+<code>p-1</code>. Iteration is lazy; <code>collect(F)</code> allocates
+all <code>p</code> elements and should not be used for a very large
+field.</p>
+<h3 id="multiply-two-polynomials">3. Multiply two polynomials</h3>
+<pre class="julia"><code>F = zzp(101)
+x = xpoly(F)
+
+f = x^3 + 2x + 1
+g = x^2 + 3x + 2
+
+@assert poly_mul(f, g) == f * g
+@assert poly_mul(f, g; method = :schoolbook) == f * g
+@assert poly_mul(f, g; method = :karatsuba) == f * g
+@assert poly_mul(f, g; method = :fft) == f * g</code></pre>
+<p>Coefficients are stored <strong>from low degree to high
+degree</strong>. The zero polynomial has degree <code>-1</code>.</p>
+<h3 id="solve-a-finite-field-linear-system">4. Solve a finite-field
+linear system</h3>
+<pre class="julia"><code>F = zzp(101)
+A = F.([2 3 1; 4 1 5; 3 7 2])
+b = F.([1, 2, 3])
+
+x = solve(A, b)
+@assert A * x == b
+
+@assert det(A) != 0
+@assert A * matrix_inverse(A) == F.([1 0 0; 0 1 0; 0 0 1])</code></pre>
+<h3 id="reduce-an-integer-lattice-basis">5. Reduce an integer lattice
+basis</h3>
+<pre class="julia"><code>A = BigInt[1 1 1; -1 0 2; 3 5 6]
+result = lll(A)  # fast by default, with exact verification
+
+@assert result.transform * A == result.basis
+@assert abs(det_exact(result.transform)) == 1
+@assert result.verified</code></pre>
+<h2 id="choosing-the-right-field">Choosing the right field</h2>
+<div class="table-wrap"><table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Need</th>
+<th>Recommended parent</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Fast prime-field arithmetic with an <code>Int</code> modulus</td>
+<td><code>zzp(p)</code></td>
+<td>Type-level modulus, canonical <code>Int</code> representation, field
+iteration</td>
+</tr>
+<tr class="even">
+<td>Arbitrary-precision modulus, including a composite one</td>
+<td><code>ZZP(n)</code></td>
+<td>BigInt representation and explicit runtime parent</td>
+</tr>
+<tr class="odd">
+<td>Binary field arithmetic</td>
+<td><code>GF2</code></td>
+<td>XOR/AND arithmetic and bit-packed polynomials</td>
+</tr>
+<tr class="even">
+<td>General polynomial extension</td>
+<td><code>extension_field(F, m)</code></td>
+<td>Polynomial quotient <code>F[x]/(m)</code></td>
+</tr>
+<tr class="odd">
+<td>Frequent arithmetic in a small extension</td>
+<td><code>zech_field(E)</code></td>
+<td>Discrete-log multiplication, inversion, and powers</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="zzp-versus-zzp"><code>zzp</code> versus <code>ZZP</code></h3>
+<pre class="julia"><code>using Test
+
+F = zzp(101)             # machine-word prime field
+R = ZZP(12)              # arbitrary-precision modular ring
+
+@assert R(5) * R(5) == R(1)
+@test_throws DomainError inv(R(6))</code></pre>
+<p><code>zzp</code> deliberately requires a prime modulus.
+<code>ZZP</code> also permits composite moduli, but only units are
+invertible.</p>
+<p>The three names in the arbitrary-precision interface have different
+roles:</p>
+<ul>
+<li><code>ZZP(n)</code> constructs a reusable parent of type
+<code>ZZPField</code>;</li>
+<li><code>ZZp</code> is the element type, and <code>ZZp(R, a)</code>
+constructs an element directly;</li>
+<li><code>ZZ_p</code> is retained only as a compatibility alias for
+<code>ZZp</code>; new code should use <code>ZZp</code>.</li>
+</ul>
+<pre class="julia"><code>R = ZZP(12)
+a = ZZp(R, 17)
+
+@assert R isa ZZPField
+@assert a isa ZZp
+@assert a == R(5)
+@assert rep(a) == 5</code></pre>
+<p>Likewise, the canonical extension-element name is
+<strong><code>ZZpE</code></strong>, without an underscore.
+<code>ExtensionElem === ZZpE</code> remains available for older
+scripts.</p>
+<h2 id="everyday-operations">Everyday operations</h2>
+<h3 id="construction-and-metadata">Construction and metadata</h3>
+<pre class="julia"><code>F = zzp(97)
+a = F(-3)
+
+rep(a)              # 94
+Int(a)              # 94
+modulus(a)          # 97
+characteristic(a)   # 97
+parent(a)           # zzp{97}
+zero(a)             # zzp{97}(0)
+one(a)              # zzp{97}(1)
+iszero(a)           # false
+isone(a)            # false</code></pre>
+<h3 id="arithmetic">Arithmetic</h3>
+<pre class="julia"><code>x + y
+x - y
+-x
+x * y
+x / y
+inv(x)
+x^e</code></pre>
+<p>Mixed integer arithmetic is reduced automatically:</p>
+<pre class="julia"><code>@assert F(3) + 100 == F(0)
+@assert 2F(3) == F(6)
+@assert F(3) * big(8) == F(3)</code></pre>
+<h3 id="random-elements-and-vectors">Random elements and vectors</h3>
+<pre class="julia"><code>using Random
+
+rng = MersenneTwister(2026)
+a = rand(rng, F)
+v = rand(rng, F, 10)
+w = VectorRandom(F, 4; rng = rng)
+c = VectorConv(F, [-1, 0, 98, big(10)^40])</code></pre>
+<h3 id="useful-scalar-helpers">Useful scalar helpers</h3>
+<div class="table-wrap"><table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Function</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>rep(x)</code></td>
+<td>Canonical representative</td>
+</tr>
+<tr class="even">
+<td><code>Int(x)</code></td>
+<td>Convert to machine integer</td>
+</tr>
+<tr class="odd">
+<td><code>BigInt(x)</code></td>
+<td>Convert to arbitrary-precision integer</td>
+</tr>
+<tr class="even">
+<td><code>modulus(F)</code></td>
+<td>Modulus of the parent</td>
+</tr>
+<tr class="odd">
+<td><code>characteristic(F)</code></td>
+<td>Field characteristic</td>
+</tr>
+<tr class="even">
+<td><code>parent(x)</code></td>
+<td>Parent field object</td>
+</tr>
+<tr class="odd">
+<td><code>zero(F)</code>, <code>one(F)</code></td>
+<td>Additive and multiplicative identities</td>
+</tr>
+<tr class="even">
+<td><code>iszero(x)</code>, <code>isone(x)</code></td>
+<td>Identity tests</td>
+</tr>
+<tr class="odd">
+<td><code>add</code>, <code>sub</code>, <code>negate</code>,
+<code>mul</code>, <code>sqr</code>, <code>divide</code>,
+<code>power</code></td>
+<td>Procedural arithmetic aliases</td>
+</tr>
+<tr class="even">
+<td><code>muladd(x,y,z)</code></td>
+<td>Fused <code>x*y+z</code> with fewer temporary objects</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="polynomials">Polynomials</h2>
+<h3 id="construction">Construction</h3>
+<pre class="julia"><code>F = zzp(101)
+f = poly(F, [1, 2, 3])   # 1 + 2x + 3x^2
+x = xpoly(F)              # x
+
+@assert degree(f) == 2
+@assert coeff(f, 0) == 1
+@assert coeff(f, 2) == 3
+@assert coeff(f, 20) == 0
+@assert LeadCoeff(f) == 3
+@assert ConstTerm(f) == 1</code></pre>
+<p><code>poly(F, f)</code> is also valid for constructing from a
+compatible polynomial. <code>coefficients(f)</code> returns a copy of
+the coefficient vector.</p>
+<h3 id="core-operations">Core operations</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr class="header">
+<th>Function</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>DivRem(f,g)</code></td>
+<td>Polynomial quotient and remainder</td>
+</tr>
+<tr class="even">
+<td><code>GCD(f,g)</code> / <code>gcd(f,g)</code></td>
+<td>Monic Euclidean GCD</td>
+</tr>
+<tr class="odd">
+<td><code>XGCD(f,g)</code></td>
+<td>Return <code>(d,s,t)</code> with <code>d = s*f + t*g</code></td>
+</tr>
+<tr class="even">
+<td><code>derivative(f)</code> / <code>diff(f)</code></td>
+<td>Formal derivative</td>
+</tr>
+<tr class="odd">
+<td><code>evaluate(f,x)</code></td>
+<td>Horner evaluation</td>
+</tr>
+<tr class="even">
+<td><code>compose(f,g)</code></td>
+<td>Polynomial composition</td>
+</tr>
+<tr class="odd">
+<td><code>interpolate(F,xs,ys)</code></td>
+<td>Lagrange interpolation</td>
+</tr>
+<tr class="even">
+<td><code>truncate(f,n)</code></td>
+<td>Keep terms of degree <code>&lt; n</code></td>
+</tr>
+<tr class="odd">
+<td><code>MulTrunc(f,g,n)</code></td>
+<td>Multiply then truncate</td>
+</tr>
+<tr class="even">
+<td><code>InvTrunc(f,n)</code></td>
+<td>Newton truncated inverse</td>
+</tr>
+<tr class="odd">
+<td><code>MulMod(f,g,m)</code></td>
+<td>Product modulo polynomial <code>m</code></td>
+</tr>
+<tr class="even">
+<td><code>InvMod(f,m)</code></td>
+<td>Inverse in a quotient ring</td>
+</tr>
+<tr class="odd">
+<td><code>PowerMod(f,e,m)</code></td>
+<td>Binary powering modulo <code>m</code></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="factorization-and-irreducibility">Factorization and
+irreducibility</h3>
+<pre class="julia"><code>F = zzp(97)
 x = xpoly(F)
 f = (x + 1)^3 * (x^2 + x + 1)
 
-fac = factor(f; rng=MersenneTwister(1))
-@assert reconstruct(fac) == f</code></pre>
-    </div>
-  </div>
+fac = factor(f)
+@assert reconstruct(fac) == f
+@assert all(is_irreducible(g) for (g, multiplicity) in fac.factors)</code></pre>
+<p>The factorization layer includes:</p>
+<ul>
+<li>square-free decomposition;</li>
+<li>distinct-degree factorization;</li>
+<li>Cantor–Zassenhaus equal-degree splitting;</li>
+<li>Rabin irreducibility testing;</li>
+<li>random irreducible polynomial generation with
+<code>BuildIrred</code>;</li>
+<li>root extraction with <code>FindRoots</code> and
+<code>FindRoot</code>.</li>
+</ul>
+<h2 id="multiplication-and-acceleration">Multiplication and
+acceleration</h2>
+<p>Acceleration is <strong>enabled by default</strong>.</p>
+<pre class="julia"><code>set_polynomial_acceleration!(true)
+result = poly_mul(f, g)</code></pre>
+<p>The automatic strategy is:</p>
+<ol type="1">
+<li>Schoolbook for small degrees;</li>
+<li>Karatsuba for medium degrees;</li>
+<li>Generalized FFT for large degrees, using same-prime NTT when
+possible and compatible NTT primes with CRT otherwise.</li>
+</ol>
+<h3 id="explicit-method-selection">Explicit method selection</h3>
+<pre class="julia"><code>reference = poly_mul(f, g; method = :schoolbook)
 
-  <div class="workspace">
-    <nav class="sidebar" aria-label="Documentation navigation">
-      <div class="sidebar-inner">
-        <h2>Contents</h2>
-        <ol class="toc">
-          <li><a href="#capabilities">Capabilities</a></li>
-          <li><a href="#beginner-zzp">Start with zzp</a></li>
-          <li><a href="#install">Install and verify</a></li>
-          <li><a href="#number-theory">Number theory</a></li>
-          <li><a href="#polynomials">Polynomials and fields</a></li>
-          <li><a href="#matrix-lattice">Matrices and LLL</a></li>
-          <li><a href="#transforms">NTT and convolution</a></li>
-          <li><a href="#api">API index</a></li>
-          <li><a href="#verification">Verification</a></li>
-          <li><a href="#acceleration">Acceleration</a></li>
-          <li><a href="#boundaries">Boundaries</a></li>
-        </ol>
-      </div>
-    </nav>
+@assert poly_mul(f, g; method = :karatsuba) == reference
+@assert poly_mul(f, g; method = :ntt) == reference
+@assert poly_mul(f, g; method = :fft) == reference
+@assert poly_mul(f, g; method = :auto) == reference</code></pre>
+<p>To restore the original behavior everywhere:</p>
+<pre class="julia"><code>set_polynomial_acceleration!(false)</code></pre>
+<h3 id="why-are-there-both-ntt-and-fft">Why are there both
+<code>:ntt</code> and <code>:fft</code>?</h3>
+<ul>
+<li><code>:ntt</code> requests the same-prime transform and therefore
+requires the transform length to divide <code>p-1</code>.</li>
+<li><code>:fft</code> is the generalized route. It can use compatible
+NTT primes and reconstruct exact integer coefficients with a coefficient
+bound or CRT.</li>
+</ul>
+<p>If generalized FFT is unavailable for an input, automatic mode falls
+back to Karatsuba.</p>
+<h2 id="gf2-and-gf2x">GF2 and GF2X</h2>
+<p><code>GF2</code> is the two-element field. <code>GF2X</code> stores a
+binary polynomial as bits of a <code>BigInt</code>, so bit
+<code>i</code> is the coefficient of <code>x^i</code>.</p>
+<pre class="julia"><code>x = GF2X(2)             # x
+f = x^2 + x + 1         # x^2 + x + 1
 
-    <main>
-      <section id="capabilities">
-        <div class="section-heading"><span class="section-label">01 / Tour</span><h2>A connected mathematical core</h2></div>
-        <div class="section-content">
-          <p>The design is layered: scalar parents feed dense polynomials; polynomials define extension fields; every field can reuse the same matrix elimination, extension-field polynomial, and NTT infrastructure where mathematically applicable.</p>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>NTL counterpart</th><th>Implemented Julia functionality</th></tr></thead>
-              <tbody>
-                <tr><td>ZZ</td><td><code>BigInt</code> plus primality, factorization, random primes, CRT, modular roots, discrete logarithms, and primitive roots.</td></tr>
-                <tr><td>lzz_p</td><td><code>zzp{p}</code>: overflow-safe machine-word prime-field arithmetic, standard random arrays, and vector helpers.</td></tr>
-                <tr><td>ZZ_p</td><td><code>F = ZZP(n)</code>: arbitrary-precision modular rings with explicit parents, including nonprime moduli for ring arithmetic.</td></tr>
-                <tr><td>ZZ_pX / zz_pX</td><td><code>ModPoly</code>: arithmetic, division, XGCD, composition, interpolation, truncated inverse, modular powering, factorization, and irreducibility.</td></tr>
-                <tr><td>GF2 / GF2X</td><td>XOR/AND field arithmetic and bit-packed binary polynomials using <code>BigInt</code> bits and carry-less multiplication.</td></tr>
-                <tr><td>ZZ_pE / zzpE / GF2E</td><td><code>extension_field</code>: inversion, powering, trace, norm, random elements, and polynomial coefficients over the extension.</td></tr>
-                <tr><td>mat_*</td><td>Determinant, RREF, rank, inverse, linear solving, and nullspace over every supported field.</td></tr>
-                <tr><td>LLL</td><td>Exact rational Gram–Schmidt and LLL reduction with the unimodular transformation matrix.</td></tr>
-                <tr><td>FFT-related layer</td><td>Primitive roots, radix-two Cooley–Tukey NTT, inverse NTT, and linear convolution.</td></tr>
-                <tr><td>ZZX, basic layer</td><td><code>poly(BigInt, ...)</code> supports dense integer-coefficient construction, arithmetic, and evaluation.</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
+@assert is_irreducible(f)
+@assert (x + 1)^2 == x^2 + 1  # characteristic two
+@assert weight(f) == 3
 
-      <section id="beginner-zzp">
-        <div class="section-heading"><span class="section-label">Start / zzp</span><h2>Your first prime field: <code>zzp</code></h2></div>
-        <div class="section-content">
-          <p><code>zzp</code> is the easiest entry point into NTL.jl. It represents arithmetic modulo a machine-word prime <code>p</code>. Think of <code>zzp{7}</code> as the finite field containing exactly seven elements, written with representatives <code>0,1,2,3,4,5,6</code>.</p>
-          <h3>Four words worth knowing</h3>
-          <div class="mapping">
-            <div class="mapping-row"><span>modulus</span><span>The prime <code>p</code> that defines the field. It is also the field characteristic.</span></div>
-            <div class="mapping-row"><span>element</span><span>A residue class modulo <code>p</code>. For example, <code>8</code> and <code>1</code> denote the same element modulo 7.</span></div>
-            <div class="mapping-row"><span>representative</span><span>The canonical integer stored in <code>0:p-1</code>. Use <code>rep(a)</code> or <code>Int(a)</code> to inspect it.</span></div>
-            <div class="mapping-row"><span>parent</span><span>The field to which an element belongs. For <code>zzp</code>, the parent is the type <code>zzp{p}</code> itself.</span></div>
-          </div>
+fac = factor((x + 1)^3 * (x^2 + x + 1)^2)
+@assert reconstruct(fac) == (x + 1)^3 * (x^2 + x + 1)^2</code></pre>
+<p>Useful functions include <code>bits</code>, <code>weight</code>,
+<code>NumBits</code>, <code>NumBytes</code>, <code>DivRem</code>,
+<code>XGCD</code>, <code>MulMod</code>, <code>PowerMod</code>,
+<code>factor</code>, <code>is_irreducible</code>, and
+<code>BuildIrredGF2X</code>.</p>
+<h2 id="extension-fields-and-zzpe">Extension fields and
+<code>ZZpE</code></h2>
+<h3 id="the-mathematical-model">The mathematical model</h3>
+<p><code>extension_field(F, m)</code> constructs the quotient
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>E</mi><mo>=</mo><mi>F</mi><mrow><mo stretchy="true" form="prefix">[</mo><mi>X</mi><mo stretchy="true" form="postfix">]</mo></mrow><mi>/</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>m</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>X</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">E=F[X]/(m(X))</annotation></semantics></math>.
+By default it verifies that <code>m</code> is irreducible, so the
+quotient is a field. If
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>F</mi><mo>=</mo><msub><mstyle mathvariant="double-struck"><mi>𝔽</mi></mstyle><mi>q</mi></msub></mrow><annotation encoding="application/x-tex">F=\mathbb F_q</annotation></semantics></math>
+and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>deg</mo><mi>m</mi><mo>=</mo><mi>d</mi></mrow><annotation encoding="application/x-tex">\deg m=d</annotation></semantics></math>,
+then:</p>
+<ul>
+<li><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>E</mi><mo>≅</mo><msub><mstyle mathvariant="double-struck"><mi>𝔽</mi></mstyle><msup><mi>q</mi><mi>d</mi></msup></msub></mrow><annotation encoding="application/x-tex">E\cong\mathbb F_{q^d}</annotation></semantics></math>
+and <code>cardinality(E) == q^d</code>;</li>
+<li><code>t = gen(E)</code> is the image of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>X</mi><annotation encoding="application/x-tex">X</annotation></semantics></math>,
+so
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>m</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>t</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">m(t)=0</annotation></semantics></math>
+in <code>E</code>;</li>
+<li>every element has a unique representative
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>a</mi><mn>0</mn></msub><mo>+</mo><msub><mi>a</mi><mn>1</mn></msub><mi>t</mi><mo>+</mo><mi>⋯</mi><mo>+</mo><msub><mi>a</mi><mrow><mi>d</mi><mo>−</mo><mn>1</mn></mrow></msub><msup><mi>t</mi><mrow><mi>d</mi><mo>−</mo><mn>1</mn></mrow></msup></mrow><annotation encoding="application/x-tex">a_0+a_1t+\cdots+a_{d-1}t^{d-1}</annotation></semantics></math>;</li>
+<li><code>ZZpE</code> is the element type, while
+<code>ExtensionField</code> is the parent type.</li>
+</ul>
+<p>The canonical name is <code>ZZpE</code>, not <code>ZZ_pE</code>. The
+old Julia name <code>ExtensionElem</code> is a compatibility alias:
+<code>ExtensionElem === ZZpE</code>.</p>
+<h3 id="construct-a-field-and-its-elements">Construct a field and its
+elements</h3>
+<p>The following example builds
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mstyle mathvariant="double-struck"><mi>𝔽</mi></mstyle><mn>25</mn></msub><mo>=</mo><msub><mstyle mathvariant="double-struck"><mi>𝔽</mi></mstyle><mn>5</mn></msub><mrow><mo stretchy="true" form="prefix">[</mo><mi>t</mi><mo stretchy="true" form="postfix">]</mo></mrow></mrow><annotation encoding="application/x-tex">\mathbb F_{25}=\mathbb F_5[t]</annotation></semantics></math>,
+where
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>t</mi><mn>2</mn></msup><mo>=</mo><mo>−</mo><mn>2</mn><mo>=</mo><mn>3</mn></mrow><annotation encoding="application/x-tex">t^2=-2=3</annotation></semantics></math>.
+The polynomial
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>X</mi><mn>2</mn></msup><mo>+</mo><mn>2</mn></mrow><annotation encoding="application/x-tex">X^2+2</annotation></semantics></math>
+is irreducible over
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mstyle mathvariant="double-struck"><mi>𝔽</mi></mstyle><mn>5</mn></msub><annotation encoding="application/x-tex">\mathbb F_5</annotation></semantics></math>.</p>
+<pre class="julia"><code>using NTL
+using Random
+using Test
 
-          <h3>Construct, calculate, and read the output</h3>
-          <div class="code-panel">
-            <div class="code-caption">A complete first session</div>
-            <pre><code>using NTL
+F = zzp(5)
+X = xpoly(F)
+m = X^2 + 2
+@assert is_irreducible(m)
 
-F = zzp(7)       # F is zzp{7}
-a = F(10)        # 10 mod 7 = 3
-b = F(-1)        # -1 mod 7 = 6
+E = extension_field(F, m)  # Check irreducibility and build the parent.
+t = gen(E)                 # t is the image of X.
 
-println(a)       # zzp{7}(3)
-println(a + b)   # zzp{7}(2)
-println(a * b)   # zzp{7}(4)
-println(a / b)   # zzp{7}(4), because 3*inv(6) = 18 = 4 mod 7
+a = ZZpE(E, [1, 2])        # 1 + 2t: coefficients are low degree first.
+b = E(1 + 3X)              # Polynomial input is reduced modulo m.
+c = E(4)                   # A scalar becomes a constant extension element.
 
-@assert rep(a) == 3
-@assert Int(a) == 3
-@assert modulus(a) == 7
-@assert a * inv(a) == one(F)
-@assert a^0 == one(F)</code></pre>
-          </div>
-          <p>The displayed form <code>zzp{7}(3)</code> therefore means “the element with representative 3 in the field modulo 7.” Integer operands are reduced automatically, so <code>a+20</code> and <code>2a</code> are valid.</p>
+@assert E isa ExtensionField
+@assert a isa ZZpE
+@assert a == 1 + 2t
+@assert b == 1 + 3t
+@assert c == E([4])
+@assert ZZpE(E, a) == a
+@assert ZZpE(E, X^3 + 1) == E(X^3 + 1)
+@assert degree(rep(ZZpE(E, X^3 + 1))) &lt; extension_degree(E)
+@assert t^2 == E(3)</code></pre>
+<p>There are three equivalent everyday construction styles:</p>
+<div class="table-wrap"><table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Construction</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>E(c)</code></td>
+<td>General parent call: accepts a scalar, coefficient vector,
+polynomial, or compatible extension element</td>
+</tr>
+<tr class="even">
+<td><code>ZZpE(E, c)</code></td>
+<td>Explicit element-type spelling for scalars, coefficient vectors,
+polynomials, and extension elements</td>
+</tr>
+<tr class="odd">
+<td><code>gen(E)</code></td>
+<td>The distinguished generator
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>t</mi><mo>=</mo><mi>X</mi><mrow><mspace width="0.222em"></mspace><mo stretchy="false" form="prefix">(</mo><mo>mod</mo><mspace width="0.222em"></mspace><mi>m</mi><mo stretchy="false" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">t=X\pmod m</annotation></semantics></math></td>
+</tr>
+</tbody>
+</table></div>
+<p>For polynomial input, <code>E(p)</code> and <code>ZZpE(E, p)</code>
+are equivalent and always reduce <code>p</code> modulo the defining
+polynomial. Coefficient vectors are converted to the base field and
+normalized; they do not need to have exactly <code>d</code> entries.</p>
+<h3 id="inspect-the-representation">Inspect the representation</h3>
+<p><code>rep(a)</code> is a reduced <code>ModPoly</code>,
+<strong>not</strong> an integer and not a Zech logarithm. Its
+coefficient vector is stored from low degree to high degree and may be
+shorter than <code>d</code> when high coefficients are zero. Use
+<code>coeff(rep(a), i)</code> when you need a fixed coefficient
+position, because out-of-range coefficients read as zero.</p>
+<pre class="julia"><code>@assert parent(a) == E
+@assert base_field(a) == F
+@assert base_field(E) == F
+@assert modulus(a) == m
+@assert modulus(E) == m
+@assert defining_polynomial(E) == m
+@assert characteristic(a) == 5
+@assert extension_degree(E) == 2
+@assert degree(E) == 2
+@assert cardinality(E) == 25
 
-          <h3>Iterate over every field element</h3>
-          <p>A <code>zzp</code> field is a finite Julia iterator. Elements are produced in canonical order, beginning with zero and ending with <code>p-1</code>.</p>
-          <div class="code-panel">
-            <div class="code-caption">Iteration, collection, and summation</div>
-            <pre><code>F = zzp{5}
+@assert degree(rep(a)) &lt;= 1
+@assert coeff(rep(a), 0) == F(1)
+@assert coeff(rep(a), 1) == F(2)
+@assert coeff(rep(a), 2) == F(0)
+@assert coefficients(rep(a)) == F.([1, 2])</code></pre>
+<div class="table-wrap"><table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Interface</th>
+<th>Result for an element or parent</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>parent(a)</code></td>
+<td>The <code>ExtensionField</code> parent</td>
+</tr>
+<tr class="even">
+<td><code>rep(a)</code></td>
+<td>The canonical reduced polynomial representative</td>
+</tr>
+<tr class="odd">
+<td><code>base_field(E)</code> or <code>base_field(a)</code></td>
+<td>The underlying coefficient field</td>
+</tr>
+<tr class="even">
+<td><code>defining_polynomial(E)</code> or <code>modulus(a)</code></td>
+<td>The monic defining polynomial</td>
+</tr>
+<tr class="odd">
+<td><code>extension_degree(E)</code> or <code>degree(E)</code></td>
+<td>The degree
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>d</mi><annotation encoding="application/x-tex">d</annotation></semantics></math></td>
+</tr>
+<tr class="even">
+<td><code>cardinality(E)</code></td>
+<td>The field order
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>q</mi><mi>d</mi></msup><annotation encoding="application/x-tex">q^d</annotation></semantics></math>,
+as an arbitrary-precision integer</td>
+</tr>
+<tr class="odd">
+<td><code>characteristic(E)</code> or
+<code>characteristic(a)</code></td>
+<td>The characteristic
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>p</mi><annotation encoding="application/x-tex">p</annotation></semantics></math></td>
+</tr>
+<tr class="even">
+<td><code>zero(E)</code>, <code>one(E)</code></td>
+<td>Additive and multiplicative identities</td>
+</tr>
+<tr class="odd">
+<td><code>iszero(a)</code>, <code>isone(a)</code></td>
+<td>Identity tests</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="addition-multiplication-division-and-powers">Addition,
+multiplication, division, and powers</h3>
+<p>Addition and subtraction operate coefficient by coefficient.
+Multiplication first multiplies the polynomial representatives and then
+reduces modulo <code>m</code>. Inversion uses the polynomial extended
+Euclidean algorithm. Powers use modular square-and-multiply; negative
+exponents invert first.</p>
+<pre class="julia"><code>d = ZZpE(E, [2, 1])       # 2 + t
 
-for a in F
-    println(a)
-end
+@assert a + d == E([3, 3])
+@assert a - d == E([-1, 1])
+@assert -a == E([-1, -2])
+@assert a * d == E(rem(rep(a) * rep(d), m))
+@assert sqr(a) == a * a
 
-@assert [rep(a) for a in F] == [0,1,2,3,4]
-@assert collect(F) == F.([0,1,2,3,4])
-@assert length(F) == 5
-@assert first(F) == F(0)
-@assert last(F) == F(4)
-@assert sum(F) == F(10)</code></pre>
-          </div>
-          <p class="note"><strong>Large fields.</strong> Iteration is lazy and does not allocate a vector. <code>collect(F)</code> does allocate <code>p</code> elements, so do not collect a very large field merely to test its size; use <code>length(F)</code> instead.</p>
+# Directly, (1 + 2t)^2 = 3 + 4t because t^2 = 3 in F_5.
+@assert a^2 == E([3, 4])
 
-          <h3>Choose <code>zzp</code> or <code>ZZP</code></h3>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>Need</th><th>Recommended parent</th></tr></thead>
-              <tbody>
-                <tr><td>Small, prime modulus fitting in <code>Int</code></td><td><code>F = zzp(p)</code>. Fast machine-word storage, type-level modulus, and finite-field iteration.</td></tr>
-                <tr><td>Arbitrarily large modulus</td><td><code>F = ZZP(n)</code>. BigInt storage and an explicit runtime parent.</td></tr>
-                <tr><td>Composite modulus for ring arithmetic</td><td><code>ZZP(n)</code>. Addition and multiplication work; only units have inverses. <code>zzp</code> deliberately rejects composite moduli.</td></tr>
-                <tr><td>Enumerate all elements</td><td><code>zzp(p)</code>. Iteration is defined only for the machine-word prime-field parent.</td></tr>
-              </tbody>
-            </table>
-          </div>
+@assert a * inv(a) == one(E)
+@assert a / d == a * inv(d)
+@assert a^(-3) == inv(a)^3
+@assert power(a, 17) == a^17
 
-          <h3>Beginner checklist and common errors</h3>
-          <ul>
-            <li><code>zzp(15)</code> throws <code>ArgumentError</code> because 15 is composite. Use <code>ProbPrime(p)</code> when you need a Boolean primality check first.</li>
-            <li><code>F(2)</code> is zero when <code>F=zzp(2)</code>. Construction always reduces modulo the field modulus.</li>
-            <li>Division or a negative power requires a nonzero denominator/base. <code>inv(zero(F))</code> throws <code>DomainError</code>.</li>
-            <li>Different moduli are different parents. Do not add <code>zzp{7}(1)</code> to <code>zzp{11}(1)</code> without explicitly choosing the mathematics you intend.</li>
-            <li>Use <code>iszero(a)</code>, <code>isone(a)</code>, <code>zero(F)</code>, and <code>one(F)</code> rather than relying on visual output.</li>
-          </ul>
+# Integer and base-field scalars are embedded as constant polynomials.
+@assert a + 2 == E([3, 2])
+@assert 3a == E([3, 1])
+@assert a * F(2) == E([2, 4])</code></pre>
+<p>Division by zero and inversion of zero throw
+<code>DomainError</code>. Operands belonging to different extension
+parents are not mixed implicitly.</p>
+<pre class="julia"><code>@test_throws DomainError inv(zero(E))
 
-          <h3>Core <code>zzp</code> API</h3>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>Entry point</th><th>Beginner-friendly meaning</th></tr></thead>
-              <tbody>
-                <tr><td>zzp(p), zzp{p}(a)</td><td>Validate a prime field and construct reduced elements.</td></tr>
-                <tr><td>rep(a), Int(a)</td><td>Read the canonical integer representative.</td></tr>
-                <tr><td>modulus(F), characteristic(F)</td><td>Read the prime modulus/characteristic.</td></tr>
-                <tr><td>zero(F), one(F), iszero(a), isone(a)</td><td>Field identities and identity tests.</td></tr>
-                <tr><td>+, -, *, /, inv, ^</td><td>Ordinary field arithmetic; negative powers use inversion.</td></tr>
-                <tr><td>rand(F), rand(rng,F,n)</td><td>Uniform random elements, including seeded reproducible arrays.</td></tr>
-                <tr><td>for a in F, collect(F)</td><td>Traverse all elements in representative order.</td></tr>
-                <tr><td>AddMod, SubMod, MulMod, InvMod, PowerMod</td><td>Lower-level modular functions for users who need direct <code>Int</code> representatives.</td></tr>
-                <tr><td>info(F)</td><td>Inspect modulus, zero, one, and storage metadata.</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
+E2 = extension_field(F, X^2 + 3)
+@test_throws ArgumentError a + E2([1, 2])
+@test_throws ArgumentError extension_field(F, X^2 + 1) # Reducible over F_5.</code></pre>
+<p>The advanced keyword <code>check = false</code> skips the
+irreducibility test. It is intended only for users who deliberately want
+a polynomial quotient ring; field-only claims and inverses are not
+guaranteed when <code>m</code> is reducible.</p>
+<h3 id="frobenius-trace-and-norm">Frobenius, trace, and norm</h3>
+<p>For
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>q</mi><mo>=</mo><mrow><mo stretchy="true" form="prefix">|</mo><mi>F</mi><mo stretchy="true" form="postfix">|</mo></mrow></mrow><annotation encoding="application/x-tex">q=|F|</annotation></semantics></math>
+and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>d</mi><mo>=</mo><mrow><mo stretchy="true" form="prefix">[</mo><mi>E</mi><mo>:</mo><mi>F</mi><mo stretchy="true" form="postfix">]</mo></mrow></mrow><annotation encoding="application/x-tex">d=[E:F]</annotation></semantics></math>,
+the Frobenius map is
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>a</mi><mo>↦</mo><msup><mi>a</mi><mi>q</mi></msup></mrow><annotation encoding="application/x-tex">a\mapsto a^q</annotation></semantics></math>.
+NTL.jl computes the absolute trace and norm by</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mo>Tr</mo><mrow><mi>E</mi><mi>/</mi><mi>F</mi></mrow></msub><mrow><mo stretchy="true" form="prefix">(</mo><mi>a</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>0</mn></mrow><mrow><mi>d</mi><mo>−</mo><mn>1</mn></mrow></munderover><msup><mi>a</mi><msup><mi>q</mi><mi>i</mi></msup></msup><mo>,</mo><mspace width="2.0em"></mspace><msub><mo>N</mo><mrow><mi>E</mi><mi>/</mi><mi>F</mi></mrow></msub><mrow><mo stretchy="true" form="prefix">(</mo><mi>a</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><msup><mi>a</mi><mrow><mrow><mo stretchy="true" form="prefix">(</mo><msup><mi>q</mi><mi>d</mi></msup><mo>−</mo><mn>1</mn><mo stretchy="true" form="postfix">)</mo></mrow><mi>/</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>q</mi><mo>−</mo><mn>1</mn><mo stretchy="true" form="postfix">)</mo></mrow></mrow></msup><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\operatorname{Tr}_{E/F}(a)=\sum_{i=0}^{d-1}a^{q^i},
+\qquad
+\operatorname{N}_{E/F}(a)=a^{(q^d-1)/(q-1)}.
+</annotation></semantics></math></p>
+<p>Both return a <strong>base-field element</strong>, not a
+<code>ZZpE</code>.</p>
+<pre class="julia"><code>@assert a^5 == E([1, 3])       # Frobenius conjugate of 1 + 2t
+@assert trace(a) == F(2)
+@assert norm(a) == F(4)
+@assert E(trace(a)) == a + a^5
+@assert E(norm(a)) == a * a^5
 
-      <section id="install">
-        <div class="section-heading"><span class="section-label">02 / Run</span><h2>Install and reproduce the checks</h2></div>
-        <div class="section-content">
-          <p>Use Julia 1.9 or later. Runtime code depends only on the <code>Random</code> standard library. The test target additionally uses <code>Test</code>. No NTL installation, C++ compiler, binary artifact, or third-party Julia package is needed.</p>
-          <div class="code-panel">
-            <div class="code-caption">Shell — from NTLJulia/</div>
-            <pre><code>julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.test()'
-julia --project=. examples/04_number_theory.jl
-julia --project=. examples/05_polynomial_factorization.jl
-julia --project=. examples/08_ntt_convolution.jl</code></pre>
-          </div>
-          <h3>First computation</h3>
-          <div class="code-panel">
-            <div class="code-caption">Julia</div>
-            <pre><code>using NTL
+@assert trace(t) == F(0)
+@assert norm(t) == F(2)</code></pre>
+<p>For an element of degree
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>d</mi><annotation encoding="application/x-tex">d</annotation></semantics></math>
+over a machine-word prime field, addition costs
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>O</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>d</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">O(d)</annotation></semantics></math>
+coefficient operations. Multiplication and inversion inherit the
+dense-polynomial multiplication and XGCD costs. Trace uses Frobenius
+powers; norm uses modular exponentiation.</p>
+<h3 id="random-elements-and-arrays">Random elements and arrays</h3>
+<pre class="julia"><code>rng = MersenneTwister(2026)
+u = rand(rng, E)
+v = rand(rng, E, 4)
 
-F = ZZP(big(10)^60 + 37)  # Arbitrary-precision modulus
-a = F(-1)
-@assert a^2 == one(F)
+@assert u isa ZZpE
+@assert parent(u) == E
+@assert length(v) == 4
+@assert all(parent(w) == E for w in v)</code></pre>
+<p>A random extension element is produced by sampling a polynomial of
+degree below <code>d</code> and reducing it in <code>E</code>. Supplying
+an explicit RNG makes experiments reproducible.</p>
+<h3 id="polynomials-whose-coefficients-are-zzpe">Polynomials whose
+coefficients are <code>ZZpE</code></h3>
+<p><code>ZZpE</code> is a first-class coefficient type for
+<code>ModPoly</code>. This enables extension-field polynomials without a
+separate C++-style global context.</p>
+<pre class="julia"><code>Y = xpoly(E)
+h = Y^2 + a*Y + d
 
-G = zzp(101)             # Machine-word prime field
-A = G.([2 3 1; 4 1 5; 3 7 2])
-b = G.([1, 2, 3])
-@assert A * solve(A, b) == b</code></pre>
-          </div>
-        </div>
-      </section>
+@assert field(h) == E
+@assert evaluate(h, zero(E)) == d
 
-      <section id="number-theory">
-        <div class="section-heading"><span class="section-label">03 / ZZ</span><h2>Arbitrary-precision number theory</h2></div>
-        <div class="section-content">
-          <p><code>ProbPrime</code> is deterministic for signed machine integers and uses fixed Miller–Rabin witnesses for larger integers. <code>FactorInt</code> combines primality testing with Brent's batch-GCD variant of Pollard rho. The output is a sorted vector of <code>(prime, exponent)</code> pairs.</p>
-          <div class="code-panel">
-            <div class="code-caption">examples/04_number_theory.jl — excerpt</div>
-            <pre><code>n = big(2)^89 - 1
-@assert ProbPrime(n)
+q, r = DivRem(h, Y + 1)
+@assert q * (Y + 1) + r == h
+@assert GCD((Y + 1)^2, Y + 1) == Y + 1</code></pre>
+<p>Use <code>factor</code>, <code>FindRoots</code>,
+<code>interpolate</code>, and the other generic polynomial algorithms
+over an extension exactly as over a prime field.</p>
+<h3 id="binary-extensions-use-the-same-element-model">Binary extensions
+use the same element model</h3>
+<p><code>GF2E(m)</code> is a convenience constructor for an extension of
+<code>GF2</code>; its elements also use <code>ZZpE</code> with a
+<code>GF2</code> base field.</p>
+<pre class="julia"><code>g = GF2X(2)
+aes_modulus = g^8 + g^4 + g^3 + g + 1
+@assert is_irreducible(aes_modulus)
 
-fac = FactorInt(big(99991) * big(10007))
-@assert prod(p^e for (p,e) in fac; init=BigInt(1)) == big(99991)*big(10007)
+B = GF2E(aes_modulus)
+z = gen(B) + 1
 
-x, M = CRT([2,3,2], [3,5,7])
-@assert (x,M) == (23,105)
+@assert gen(B) isa ZZpE
+@assert cardinality(B) == 256
+@assert z^255 == one(B)
+@assert z * inv(z) == one(B)</code></pre>
+<p>For a minimal binary example,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>t</mi><mn>2</mn></msup><mo>+</mo><mi>t</mi><mo>+</mo><mn>1</mn><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">t^2+t+1=0</annotation></semantics></math>
+gives
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mstyle mathvariant="double-struck"><mi>𝔽</mi></mstyle><mn>4</mn></msub><annotation encoding="application/x-tex">\mathbb F_4</annotation></semantics></math>:</p>
+<pre class="julia"><code>B4 = GF2E(g^2 + g + 1)
+@assert cardinality(B4) == 4
+@assert gen(B4)^3 == one(B4)</code></pre>
+<h3 id="zzpe-or-zechelem"><code>ZZpE</code> or
+<code>ZechElem</code>?</h3>
+<p>Both represent elements of the same mathematical extension, but their
+storage and fast operations differ.</p>
+<div class="table-wrap"><table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Need</th>
+<th>Recommended representation</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Inspect coefficients, defining polynomials, trace, or norm</td>
+<td><code>ZZpE</code> through <code>extension_field</code></td>
+</tr>
+<tr class="even">
+<td>Build polynomials over the extension</td>
+<td><code>ZZpE</code></td>
+</tr>
+<tr class="odd">
+<td>Work in a large extension</td>
+<td><code>ZZpE</code></td>
+</tr>
+<tr class="even">
+<td>Repeated multiplication, inversion, and powers in a small
+extension</td>
+<td><code>ZechElem</code> through <code>zech_field</code></td>
+</tr>
+<tr class="odd">
+<td>Convert a Zech result back to polynomial form</td>
+<td><code>extension_element(z)</code></td>
+</tr>
+</tbody>
+</table></div>
+<p>The Zech representation stores discrete logarithms and is limited to
+fields of order at most 65,535. <code>ZZpE</code> stores polynomial
+representatives and has no such field-order table limit.</p>
+<h2 id="zech-fields-for-fast-small-field-arithmetic">Zech fields for
+fast small-field arithmetic</h2>
+<p>A Zech field is a discrete-log representation of the same extension
+field. It is not a different mathematical field.</p>
+<p>For a field of order <code>q</code>, a primitive element
+<code>g</code> is chosen so that every nonzero element is
+<code>g^k</code>. Multiplication becomes addition of exponents modulo
+<code>q-1</code>; inversion and powering become sign change and scalar
+multiplication of exponents.</p>
+<pre class="julia"><code>F = zzp(3)
+E = extension_field(F, poly(F, [2, 1, 1]))
+Z = zech_field(E)
+x = ZechElem(Z, Z._generator)
 
-r = SqrRootMod(10, 13)
-@assert r !== nothing &amp;&amp; r^2 % 13 == 10
+@assert cardinality(Z) == 9
+@assert x * inv(x) == one(Z)
+@assert x^8 == one(Z)
+@assert muladd(x, x, one(x)) == x * x + one(x)
+@assert isbitstype(typeof(x))</code></pre>
+<h3 id="why-is-it-faster">Why is it faster?</h3>
+<p>Ordinary extension multiplication performs polynomial multiplication
+and reduction. Zech multiplication performs table lookups:</p>
+<ul>
+<li><code>log[a] + log[b]</code> for multiplication;</li>
+<li><code>log[a] - log[b]</code> for division;</li>
+<li><code>-log[a]</code> for inversion;</li>
+<li><code>e * log[a]</code> for powers.</li>
+</ul>
+<p>Use <code>extension_element(a)</code> to return to the ordinary
+polynomial extension representation.</p>
+<h3 id="limits-and-requirements">Limits and requirements</h3>
+<ul>
+<li>The base must currently be a machine-word prime field
+<code>zzp</code>.</li>
+<li>The extension order must satisfy <code>q &lt;= 65535</code>.</li>
+<li>A primitive multiplicative generator is required.
+<code>zech_field</code> searches for one automatically; an explicitly
+supplied non-generator is rejected.</li>
+</ul>
+<h2 id="elliptic-curve-point-counting">Elliptic-curve point
+counting</h2>
+<p>For the cubic</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>E</mi><mo>:</mo><msup><mi>y</mi><mn>2</mn></msup><mo>=</mo><msup><mi>x</mi><mn>3</mn></msup><mo>+</mo><mn>2</mn><mi>x</mi><mo>+</mo><mn>3</mn></mrow><annotation encoding="application/x-tex">
+E: y^2 = x^3 + 2x + 3
+</annotation></semantics></math></p>
+<p>NTL.jl can count projective points over
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mstyle mathvariant="double-struck"><mi>𝔽</mi></mstyle><msup><mn>5</mn><mi>k</mi></msup></msub><annotation encoding="application/x-tex">\mathbb F_{5^k}</annotation></semantics></math>.
+The implementation counts the point at infinity as well as all affine
+solutions. It uses the Euler criterion to decide whether the right-hand
+side is a square, avoiding a full
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>q</mi><mn>2</mn></msup><annotation encoding="application/x-tex">q^2</annotation></semantics></math>
+search for larger fields.</p>
+<pre class="julia"><code>using NTL
+
+elliptic(x, y) = y^2 - x^3 - 2x - 3
+
+function count_points_fast(F)
+    q = cardinality(F)
+    affine = 0
+    for x in all_elements(F)
+        rhs = x^3 + 2x + 3
+        if iszero(rhs)
+            affine += 1
+        elseif rhs^div(q - 1, 2) == one(rhs)
+            affine += 2
+        end
+    end
+    (affine = affine, projective = affine + 1)
+end</code></pre>
+<p>For small fields, the fast method is checked against exhaustive
+enumeration of all
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="true" form="prefix">(</mo><mi>x</mi><mo>,</mo><mi>y</mi><mo stretchy="true" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(x,y)</annotation></semantics></math>
+pairs. Current results are:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr class="header">
+<th
+style="text-align: right;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math></th>
+<th
+style="text-align: right;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>q</mi><mo>=</mo><msup><mn>5</mn><mi>k</mi></msup></mrow><annotation encoding="application/x-tex">q=5^k</annotation></semantics></math></th>
+<th style="text-align: right;">Affine points</th>
+<th style="text-align: right;">Projective points</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">7</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">25</td>
+<td style="text-align: right;">24</td>
+<td style="text-align: right;">25</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">125</td>
+<td style="text-align: right;">126</td>
+<td style="text-align: right;">127</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">625</td>
+<td style="text-align: right;">624</td>
+<td style="text-align: right;">625</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">3125</td>
+<td style="text-align: right;">3126</td>
+<td style="text-align: right;">3127</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">15625</td>
+<td style="text-align: right;">15624</td>
+<td style="text-align: right;">15625</td>
+</tr>
+</tbody>
+</table></div>
+<p>The helper <code>all_elements(F)</code> is defined in the example and
+enumerates every field element. The complete example is
+<code>examples/13_elliptic_curve.jl</code>. It constructs
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mstyle mathvariant="double-struck"><mi>𝔽</mi></mstyle><msup><mn>5</mn><mi>k</mi></msup></msub><annotation encoding="application/x-tex">\mathbb F_{5^k}</annotation></semantics></math>
+with irreducible polynomials and prints both affine and projective
+counts. The cubic is singular in characteristic five because
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>4</mn><mo>⋅</mo><msup><mn>2</mn><mn>3</mn></msup><mo>+</mo><mn>27</mn><mo>⋅</mo><msup><mn>3</mn><mn>2</mn></msup><mo>=</mo><mn>275</mn><mo>≡</mo><mn>0</mn><mrow><mspace width="0.222em"></mspace><mo stretchy="false" form="prefix">(</mo><mo>mod</mo><mspace width="0.222em"></mspace><mn>5</mn><mo stretchy="false" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">4\cdot2^3+27\cdot3^2=275\equiv0\pmod5</annotation></semantics></math>,
+but the point count is still well-defined.</p>
+<h2 id="matrices-and-exact-linear-algebra">Matrices and exact linear
+algebra</h2>
+<p>The generic matrix routines work over supported fields.</p>
+<pre class="julia"><code>F = zzp(101)
+A = F.([2 3 1; 4 1 5; 3 7 2])
+b = F.([1, 2, 3])
+
+x = solve(A, b)
+d = det(A)
+invA = matrix_inverse(A)
+
+@assert A * x == b
+@assert A * invA == F.([1 0 0; 0 1 0; 0 0 1])
+
+S = F.([1 2 3; 2 4 6; 0 1 1])
+@assert iszero(det(S))
+@assert rank(S) == 2
+@assert all(iszero, S * nullspace(S)[1])</code></pre>
+<div class="table-wrap"><table>
+<thead>
+<tr class="header">
+<th>Function</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>det(A)</code></td>
+<td>Determinant by Gaussian elimination</td>
+</tr>
+<tr class="even">
+<td><code>det_exact(A)</code></td>
+<td>Exact integer determinant by Bareiss elimination</td>
+</tr>
+<tr class="odd">
+<td><code>rref(A)</code></td>
+<td>Reduced row-echelon form and pivot columns</td>
+</tr>
+<tr class="even">
+<td><code>rank(A)</code></td>
+<td>Rank over an exact field</td>
+</tr>
+<tr class="odd">
+<td><code>solve(A,b)</code></td>
+<td>Solve a nonsingular square system</td>
+</tr>
+<tr class="even">
+<td><code>matrix_inverse(A)</code></td>
+<td>Inverse over a field</td>
+</tr>
+<tr class="odd">
+<td><code>nullspace(A)</code></td>
+<td>Basis of the right nullspace</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="lll-lattice-reduction">LLL lattice reduction</h2>
+<pre class="julia"><code>A = BigInt[1 1 1; -1 0 2; 3 5 6]
+result = lll(A; mode = :fast, verify = true)
+
+@assert result.transform * A == result.basis
+@assert abs(det_exact(result.transform)) == 1
+@assert result.verified</code></pre>
+<h3 id="modes">Modes</h3>
+<div class="table-wrap"><table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Mode</th>
+<th>Behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>:fast</code></td>
+<td>Exact integer row operations, floating GSO for decisions, exact
+verification</td>
+</tr>
+<tr class="even">
+<td><code>:exact</code></td>
+<td>Original exact-rational implementation</td>
+</tr>
+</tbody>
+</table></div>
+<p>The default fast mode verifies:</p>
+<ul>
+<li><code>transform * A == basis</code>;</li>
+<li><code>abs(det_exact(transform)) == 1</code>;</li>
+<li>exact size-reduction bounds;</li>
+<li>the exact Lovász condition.</li>
+</ul>
+<p>If verification fails, the implementation automatically falls back to
+exact mode. <code>verify = false</code> skips the additional
+verification pass when that trade-off is intentional.</p>
+<h2 id="ntt-and-generalized-fft">NTT and generalized FFT</h2>
+<h3 id="same-prime-ntt">Same-prime NTT</h3>
+<p><code>ntt_convolve(a,b)</code> computes convolution over a supported
+prime field. A radix-two transform of length <code>n</code> requires
+<code>n</code> to be a power of two and to divide <code>p-1</code>.</p>
+<pre class="julia"><code>F = zzp(97)  # 97-1 = 96, which is divisible by 32
+a = rand(MersenneTwister(1), F, 32)
+@assert intt(ntt(a)) == a
+
+b = rand(MersenneTwister(2), F, 32)
+@assert ntt_convolve(a, b) == convolve(a, b)</code></pre>
+<h3 id="generalized-fft">Generalized FFT</h3>
+<p><code>fft_convolve(a,b)</code> uses a same-prime fast path when
+possible. Otherwise it selects compatible NTT primes and reconstructs
+exact coefficients with a coefficient bound and, when needed,
+multi-prime CRT.</p>
+<pre class="julia"><code>F = zzp(101)
+f = random_poly(F, 1000)
+g = random_poly(F, 1000)
+
+reference = poly_mul(f, g; method = :schoolbook)
+@assert poly_mul(f, g; method = :fft) == reference</code></pre>
+<p>The reconstruction is exact; it is not a floating-point
+approximation.</p>
+<h2 id="number-theory">Number theory</h2>
+<div class="table-wrap"><table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Function</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>ProbPrime(n; rounds=16)</code></td>
+<td>Miller–Rabin primality test; deterministic in the signed
+<code>Int</code> range</td>
+</tr>
+<tr class="even">
+<td><code>MillerWitness(n,w)</code></td>
+<td>Test whether <code>w</code> witnesses compositeness</td>
+</tr>
+<tr class="odd">
+<td><code>NextPrime(m)</code></td>
+<td>Least probable prime <code>&gt;= m</code></td>
+</tr>
+<tr class="even">
+<td><code>PrevPrime(m)</code></td>
+<td>Greatest probable prime <code>&lt;= m</code></td>
+</tr>
+<tr class="odd">
+<td><code>GenPrime(bits)</code></td>
+<td>Generate a probable prime with an exact bit length</td>
+</tr>
+<tr class="even">
+<td><code>RandomBits(bits)</code></td>
+<td>Random integer with at most <code>bits</code> bits</td>
+</tr>
+<tr class="odd">
+<td><code>RandomLen(bits)</code></td>
+<td>Random integer with exactly <code>bits</code> bits</td>
+</tr>
+<tr class="even">
+<td><code>RandomBnd(n)</code></td>
+<td>Uniform random integer below <code>n</code></td>
+</tr>
+<tr class="odd">
+<td><code>FactorInt(n)</code></td>
+<td>Factorization using Miller–Rabin and Pollard–Brent rho</td>
+</tr>
+<tr class="even">
+<td><code>EulerPhi(n)</code></td>
+<td>Euler’s totient from the factorization</td>
+</tr>
+<tr class="odd">
+<td><code>CRT(r,m)</code></td>
+<td>Chinese remaindering for pairwise-coprime moduli</td>
+</tr>
+<tr class="even">
+<td><code>SqrRootMod(a,p)</code></td>
+<td>Tonelli–Shanks square root; returns <code>nothing</code> for a
+nonresidue</td>
+</tr>
+<tr class="odd">
+<td><code>DiscreteLog(a,b,p)</code></td>
+<td>Baby-step/giant-step logarithm</td>
+</tr>
+<tr class="even">
+<td><code>PrimitiveRoot(p)</code></td>
+<td>Generator of the multiplicative group modulo a prime</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="a-small-example">A small example</h3>
+<pre class="julia"><code>@assert ProbPrime(97)
+@assert !ProbPrime(341)
+@assert NextPrime(100) == 101
+@assert PrevPrime(100) == 97
+
+fac = FactorInt(99991 * 10007)
+@assert prod(p^e for (p, e) in fac; init = BigInt(1)) == 99991 * 10007
+
+x, M = CRT([2, 3, 2], [3, 5, 7])
+@assert (x, M) == (23, 105)
 
 g = PrimitiveRoot(97)
 y = powermod(g, 42, 97)
-@assert powermod(g, DiscreteLog(g,y,97), 97) == y</code></pre>
-          </div>
-          <div class="mapping">
-            <div class="mapping-row"><span>GenPrime(bits)</span><span>Random probable prime with an exact requested bit length.</span></div>
-            <div class="mapping-row"><span>RandomBits / RandomLen / RandomBnd</span><span>Seeded <code>AbstractRNG</code> support for reproducible arbitrary-precision random integers.</span></div>
-            <div class="mapping-row"><span>SqrRootMod</span><span>Tonelli–Shanks for odd primes, with characteristic-two and nonresidue cases.</span></div>
-            <div class="mapping-row"><span>DiscreteLog</span><span>Baby-step/giant-step logarithms in prime-field multiplicative groups.</span></div>
-          </div>
-        </div>
-      </section>
+@assert powermod(g, DiscreteLog(g, y, 97), 97) == y</code></pre>
+<h2 id="important-api-reference">Important API reference</h2>
+<h3 id="prime-field-and-modular-arithmetic">Prime-field and modular
+arithmetic</h3>
+<div class="table-wrap"><table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Function</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>zzp(p)</code></td>
+<td>Validate a prime and return <code>zzp{p}</code></td>
+</tr>
+<tr class="even">
+<td><code>zzp_Min</code>, <code>zzp_Max</code></td>
+<td>Bounds of supported machine-word prime moduli</td>
+</tr>
+<tr class="odd">
+<td><code>AddMod</code>, <code>SubMod</code>,
+<code>NegateMod</code></td>
+<td>Overflow-safe modular add/subtract/negate on reduced
+<code>Int</code> values</td>
+</tr>
+<tr class="even">
+<td><code>MulMod</code>, <code>SqrMod</code></td>
+<td>Modular multiplication and squaring</td>
+</tr>
+<tr class="odd">
+<td><code>InvMod</code>, <code>InvModStatus</code></td>
+<td>Inverse or a nonthrowing status result</td>
+</tr>
+<tr class="even">
+<td><code>PowerMod</code></td>
+<td>Binary modular powering with negative-exponent support</td>
+</tr>
+<tr class="odd">
+<td><code>muladd(x,y,z)</code></td>
+<td>Fused <code>x*y+z</code></td>
+</tr>
+<tr class="even">
+<td><code>ZZP(n)</code></td>
+<td>Construct an arbitrary-precision modular parent</td>
+</tr>
+<tr class="odd">
+<td><code>ZZPField</code>, <code>ZZp</code></td>
+<td>Parent and element types; <code>ZZp(R,a)</code> is direct element
+construction</td>
+</tr>
+<tr class="even">
+<td><code>rep</code>, <code>parent</code>, <code>modulus</code>,
+<code>characteristic</code></td>
+<td>Canonical representative and parent metadata</td>
+</tr>
+<tr class="odd">
+<td><code>rand</code>, <code>VectorRandom</code>,
+<code>VectorConv</code></td>
+<td>Random elements and vector conversion</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="polynomial-acceleration">Polynomial acceleration</h3>
+<div class="table-wrap"><table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Function</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>poly_mul(f,g; method)</code></td>
+<td>Select schoolbook, Karatsuba, NTT, generalized FFT, or automatic
+mode</td>
+</tr>
+<tr class="even">
+<td><code>set_polynomial_acceleration!(Bool)</code></td>
+<td>Enable/disable automatic acceleration</td>
+</tr>
+<tr class="odd">
+<td><code>polynomial_acceleration()</code></td>
+<td>Inspect the current mode</td>
+</tr>
+<tr class="even">
+<td><code>fft_convolve(a,b)</code></td>
+<td>Generalized FFT with exact reconstruction</td>
+</tr>
+<tr class="odd">
+<td><code>ntt_convolve(a,b)</code></td>
+<td>Same-prime NTT convolution</td>
+</tr>
+<tr class="even">
+<td><code>convolve(a,b)</code></td>
+<td>Direct schoolbook convolution</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="extension-fields-and-zech-fields">Extension fields and Zech
+fields</h3>
+<div class="table-wrap"><table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Function</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>ExtensionField</code>, <code>ZZpE</code></td>
+<td>Extension parent and canonical polynomial-represented element
+types</td>
+</tr>
+<tr class="even">
+<td><code>extension_field(F,m; check=true)</code></td>
+<td>Checked polynomial quotient extension</td>
+</tr>
+<tr class="odd">
+<td><code>E(c)</code>, <code>ZZpE(E,c)</code></td>
+<td>Construct scalars, coefficient vectors, polynomials through
+<code>E</code>, or copy elements</td>
+</tr>
+<tr class="even">
+<td><code>GF2E(m)</code></td>
+<td>Binary extension using the same <code>ZZpE</code> element model</td>
+</tr>
+<tr class="odd">
+<td><code>gen(E)</code></td>
+<td>Image of the polynomial indeterminate in the extension</td>
+</tr>
+<tr class="even">
+<td><code>base_field</code>, <code>defining_polynomial</code>,
+<code>parent</code>, <code>rep</code></td>
+<td>Parent and representation metadata</td>
+</tr>
+<tr class="odd">
+<td><code>extension_degree(E)</code>, <code>degree(E)</code></td>
+<td>Extension degree</td>
+</tr>
+<tr class="even">
+<td><code>cardinality(E)</code></td>
+<td>Number of elements,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>q</mi><mi>d</mi></msup><annotation encoding="application/x-tex">q^d</annotation></semantics></math></td>
+</tr>
+<tr class="odd">
+<td><code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>,
+<code>inv</code>, <code>power</code>, <code>^</code></td>
+<td>Extension arithmetic with reduction modulo the defining
+polynomial</td>
+</tr>
+<tr class="even">
+<td><code>rand(rng,E)</code>, <code>rand(rng,E,n)</code></td>
+<td>Random extension elements and arrays</td>
+</tr>
+<tr class="odd">
+<td><code>trace(a)</code>, <code>norm(a)</code></td>
+<td>Absolute trace and norm to the base field</td>
+</tr>
+<tr class="even">
+<td><code>xpoly(E)</code>, <code>poly(E,c)</code></td>
+<td>Polynomials with <code>ZZpE</code> coefficients</td>
+</tr>
+<tr class="odd">
+<td><code>zech_field(E)</code></td>
+<td>Build a small-field discrete-log representation</td>
+</tr>
+<tr class="even">
+<td><code>extension_element(a)</code></td>
+<td>Convert a Zech element back to <code>ZZpE</code></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="matrix-and-lattice-functions">Matrix and lattice functions</h3>
+<div class="table-wrap"><table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Function</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>det</code>, <code>det_exact</code>, <code>rank</code>,
+<code>rref</code>, <code>solve</code>, <code>matrix_inverse</code>,
+<code>nullspace</code></td>
+<td>Exact matrix algorithms</td>
+</tr>
+<tr class="even">
+<td><code>gram_schmidt_exact(B)</code></td>
+<td>Exact rational Gram–Schmidt data</td>
+</tr>
+<tr class="odd">
+<td><code>lll(A; mode, verify)</code></td>
+<td>LLL with fast and exact modes</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="project-architecture">Project architecture</h2>
+<pre class="text"><code>NTLJulia/
+├── Project.toml
+├── README.md
+├── docs/
+│   └── index.html
+├── src/
+│   ├── NTL.jl              # Module entry, prime fields, low-level arithmetic
+│   ├── zzp_big.jl          # Arbitrary-precision modular rings
+│   ├── numbertheory.jl     # Primality, factorization, CRT, roots, discrete logs
+│   ├── polynomial.jl       # Dense polynomials and factorization
+│   ├── polynomial_mul.jl   # Schoolbook, Karatsuba, and acceleration strategies
+│   ├── binary.jl           # GF2 and bit-packed GF2X
+│   ├── extension.jl        # ExtensionField and ZZpE polynomial representatives
+│   ├── zech.jl             # Isbits Zech representation and tables
+│   ├── matrix.jl           # Determinants, RREF, solving, rank, nullspace
+│   ├── lattice.jl          # Original exact LLL implementation
+│   ├── lll_fast.jl         # Fast LLL with exact verification and fallback
+│   ├── transform.jl        # Same-prime NTT and optimized butterflies
+│   └── fft.jl              # Generalized FFT and CRT reconstruction
+├── examples/
+│   ├── 01_basic_arithmetic.jl
+│   ├── 02_vectors_and_random.jl
+│   ├── 03_linear_system.jl
+│   ├── 04_number_theory.jl
+│   ├── 05_polynomial_factorization.jl
+│   ├── 06_extension_gf2.jl
+│   ├── 07_matrix_lattice.jl
+│   ├── 08_ntt_convolution.jl
+│   ├── 09_polynomial_acceleration.jl
+│   ├── 10_generalized_fft.jl
+│   ├── 11_fast_lll.jl
+│   ├── 12_zech_extension.jl
+│   ├── 13_elliptic_curve.jl
+│   └── api_tour.jl          # At least one executable call for every exported API
+└── test/
+    ├── runtests.jl
+    ├── zzp_numtheory.jl
+    ├── polynomial.jl
+    ├── binary_extension.jl
+    ├── matrix_lattice_transform.jl
+    ├── acceleration.jl
+    ├── lll_fast.jl
+    ├── zech.jl
+    ├── elliptic.jl
+    └── naming.jl            # Canonical names and compatibility aliases</code></pre>
+<p>The public API is grouped by mathematical role rather than by C++
+header names, so the implementation is easier to navigate for new
+users.</p>
+<h2 id="examples-and-tests">Examples and tests</h2>
+<p>Run any example with:</p>
+<pre class="bash"><code>julia --project=. examples/01_basic_arithmetic.jl</code></pre>
+<p><strong>Complete API coverage:</strong> <a
+href="../examples/api_tour.jl"><code>examples/api_tour.jl</code></a>
+contains at least one executable call for every exported NTL.jl
+interface. It also includes a dedicated <code>ZZpE</code> block covering
+construction, representation, arithmetic, inversion, powers, random
+elements, and polynomials over an extension. Run it with:</p>
+<pre class="bash"><code>julia --project=. examples/api_tour.jl</code></pre>
+<div class="table-wrap"><table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Script</th>
+<th>Demonstrates</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>01_basic_arithmetic.jl</code></td>
+<td>Prime-field construction, arithmetic, low-level helpers,
+iteration</td>
+</tr>
+<tr class="even">
+<td><code>02_vectors_and_random.jl</code></td>
+<td>Random elements, conversion, vector operations</td>
+</tr>
+<tr class="odd">
+<td><code>03_linear_system.jl</code></td>
+<td>Solving a finite-field linear system</td>
+</tr>
+<tr class="even">
+<td><code>04_number_theory.jl</code></td>
+<td>Primality, factorization, CRT, modular roots, discrete logs, prime
+generation</td>
+</tr>
+<tr class="odd">
+<td><code>05_polynomial_factorization.jl</code></td>
+<td>Factor reconstruction, irreducibility, interpolation, modular
+powers</td>
+</tr>
+<tr class="even">
+<td><code>06_extension_gf2.jl</code></td>
+<td>GF(2^8), prime-field extensions, extension-field polynomials</td>
+</tr>
+<tr class="odd">
+<td><code>07_matrix_lattice.jl</code></td>
+<td>Matrix solving, inverse, nullspace, exact LLL</td>
+</tr>
+<tr class="even">
+<td><code>08_ntt_convolution.jl</code></td>
+<td>NTT round trips and convolution</td>
+</tr>
+<tr class="odd">
+<td><code>09_polynomial_acceleration.jl</code></td>
+<td>Schoolbook, Karatsuba, NTT, and automatic selection</td>
+</tr>
+<tr class="even">
+<td><code>10_generalized_fft.jl</code></td>
+<td>Generalized FFT and exact coefficient reconstruction</td>
+</tr>
+<tr class="odd">
+<td><code>11_fast_lll.jl</code></td>
+<td>Fast and exact LLL modes with verification</td>
+</tr>
+<tr class="even">
+<td><code>12_zech_extension.jl</code></td>
+<td>Zech elements, inverse, powers, and <code>muladd</code></td>
+</tr>
+<tr class="odd">
+<td><code>13_elliptic_curve.jl</code></td>
+<td>Elliptic-curve point counting over
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mstyle mathvariant="double-struck"><mi>𝔽</mi></mstyle><msup><mn>5</mn><mi>k</mi></msup></msub><annotation encoding="application/x-tex">\mathbb F_{5^k}</annotation></semantics></math>,
+including the point at infinity</td>
+</tr>
+<tr class="even">
+<td><code>api_tour.jl</code></td>
+<td>Every exported interface, including the complete <code>ZZpE</code>
+workflow</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="comparison-with-c-ntl">Comparison with C++ NTL</h2>
+<p>The following measurements are <strong>workload-specific
+examples</strong>, not universal performance guarantees. They were
+collected on a 2-core server using official C++ NTL 11.4.2 with native
+SIMD and Julia 1.11.7.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr class="header">
+<th>Operation</th>
+<th style="text-align: right;">C++ NTL (ms)</th>
+<th style="text-align: right;">NTL.jl (ms)</th>
+<th style="text-align: right;">Julia / C++</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Small modular multiplication</td>
+<td style="text-align: right;">8.5685</td>
+<td style="text-align: right;">20.0726</td>
+<td style="text-align: right;">2.34x</td>
+</tr>
+<tr class="even">
+<td>BigInt modular exponentiation</td>
+<td style="text-align: right;">0.0101</td>
+<td style="text-align: right;">0.0189</td>
+<td style="text-align: right;">1.87x</td>
+</tr>
+<tr class="odd">
+<td>Polynomial multiplication</td>
+<td style="text-align: right;">0.1025</td>
+<td style="text-align: right;">2.5212</td>
+<td style="text-align: right;">24.60x</td>
+</tr>
+<tr class="even">
+<td>NTT convolution</td>
+<td style="text-align: right;">0.8374</td>
+<td style="text-align: right;">5.8378</td>
+<td style="text-align: right;">6.97x</td>
+</tr>
+<tr class="odd">
+<td>Polynomial factorization</td>
+<td style="text-align: right;">0.0297</td>
+<td style="text-align: right;">2.0918</td>
+<td style="text-align: right;">70.43x</td>
+</tr>
+<tr class="even">
+<td>Finite-field determinant</td>
+<td style="text-align: right;">0.0395</td>
+<td style="text-align: right;">0.4852</td>
+<td style="text-align: right;">12.28x</td>
+</tr>
+<tr class="odd">
+<td>LLL</td>
+<td style="text-align: right;">0.0720</td>
+<td style="text-align: right;">2.0970</td>
+<td style="text-align: right;">29.13x</td>
+</tr>
+<tr class="even">
+<td>Primality test</td>
+<td style="text-align: right;">0.0680</td>
+<td style="text-align: right;">0.0295</td>
+<td style="text-align: right;">0.43x</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="what-these-results-mean">What these results mean</h3>
+<ul>
+<li>Scalar modular arithmetic is already practical for many
+workloads.</li>
+<li>C++ NTL remains faster for large FFT-based multiplication,
+factorization, and LLL because it has specialized tables,
+precomputation, pointer-level loops, and long-standing native
+optimizations.</li>
+<li>Julia’s generalized FFT substantially reduced the polynomial
+multiplication gap compared with the original schoolbook
+implementation.</li>
+<li>Fast LLL reduced the LLL-specific slowdown from over 1,500x to about
+29x while retaining exact verification.</li>
+<li>The primality result is not evidence that Julia is generally faster:
+the compared witness sets and rounds differ.</li>
+</ul>
+<h2 id="comparison-with-galoisfieldsjl">Comparison with
+GaloisFields.jl</h2>
+<p>GaloisFields.jl is particularly strong for small finite fields and
+extension arithmetic. It uses Zech logarithms for fast multiplication
+and has a convenient macro interface.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr class="header">
+<th>Operation</th>
+<th style="text-align: right;">NTL.jl (ms)</th>
+<th style="text-align: right;">GaloisFields (ms)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Prime-field mul/add x1e6, p=101</td>
+<td style="text-align: right;">48.15</td>
+<td style="text-align: right;">53.54</td>
+</tr>
+<tr class="even">
+<td>Prime-field fused muladd x1e6</td>
+<td style="text-align: right;">26.24</td>
+<td style="text-align: right;">53.54</td>
+</tr>
+<tr class="odd">
+<td>Prime-field power x10000, p=101</td>
+<td style="text-align: right;">0.718</td>
+<td style="text-align: right;">0.687</td>
+</tr>
+<tr class="even">
+<td>Prime-field inverse x10000, p=101</td>
+<td style="text-align: right;">0.570</td>
+<td style="text-align: right;">0.577</td>
+</tr>
+<tr class="odd">
+<td>Zech extension ops x10000</td>
+<td style="text-align: right;">1.283</td>
+<td style="text-align: right;">1.191</td>
+</tr>
+<tr class="even">
+<td>Zech muladd x10000</td>
+<td style="text-align: right;">1.064</td>
+<td style="text-align: right;">1.191</td>
+</tr>
+<tr class="odd">
+<td>Zech inverse x10000</td>
+<td style="text-align: right;">0.660</td>
+<td style="text-align: right;">0.746</td>
+</tr>
+<tr class="even">
+<td>Zech power x10000</td>
+<td style="text-align: right;">0.783</td>
+<td style="text-align: right;">0.680</td>
+</tr>
+<tr class="odd">
+<td>Polynomial multiplication, deg 999</td>
+<td style="text-align: right;">1.206</td>
+<td style="text-align: right;">6.347</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="interpretation">Interpretation</h3>
+<ul>
+<li>Prime-field arithmetic is comparable, and fused <code>muladd</code>
+is faster in the tested loop.</li>
+<li>Zech arithmetic is also comparable. The small differences are
+implementation overheads rather than fundamental algorithmic
+differences.</li>
+<li>NTL.jl is faster for the tested large polynomial multiplication
+because of generalized FFT and exact coefficient reconstruction.</li>
+<li>GaloisFields remains a good choice for compact small-field code and
+extension-tower syntax; NTL.jl covers a broader set of algorithms
+including matrices, LLL, generalized FFT, and number theory.</li>
+</ul>
+<h2 id="design-principles">Design principles</h2>
+<h3 id="mathematical-correctness-before-speed">Mathematical correctness
+before speed</h3>
+<p>Fast paths are checked against the original algorithms. A user can
+always request <code>:schoolbook</code> or <code>mode = :exact</code> to
+obtain the original behavior.</p>
+<h3 id="explicit-mathematical-parents">Explicit mathematical
+parents</h3>
+<p><code>zzp{p}</code> keeps the modulus in the type, so different
+moduli cannot be mixed accidentally. <code>ZZPField</code>,
+<code>ExtensionField</code>, and <code>ZechField</code> make runtime
+parent relationships explicit.</p>
+<h3 id="canonical-and-exact-representations">Canonical and exact
+representations</h3>
+<p>Prime-field elements are always stored in <code>0:p-1</code>.
+Polynomial coefficients are stored low degree first. Zech elements use
+isbits integer representatives with a parent-table identifier.</p>
+<h3 id="acceleration-with-safe-fallbacks">Acceleration with safe
+fallbacks</h3>
+<p>The package prefers degree-based and representation-based
+acceleration rather than one universal algorithm. Unsupported NTT
+lengths, large coefficient bounds, or failed LLL verification trigger a
+safe fallback.</p>
+<h3 id="verification-as-part-of-the-implementation">Verification as part
+of the implementation</h3>
+<p>The LLL fast path checks the returned basis and transformation with
+exact rational GSO. Polynomial acceleration is tested by comparing every
+result with schoolbook and direct convolution.</p>
+<h2 id="limitations">Limitations</h2>
+<ul>
+<li>This is not a full replacement for every NTL module.
+Arbitrary-precision real numbers (<code>RR</code>), HNF, BKZ, complete
+integer-polynomial factorization, and C++ ABI compatibility are not
+included.</li>
+<li>Radix-two NTT requires a power-of-two transform length and an
+appropriate root of unity.</li>
+<li>Generalized FFT currently supports scalar modular coefficients;
+extension-field coefficients require other multiplication paths.</li>
+<li>Zech tables require a primitive generator and are limited to fields
+with at most 65,535 elements.</li>
+<li>Fast LLL is intended for reproducible exact arithmetic on modest
+bases, not as a replacement for NTL’s highly tuned large-basis reduction
+routines.</li>
+<li>Polynomial factorization and matrix algorithms are not claimed to
+match C++ NTL’s performance for very large inputs.</li>
+</ul>
+<h2 id="faq-for-beginners">FAQ for beginners</h2>
+<h3 id="why-does-zzp15-fail">Why does <code>zzp(15)</code> fail?</h3>
+<p><code>zzp</code> represents a prime field. Fifteen is composite. Use
+<code>ZZP(15)</code> if you intentionally need a modular ring, and
+remember that only units have inverses.</p>
+<h3 id="why-is-f2-zero-when-f-zzp2">Why is <code>F(2)</code> zero when
+<code>F = zzp(2)</code>?</h3>
+<p>Construction always reduces modulo the field modulus:
+<code>2 mod 2 = 0</code>.</p>
+<h3 id="why-can-i-not-add-zzp71-to-zzp111">Why can I not add
+<code>zzp{7}(1)</code> to <code>zzp{11}(1)</code>?</h3>
+<p>They belong to different fields. Choose one parent explicitly instead
+of relying on an implicit and potentially incorrect conversion.</p>
+<h3 id="why-does-collectf-use-memory-even-though-iteration-is-lazy">Why
+does <code>collect(F)</code> use memory even though iteration is
+lazy?</h3>
+<p>Iteration produces elements one at a time, but <code>collect</code>
+allocates a vector of all <code>p</code> elements. Use
+<code>length(F)</code> for size and <code>for x in F</code> for lazy
+traversal.</p>
+<h3 id="why-does-ntt-report-that-n-must-divide-p-1">Why does NTT report
+that <code>n</code> must divide <code>p-1</code>?</h3>
+<p>A primitive <code>n</code>-th root of unity exists in
+<code>F_p</code> only when <code>n</code> divides <code>p-1</code>. If
+that condition fails, automatic multiplication uses generalized FFT or
+Karatsuba instead.</p>
+<h3 id="why-does-generalized-fft-sometimes-use-other-primes">Why does
+generalized FFT sometimes use other primes?</h3>
+<p>It allows convolution when the original field lacks a suitable root.
+Exact integer bounds and CRT ensure that the reconstructed result is
+correct before reduction to the original modulus.</p>
+<h3 id="when-should-i-use-zech_field-instead-of-extension_field">When
+should I use <code>zech_field</code> instead of
+<code>extension_field</code>?</h3>
+<p>Use it for frequent multiplication, inversion, and powers in a small
+extension. It builds a discrete-log table once and then performs fast
+table-based operations. For large extensions or polynomial-heavy theory,
+use the ordinary extension representation.</p>
+<h3 id="is-verify-false-in-lll-unsafe">Is <code>verify = false</code> in
+LLL unsafe?</h3>
+<p>It does not change the integer arithmetic of the basis or
+transformation, but it skips the additional exact verification step. Use
+it only when you intentionally want to avoid that cost.</p>
+<h2 id="contributing">Contributing</h2>
+<p>Contributions should preserve the package’s verification-first
+style.</p>
+<ol type="1">
+<li>Add mathematical identities and regression tests before
+optimizing.</li>
+<li>Compare with schoolbook, direct convolution, or C++ NTL where
+practical.</li>
+<li>Keep the original algorithm available as an explicit fallback.</li>
+<li>Document supported moduli, parent requirements, complexity, and
+failure modes.</li>
+<li>Run the full test suite and all examples before pushing.</li>
+<li>Update <code>README.md</code>, <code>docs/index.html</code>, and
+relevant examples for every public interface change.</li>
+</ol>
+<p>Useful invariants include <code>U*A == B</code>,
+<code>abs(det_exact(U)) == 1</code>, factor reconstruction,
+<code>A*x == b</code>, and exact coefficient reconstruction.</p>
+<h1 id="documentation-appendices">Documentation appendices</h1>
+<h2 id="a.-run-the-complete-api-tour">A. Run the complete API tour</h2>
+<p>The HTML manual contains the entire README above and the complete
+executable tour below. The source file is <a
+href="../examples/api_tour.jl">examples/api_tour.jl</a>. From the package
+root, run:</p>
+<pre class="bash"><code>julia --project=. examples/api_tour.jl</code></pre>
+<p>A successful run ends with
+<code>API tour completed successfully.</code> The tour covers all
+<strong>136 exported names</strong>, including the two compatibility
+aliases, and checks results with assertions rather than merely printing
+them.</p>
+<h2 id="b.-complete-executable-api-tour">B. Complete executable API
+tour</h2>
+<pre class="julia"><code>using NTL
+using Random
+using Test
+using Statistics
 
-      <section id="polynomials">
-        <div class="section-heading"><span class="section-label">04 / Polynomials</span><h2>From Euclidean arithmetic to factorization</h2></div>
-        <div class="section-content">
-          <p>Coefficients are stored from low degree to high degree, and trailing zeros are normalized. The zero polynomial has degree <code>-1</code>. Constructors accept any supported parent, including an extension-field object.</p>
-          <div class="code-panel">
-            <div class="code-caption">Factorization over F_97</div>
-            <pre><code>F = zzp(97)
-x = xpoly(F)
-f = (x+1)^3 * (x^2+x+1) * (x^4+3x+5)
-fac = factor(f; rng=MersenneTwister(2026))
+# This tour exercises every exported interface in the current module.
 
-@assert reconstruct(fac) == f
-@assert all(is_irreducible(g) for (g,m) in fac.factors)
+# Prime-field metadata and arithmetic -----------------------------------------
+@assert zzp_Min == 2
+@assert zzp_Max &gt; zzp_Min
+F = zzp(101)
+@assert modulus(F) == 101
+@assert characteristic(F) == 101
+@assert parent(F(1)) == F
+@assert info(zzp).minimum_modulus == 2
+@assert info(F).modulus == 101
+@assert info(F(3)).representative == 3
 
-m = BuildIrred(F, 6)
-a = PowerMod(x+1, big(10)^100, m)</code></pre>
-          </div>
-          <h3>Binary polynomials and extension fields</h3>
-          <div class="code-panel">
-            <div class="code-caption">GF(2^8) with the AES polynomial</div>
-            <pre><code>x = GF2X(2)  # bit i stores coefficient x^i
-m = x^8 + x^4 + x^3 + x + 1
-E = GF2E(m)
-a = gen(E) + 1
+x, y = F(3), F(4)
+@assert rep(x) == 3
+@assert Int(x) == 3
+@assert BigInt(x) == 3
+@assert zero(F) == F(0)
+@assert one(F) == F(1)
+@assert oneunit(F) == F(1)
+@assert zero(x) == zero(F)
+@assert one(x) == one(F)
+@assert oneunit(x) == one(F)
+@assert iszero(zero(F))
+@assert isone(one(F))
+@assert !iszero(x)
+@assert !isone(y)
+@assert x + y == F(7)
+@assert x - y == F(100)
+@assert -x == F(98)
+@assert x * y == F(12)
+@assert x / y == F(3 * inv(y))
+@assert add(x, y) == x + y
+@assert sub(x, y) == x - y
+@assert negate(x) == -x
+@assert mul(x, y) == x * y
+@assert sqr(x) == x * x
+@assert divide(x, y) == x / y
+@assert power(x, 3) == x^3
+@assert inv(x) * x == one(F)
+@assert muladd(x, y, x) == x * y + x
+@assert swap(x, y) == (y, x)
 
-@assert cardinality(E) == 256
-@assert a^255 == one(E)
-@assert a * inv(a) == one(E)</code></pre>
-          </div>
-          <div class="note"><strong>Generic extension-field polynomials.</strong> <code>xpoly(E)</code> creates another polynomial layer over an extension. The same arithmetic and finite-field factorization algorithms then operate on <code>ExtensionElem</code> coefficients.</div>
-        </div>
-      </section>
+# Low-level modular helpers ----------------------------------------------------
+@assert AddMod(100, 2, 101) == 1
+@assert SubMod(1, 2, 101) == 100
+@assert NegateMod(1, 101) == 100
+@assert MulMod(3, 4, 101) == 12
+@assert SqrMod(3, 101) == 9
+@assert InvMod(3, 101) == 34
+@assert InvModStatus(3, 101) == (true, 34)
+@assert InvModStatus(0, 101) == (false, 0)
+@assert PowerMod(3, -1, 101) == 34
+@assert PowerMod(3, big(1000), 101) == 1
 
-      <section id="matrix-lattice">
-        <div class="section-heading"><span class="section-label">05 / Exact linear algebra</span><h2>Matrices and LLL with checkable invariants</h2></div>
-        <div class="section-content">
-          <p>Field matrices use pivoting and Gauss–Jordan elimination. Integer determinants use fraction-free Bareiss elimination. LLL uses exact rational Gram–Schmidt data, size reduction, and the Lovász condition.</p>
-          <div class="code-panel">
-            <div class="code-caption">examples/07_matrix_lattice.jl — excerpt</div>
-            <pre><code>F = zzp(101)
-A = F.([2 3 1; 4 1 5; 3 7 2])
-b = F.([1,2,3])
-@assert A * solve(A,b) == b
-@assert A * matrix_inverse(A) == F.([1 0 0; 0 1 0; 0 0 1])
+@assert VectorConv(F, [-1, 0, 2, 103]) == F.([100, 0, 2, 2])
+@assert length(VectorRandom(F, 4; rng = MersenneTwister(1))) == 4
+@assert random_zzp(F; rng = MersenneTwister(2)) isa F
+@assert VectorMulMod([1, 2, 3], 3, 101) == [3, 6, 9]
+out = zeros(Int, 3)
+@assert VectorMulMod!(out, [1, 2, 3], 3, 101) === out
+@assert out == [3, 6, 9]
 
-A0 = BigInt[1 1 1; -1 0 2; 3 5 6]
-reduced = lll(A0)
-B, U = reduced.basis, reduced.transform
-@assert U * A0 == B
-@assert abs(det_exact(U)) == 1</code></pre>
-          </div>
-          <p>LLL accepts full-rank integer row bases. The returned transformation makes the result independently checkable without relying on approximate floating-point reconstruction.</p>
-        </div>
-      </section>
+# Arbitrary-precision modular rings -------------------------------------------
+R = ZZP(12)
+@assert R isa ZZPField
+@assert R(5) isa ZZp
+@assert ZZ_p === ZZp # Legacy alias retained for compatibility.
+@assert ZZp(R, 5) == R(5)
+@assert modulus(R) == 12
+@assert characteristic(R) == 12
+@assert R(5) * R(5) == R(1)
+@assert rep(R(-1)) == 11
+@assert BigInt(R(5)) == 5
+@assert parent(R(5)) == R
+@assert zero(R) == R(0)
+@assert one(R) == R(1)
+@assert oneunit(R) == R(1)
+@assert R(5) * inv(R(5)) == one(R)
+@assert R(5)^(-1) == inv(R(5))
+@test_throws DomainError inv(R(6))
+@test_throws ErrorException R(1) + zzp(7)(1)
+@assert length(VectorRandom(R, 2; rng = MersenneTwister(3))) == 2
+@assert VectorConv(R, [-1, 2, 13]) == R.([-1, 2, 13])
+@assert random_zzp(R; rng = MersenneTwister(4)) isa ZZp
 
-      <section id="transforms">
-        <div class="section-heading"><span class="section-label">06 / NTT</span><h2>Primitive roots and fast convolution</h2></div>
-        <div class="section-content">
-          <p>The radix-two transform requires a power-of-two length <code>n</code> dividing <code>p-1</code>. <code>ntt_convolve</code> chooses the next power of two for the linear-convolution length and throws a clear error if the selected field cannot support it.</p>
-          <div class="code-panel">
-            <div class="code-caption">examples/08_ntt_convolution.jl</div>
-            <pre><code>F = zzp(257)       # 257-1 = 256
-omega = root_of_unity(32, F)
-a = rand(MersenneTwister(2026), F, 32)
-@assert intt(ntt(a)) == a
+# Number theory ----------------------------------------------------------------
+@assert ProbPrime(101)
+@assert !ProbPrime(341)
+@assert MillerWitness(341, 2)
+@assert !MillerWitness(101, 2)
+@assert NextPrime(100) == 101
+@assert PrevPrime(100) == 97
+@assert ndigits(GenPrime(16; rng = MersenneTwister(5)), base = 2) == 16
+@assert 0 &lt;= RandomBits(12; rng = MersenneTwister(6)) &lt; (big(1) &lt;&lt; 12)
+@assert ndigits(RandomLen(12; rng = MersenneTwister(7)), base = 2) == 12
+@assert 0 &lt;= RandomBnd(100; rng = MersenneTwister(8)) &lt; 100
+@assert FactorInt(99991 * 10007) == [(10007, 1), (99991, 1)]
+@assert EulerPhi(36) == 12
+@assert CRT([2, 3, 2], [3, 5, 7]) == (23, 105)
+r = SqrRootMod(10, 13)
+@assert r !== nothing &amp;&amp; r^2 % 13 == 10
+@assert SqrRootMod(2, 13) === nothing
+@assert DiscreteLog(2, 8, 13) == 3
+@assert PrimitiveRoot(97) == 5
+@assert primitive_root(F) != 0
 
-u = rand(MersenneTwister(7), F, 100)
-v = rand(MersenneTwister(8), F, 80)
-@assert ntt_convolve(u,v) == convolve(u,v)</code></pre>
-          </div>
-        </div>
-      </section>
+# Dense polynomials -------------------------------------------------------------
+P = F
+x = xpoly(P)
+f = poly(P, [1, 2, 3])
+@assert poly_mul(f, x + 1) == f * (x + 1)
+@assert field(f) == P
+@assert coefficients(f) == P.([1, 2, 3])
+@assert coeff(f, 0) == 1
+@assert coeff(f, 2) == 3
+@assert coeff(f, 20) == 0
+@assert degree(f) == 2 == deg(f)
+@assert LeadCoeff(f) == 3
+@assert ConstTerm(f) == 1
+@assert leading(f) == 3
+setcoeff!(f, 3, 4)
+@assert coeff(f, 3) == 4
+f = poly(P, [1, 2, 3])
+@assert monic(2x^2 + 1) == x^2 + P(51)
+@assert ismonic(monic(f))
+@assert LeftShift(f, 2) == x^2 * f
+@assert RightShift(LeftShift(f, 2), 2) == f
+q, r = DivRem(f^2, x + 1)
+@assert q * (x + 1) + r == f^2
+@assert GCD((x + 1)^2, x + 1) == x + 1
+d, s, t = XGCD(x^2 + 1, x + 1)
+@assert d == s * (x^2 + 1) + t * (x + 1)
+@assert derivative(f) == 2 + 6x
+@assert diff(f) == derivative(f)
+@assert evaluate(f, 2) == 17
+@assert evaluate(f, [0, 1, 2]) == P.([1, 6, 17])
+@assert compose(f, x + 1) == 3x^2 + 8x + 6
+@assert CompMod(f, x + 1, x^2 + 1) == rem(compose(f, x + 1), x^2 + 1)
+@assert truncate(f^3, 2) == poly(P, [1, 6])
+@assert MulTrunc(f, x + 1, 2) == truncate(f * (x + 1), 2)
+@assert truncate((1 + x + x^2) * InvTrunc(1 + x + x^2, 3), 3) == one(f)
+@assert MulMod(f, x + 1, x^2 + 1) == rem(f * (x + 1), x^2 + 1)
+@assert rem(InvMod(x + 1, x^2 + 1) * (x + 1), x^2 + 1) == one(f)
+@assert InvModStatus(x + 1, x^2 + 1)[1]
+@assert PowerMod(x + 1, 3, x^2 + 1) == rem((x + 1)^3, x^2 + 1)
+@assert random_poly(P, 4) isa ModPoly
+@assert BuildFromRoots(P, [1, 2]) == x^2 - 3x + 2
+@assert evaluate(interpolate(P, [0, 1, 2], [1, 2, 5]), [0, 1, 2]) == P.([1, 2, 5])
+@assert !isempty(SquareFreeDecomp((x + 1)^2 * (x + 2)))
+@assert !isempty(DistinctDegreeDecomp((x + 1) * (x + 2)))
+@assert !isempty(EqualDegreeSplit((x + 1) * (x + 2), 1))
+fac = factor((x + 1)^2 * (x + 2))
+@assert fac isa PolyFactorization
+@assert reconstruct(fac) == (x + 1)^2 * (x + 2)
+@assert all(is_irreducible(g) for (g, _) in fac.factors)
+@assert is_irreducible(BuildIrred(P, 3))
+@assert !isempty(FindRoots((x - 1) * (x - 2)))
+@assert FindRoot(x - 2) == P(2)
 
-      <section id="api">
-        <div class="section-heading"><span class="section-label">07 / API</span><h2>Grouped function index</h2></div>
-        <div class="section-content">
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>Layer</th><th>Principal entry points</th></tr></thead>
-              <tbody>
-                <tr><td>Machine fields</td><td><code>zzp, rep, modulus, zero, one, inv, power, AddMod, SubMod, MulMod, InvMod, PowerMod</code></td></tr>
-                <tr><td>Big modular rings</td><td><code>ZZP, ZZPField, ZZ_p, parent, cardinality, rand, VectorConv</code></td></tr>
-                <tr><td>Primes and integers</td><td><code>ProbPrime, MillerWitness, NextPrime, PrevPrime, GenPrime, RandomBits, RandomLen, RandomBnd</code></td></tr>
-                <tr><td>Number theory</td><td><code>FactorInt, EulerPhi, CRT, SqrRootMod, DiscreteLog, PrimitiveRoot</code></td></tr>
-                <tr><td>Polynomial basics</td><td><code>poly, xpoly, field, coeff, coefficients, degree, LeadCoeff, setcoeff!, monic</code></td></tr>
-                <tr><td>Polynomial algorithms</td><td><code>DivRem, GCD, XGCD, derivative, evaluate, compose, interpolate, MulTrunc, InvTrunc, MulMod, PowerMod</code></td></tr>
-                <tr><td>Factorization</td><td><code>SquareFreeDecomp, DistinctDegreeDecomp, EqualDegreeSplit, factor, reconstruct, is_irreducible, BuildIrred, FindRoots</code></td></tr>
-                <tr><td>Binary layer</td><td><code>GF2, GF2X, bits, weight, NumBits, NumBytes, random_GF2X, BuildIrredGF2X</code></td></tr>
-                <tr><td>Extensions</td><td><code>extension_field, GF2E, zech_field, ZechElem, gen, defining_polynomial, extension_degree, cardinality, trace, norm, extension_element</code></td></tr>
-                <tr><td>Acceleration</td><td><code>poly_mul, fft_convolve, set_polynomial_acceleration!, polynomial_acceleration</code></td></tr>
-                <tr><td>Matrices</td><td><code>det, det_exact, rref, rank, solve, matrix_inverse, nullspace</code></td></tr>
-                <tr><td>Lattice</td><td><code>gram_schmidt_exact, lll(mode=:fast, verify=true), lll(mode=:exact), LLL</code></td></tr>
-                <tr><td>Transforms</td><td><code>primitive_root, root_of_unity, ntt, intt, convolve, ntt_convolve</code></td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
+# GF2 and bit-packed GF2X -------------------------------------------------------
+@assert GF2(0) == GF2(0)
+@assert GF2(1) + GF2(1) == GF2(0)
+@assert GF2(1) * GF2(1) == GF2(1)
+@assert Int(GF2(1)) == 1
+@assert zero(GF2) == GF2(0)
+@assert one(GF2) == GF2(1)
+@assert oneunit(GF2) == GF2(1)
+@assert iszero(GF2(0))
+@assert isone(GF2(1))
+g = GF2X(2)
+@assert bits(g) == 2
+@assert weight(g^2 + g + 1) == 3
+@assert NumBits(g^2 + 1) == 3
+@assert NumBytes(g^2 + 1) == 1
+@assert random_GF2X(5) isa GF2X
+@assert to_modpoly(g^2 + 1) isa ModPoly
+@assert from_modpoly(to_modpoly(g^2 + 1)) == g^2 + 1
+@assert BuildIrredGF2X(3) isa GF2X
+@assert is_irreducible(BuildIrredGF2X(3))
+@assert (g + 1)^2 == g^2 + 1
+facg = factor((g + 1)^3 * (g^2 + g + 1)^2)
+@assert facg isa GF2XFactorization
+@assert reconstruct(facg) == (g + 1)^3 * (g^2 + g + 1)^2
 
-      <section id="verification">
-        <div class="section-heading"><span class="section-label">08 / Proof</span><h2>Verification built into the package</h2></div>
-        <div class="section-content">
-          <p>The original prime-field suite remains unchanged and passing. New tests exercise each added algorithm with mathematical identities and independent reference computations where practical.</p>
-          <div class="status-line"><span>4,335,143 assertions passed</span><span>8 examples executed</span><span>Julia 1.11.7 verified</span></div>
-          <div class="mapping">
-            <div class="mapping-row"><span>Scalar arithmetic</span><span>Exhaustive small-modulus comparison with independent <code>BigInt</code> results and overflow-boundary tests.</span></div>
-            <div class="mapping-row"><span>Polynomials</span><span>Division identity, XGCD identity, inverse identities, factor reconstruction, irreducibility, roots with multiplicity, and p-th-power branches.</span></div>
-            <div class="mapping-row"><span>Matrices</span><span><code>A*x=b</code>, inverse products, determinant identities, RREF pivots, and nullspace annihilation.</span></div>
-            <div class="mapping-row"><span>LLL</span><span>Transformation identity, unimodular determinant, size-reduction bounds, and Lovász inequalities.</span></div>
-            <div class="mapping-row"><span>NTT</span><span>Round-trip equality and direct schoolbook-versus-transform convolution comparison.</span></div>
-          </div>
-          <h3>Eight executable workflows</h3>
-          <p><code>01_basic_arithmetic.jl</code>, <code>02_vectors_and_random.jl</code>, <code>03_linear_system.jl</code>, <code>04_number_theory.jl</code>, <code>05_polynomial_factorization.jl</code>, <code>06_extension_gf2.jl</code>, <code>07_matrix_lattice.jl</code>, and <code>08_ntt_convolution.jl</code>.</p>
-        </div>
-      </section>
+# Extension fields --------------------------------------------------------------
+E = extension_field(P, x^2 + 2)
+@assert E isa ExtensionField
+@assert ExtensionElem === ZZpE # Legacy alias retained for compatibility.
+@assert base_field(E) == P
+@assert defining_polynomial(E) == x^2 + 2
+@assert extension_degree(E) == 2
+@assert cardinality(E) == modulus(P)^2
+@assert gen(E)^2 == E(-2)
+@assert trace(gen(E)) == P(0)
+@assert norm(gen(E)) == P(2)
+@assert parent(gen(E)) == E
+@assert rep(gen(E)) isa ModPoly
+@assert modulus(gen(E)) == defining_polynomial(E)
+@assert characteristic(gen(E)) == 101
+@assert iszero(zero(E))
+@assert isone(one(E))
+@assert zero(gen(E)) == zero(E)
+@assert one(gen(E)) == one(E)
+@assert oneunit(gen(E)) == one(E)
+@test_throws DomainError inv(zero(E))
+@assert ZZpE(E, [1, 1]) == E([1, 1])
+@assert ZZpE(E, 2) == E(2)
+@assert ZZpE(E, x^3 + 1) == E(x^3 + 1)
+@assert degree(rep(ZZpE(E, x^3 + 1))) &lt; extension_degree(E)
+@assert ZZpE(E, gen(E)) == gen(E)
+@assert ZZpE(E, gen(E)) isa ZZpE
 
-      <section id="acceleration">
-        <div class="section-heading"><span class="section-label">09 / Speed</span><h2>Optional polynomial acceleration</h2></div>
-        <div class="section-content">
-          <p>Acceleration is enabled by default. It selects Karatsuba for medium degrees and NTT for large supported prime fields; the original schoolbook remains available as an explicit opt-out. If the required NTT length does not divide <code>p-1</code>, the implementation falls back to Karatsuba.</p>
-          <div class="code-panel"><div class="code-caption">Default acceleration and original fallback</div><pre><code>using NTL
+a = ZZpE(E, [1, 2]) # 1 + 2t, where t = gen(E) and t^2 = -2
+b = ZZpE(E, [2, 1])
+@assert coefficients(rep(a)) == P.([1, 2])
+@assert a + b == E([3, 3])
+@assert a - b == E([-1, 1])
+@assert -a == E([-1, -2])
+@assert a * b == E(rem(rep(a) * rep(b), defining_polynomial(E)))
+@assert sqr(a) == a^2
+@assert a * inv(a) == one(E)
+@assert a / b == a * inv(b)
+@assert power(a, 3) == a^3
+@assert a^(-2) == inv(a)^2
+@assert rand(MersenneTwister(13), E) isa ZZpE
+@assert length(rand(MersenneTwister(14), E, 2)) == 2
+u = xpoly(E)
+@assert evaluate(u^2 + a, zero(E)) == a
+
+g2 = GF2X(2)
+E2 = GF2E(g2^2 + g2 + 1)
+@assert cardinality(E2) == 4
+@assert gen(E2)^3 == one(E2)
+
+# Zech extension representation --------------------------------------------------
+Z = zech_field(E)
+@assert Z isa ZechField
+z = ZechElem(Z, Z._generator)
+@assert parent(z) == Z
+@assert rep(z) isa Int
+@assert Int(z) == rep(z)
+@assert modulus(z) == defining_polynomial(E)
+@assert characteristic(z) == 101
+@assert extension_degree(Z) == 2
+@assert cardinality(Z) == cardinality(E)
+@assert extension_field(Z) == E
+@assert extension_element(z) isa ZZpE
+@assert length(Z) == cardinality(Z)
+@assert length(collect(Z)) == cardinality(Z)
+@assert iszero(zero(Z))
+@assert isone(one(Z))
+@assert zero(z) == zero(Z)
+@assert one(z) == one(Z)
+@assert oneunit(z) == one(Z)
+@assert z * inv(z) == one(Z)
+@assert z^(cardinality(Z) - 1) == one(Z)
+@assert muladd(z, z, one(z)) == z * z + one(z)
+@assert iszero(ZechElem(Z, 0))
+@assert isone(ZechElem(Z, 1))
+@assert hash(z) == hash(z)
+@assert rand(MersenneTwister(9), Z) isa ZechElem
+@assert rand(MersenneTwister(10), Z, 2) isa Vector
+
+# Matrices ----------------------------------------------------------------------
+A = P.([2 3 1; 4 1 5; 3 7 2])
+b = P.([1, 2, 3])
+@assert det(A) != 0
+@assert det_exact(BigInt.(A)) != 0
+@assert rank(A) == 3
+@assert A * solve(A, b) == b
+@assert A * matrix_inverse(A) == P.([1 0 0; 0 1 0; 0 0 1])
+S = P.([1 2 3; 2 4 6; 0 1 1])
+@assert iszero(det(S))
+@assert rank(S) == 2
+R, pivots = rref(S)
+@assert pivots == [1, 2]
+K = nullspace(S)
+@assert length(K) == 1
+@assert all(iszero, S * K[1])
+
+B = BigInt[1 1 1; -1 0 2; 3 5 6]
+result = lll(B)
+@assert result.transform * B == result.basis
+@assert abs(det_exact(result.transform)) == 1
+@assert result.verified
+@assert result.mode == :fast
+@assert LLL(B).basis == result.basis
+@assert gram_schmidt_exact(result.basis) isa Tuple
+
+# NTT, generalized FFT, and acceleration -----------------------------------------
+NTT_F = zzp(193) # 64 divides 193 - 1, so both 32- and 64-point transforms are valid.
+omega = root_of_unity(32, NTT_F)
+@assert omega^32 == one(omega)
+va = rand(MersenneTwister(11), NTT_F, 32)
+@assert intt(ntt(va)) == va
+vb = rand(MersenneTwister(12), NTT_F, 32)
+@assert ntt_convolve(va, vb) == convolve(va, vb)
+@assert fft_convolve(va, vb) == convolve(va, vb)
+@assert !isempty(FFT_PRIMES)
 
 set_polynomial_acceleration!(true)
 @assert polynomial_acceleration()
-
-F = zzp(998244353)
-f = random_poly(F, 600)
-g = random_poly(F, 600)
-result = poly_mul(f, g)
-
-set_polynomial_acceleration!(false)</code></pre></div>
-          <h3>Compare each path</h3>
-          <div class="code-panel"><div class="code-caption">Explicit method selection</div><pre><code>reference = poly_mul(f, g; method=:schoolbook)
-@assert poly_mul(f, g; method=:karatsuba) == reference
-@assert poly_mul(f, g; method=:ntt) == reference
-@assert poly_mul(f, g; method=:auto) == reference</code></pre></div>
-          <p>The machine-word NTT kernel uses in-place radix-two butterflies with cached roots and raw representatives. This avoids repeated modulus checks and temporary field objects in the hot loop.
-          <h3>Default acceleration versus C++ NTL</h3>
-          <div class="table-wrap"><table><thead><tr><th>Operation</th><th>Before optimization</th><th>Default acceleration</th></tr></thead><tbody>
-            <tr><td>Polynomial multiplication</td><td>1037.62× slower</td><td>23.08× slower</td></tr>
-            <tr><td>NTT convolution</td><td>310.83× slower</td><td>6.83× slower</td></tr>
-            <tr><td>Factorization</td><td>130.76× slower</td><td>65.56× slower</td></tr>
-            <tr><td>Determinant</td><td>226.66× slower</td><td>12.26× slower</td></tr>
-          </tbody></table></div></p>
-          <div class="table-wrap"><table><thead><tr><th>Case</th><th>Schoolbook</th><th>Accelerated</th><th>Speedup</th></tr></thead><tbody>
-            <tr><td>deg 999, p=101, Karatsuba</td><td>111.56 ms</td><td>5.76 ms</td><td>19.4×</td></tr>
-            <tr><td>deg 999, p=998244353, NTT</td><td>111.35 ms</td><td>1.25 ms</td><td>89.4×</td></tr>
-            <tr><td>deg 1999, p=998244353, NTT</td><td>450.10 ms</td><td>2.64 ms</td><td>170.6×</td></tr>
-          </tbody></table></div>
-        </div>
-      </section>
-
-      <section id="boundaries">
-        <div class="section-heading"><span class="section-label">09 / Scope</span><h2>What is—and is not—claimed</h2></div>
-        <div class="section-content">
-          <p>This is a broad, independently tested mathematical core, not a line-for-line or performance-complete replacement for every NTL module.</p>
-          <ul>
-            <li>No C++ ABI compatibility and no attempt to reproduce NTL's global context stack. Parents and Julia type parameters carry the mathematical context instead.</li>
-            <li><code>RR</code>, <code>quad_float</code>, and <code>xdouble</code> are not reimplemented; Julia's <code>BigFloat</code> is the recommended arbitrary-precision real layer.</li>
-            <li>Hermite normal form, full integer-polynomial factorization, Schnorr–Euchner/BKZ reduction, and NTL's platform-specific SIMD or assembly optimizations are not included in version 0.7.0.</li>
-            <li>The exact LLL implementation prioritizes reproducibility and correctness for modest bases, not NTL's highly tuned large-basis throughput.</li>
-            <li>Polynomial acceleration is enabled by default; schoolbook can be selected explicitly or restored with set_polynomial_acceleration!(false).</li>
-          </ul>
-          <p class="note"><strong>Evaluation principle.</strong> Every advertised workflow is runnable from the delivered package. The test command and examples are the demonstration, rather than screenshots of unverified output.</p>
-          <h3>Upstream scope references</h3>
-          <p><a href="https://libntl.org/doc/tour-modules.html">NTL module tour</a> · <a href="https://libntl.org/doc/ZZ_pXFactoring.cpp.html">Polynomial factorization</a> · <a href="https://libntl.org/doc/LLL.cpp.html">LLL interface</a></p>
-        </div>
-      </section>
-    </main>
+set_polynomial_acceleration!(false)
+@assert !polynomial_acceleration()
+set_polynomial_acceleration!(true)
+println(&quot;API tour completed successfully.&quot;)</code></pre>
+<h2 id="c.-exported-interface-index">C. Exported-interface index</h2>
+<p>This index complements the task-oriented API tables in the README. It
+is grouped by implementation layer so that a reader can move from a
+mathematical operation to its source file and then to the corresponding
+call in the tour.</p>
+<div class="table-wrap"><table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Source layer</th>
+<th>Exported names demonstrated in the tour</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>NTL.jl</code></td>
+<td>zzp, zzp_Min, zzp_Max, rep, modulus, characteristic, info, AddMod,
+SubMod, NegateMod, MulMod, SqrMod, InvMod, InvModStatus, PowerMod, add,
+sub, negate, mul, sqr, divide, power, muladd, random_zzp, VectorRandom,
+VectorConv, VectorMulMod, VectorMulMod!, swap</td>
+</tr>
+<tr class="even">
+<td><code>binary.jl</code></td>
+<td>GF2, GF2X, bits, weight, NumBits, NumBytes, random_GF2X,
+GF2XFactorization, BuildIrredGF2X, to_modpoly, from_modpoly</td>
+</tr>
+<tr class="odd">
+<td><code>extension.jl</code></td>
+<td>ExtensionField, ZZpE, ExtensionElem, extension_field, GF2E,
+base_field, defining_polynomial, extension_degree, cardinality, gen,
+trace, norm</td>
+</tr>
+<tr class="even">
+<td><code>fft.jl</code></td>
+<td>fft_convolve, FFT_PRIMES</td>
+</tr>
+<tr class="odd">
+<td><code>lattice.jl</code></td>
+<td>gram_schmidt_exact, lll, LLL</td>
+</tr>
+<tr class="even">
+<td><code>matrix.jl</code></td>
+<td>det, matrix_inverse, solve, rank, nullspace, rref, det_exact</td>
+</tr>
+<tr class="odd">
+<td><code>numbertheory.jl</code></td>
+<td>ProbPrime, MillerWitness, NextPrime, PrevPrime, GenPrime,
+RandomBits, RandomLen, RandomBnd, FactorInt, EulerPhi, CRT, SqrRootMod,
+DiscreteLog, PrimitiveRoot</td>
+</tr>
+<tr class="even">
+<td><code>polynomial.jl</code></td>
+<td>ModPoly, poly, xpoly, field, coefficients, coeff, degree, deg,
+LeadCoeff, ConstTerm, leading, setcoeff!, monic, ismonic, DivRem, GCD,
+XGCD, derivative, diff, evaluate, compose, LeftShift, RightShift,
+truncate, MulTrunc, InvTrunc, MulMod, InvMod, InvModStatus, PowerMod,
+CompMod, random_poly, BuildFromRoots, interpolate, SquareFreeDecomp,
+DistinctDegreeDecomp, EqualDegreeSplit, PolyFactorization, factor,
+reconstruct, is_irreducible, BuildIrred, FindRoots, FindRoot</td>
+</tr>
+<tr class="odd">
+<td><code>polynomial_mul.jl</code></td>
+<td>set_polynomial_acceleration!, polynomial_acceleration, poly_mul</td>
+</tr>
+<tr class="even">
+<td><code>transform.jl</code></td>
+<td>primitive_root, root_of_unity, ntt, intt, convolve,
+ntt_convolve</td>
+</tr>
+<tr class="odd">
+<td><code>zech.jl</code></td>
+<td>ZechField, ZechElem, zech_field, extension_element</td>
+</tr>
+<tr class="even">
+<td><code>zzp_big.jl</code></td>
+<td>ZZPField, ZZp, ZZ_p, ZZP, parent</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="d.-documentation-and-verification-checklist">D. Documentation
+and verification checklist</h2>
+<ul>
+<li>Release documented here: <strong>NTL.jl 0.8.0</strong>, targeting
+Julia 1.9 or later and tested with Julia 1.11.7.</li>
+<li>Full regression suite: <strong>4,335,165 passing
+assertions</strong>.</li>
+<li>Every exported name occurs in at least one executable example in
+<code>api_tour.jl</code>.</li>
+<li>The dedicated <code>ZZpE</code> section includes nine code blocks
+covering parent construction, scalar/vector/polynomial element
+construction, canonical representatives, metadata, arithmetic,
+inversion, powers, trace, norm, random arrays, polynomials over an
+extension, and binary fields.</li>
+<li><code>ZZpE(E, p)</code> and <code>E(p)</code> both reduce polynomial
+input before storing it; the regression suite checks this invariant over
+<code>zzp</code>, <code>ZZP</code>, and <code>GF2</code> base
+fields.</li>
+<li>New code should use <code>ZZp</code> and <code>ZZpE</code>.
+<code>ZZ_p === ZZp</code> and <code>ExtensionElem === ZZpE</code> are
+documented compatibility aliases.</li>
+<li>This page is self-contained: equations use MathML, styling is
+embedded, and no web framework or network connection is required.</li>
+</ul></main>
   </div>
-
   <footer class="footer">
-    <div>NTL.jl · Exact mathematical core · Version 0.7.0</div>
-    <div><a href="#top">Return to top</a></div>
+    <div>NTL.jl · Exact mathematical core · Version 0.8.0</div>
+    <div><a href="#top">Return to top</a> · <a href="../examples/api_tour.jl">API tour source</a></div>
   </footer>
 </div>
 </body>

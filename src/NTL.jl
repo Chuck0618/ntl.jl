@@ -236,6 +236,7 @@ function convert(::Type{zzp{P}}, a::zzp) where {P}
 end
 convert(::Type{T}, a::zzp) where {T<:Integer} = convert(T, rep(a))
 Base.Int(a::zzp) = rep(a)
+Base.BigInt(a::zzp) = BigInt(rep(a))
 promote_rule(::Type{zzp{P}}, ::Type{T}) where {P,T<:Integer} = zzp{P}
 
 show(io::IO, a::zzp{P}) where {P} = print(io, "zzp{", P, "}(", rep(a), ")")

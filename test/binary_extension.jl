@@ -69,6 +69,9 @@ end
         @test extension_degree(E) == 2
         @test base_field(E) == F
         @test defining_polynomial(E) == m
+        direct = ZZpE(E, m + x) # Public polynomial construction must reduce first.
+        @test direct == a
+        @test degree(rep(direct)) < extension_degree(E)
         @test a * inv(a) == one(E)
         @test a^0 == one(E)
         @test a^-1 == inv(a)

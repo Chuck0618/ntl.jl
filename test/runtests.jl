@@ -278,6 +278,7 @@ include("acceleration.jl")
 include("lll_fast.jl")
 include("zech.jl")
 include("elliptic.jl")
+include("naming.jl")
 
 
 @testset "zzp finite-field iteration" begin

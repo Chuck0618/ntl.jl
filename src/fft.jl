@@ -134,7 +134,7 @@ function fft_convolve(a::Vector{zzp{P}}, b::Vector{zzp{P}}) where {P}
     _fft_reconstruct(zzp{P}, _crt_coefficients(residues, moduli, total))
 end
 
-function fft_convolve(a::Vector{ZZ_p}, b::Vector{ZZ_p})
+function fft_convolve(a::Vector{ZZp}, b::Vector{ZZp})
     isempty(a) && return copy(a)
     isempty(b) && return copy(b)
     F = parent(a[1])
