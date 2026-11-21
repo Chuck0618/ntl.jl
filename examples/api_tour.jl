@@ -67,11 +67,20 @@ out = zeros(Int, 3)
 @assert out == [3, 6, 9]
 
 # Arbitrary-precision modular rings -------------------------------------------
-R = ZZP(12)
-@assert R isa ZZPField
-@assert R(5) isa ZZp
-@assert ZZ_p === ZZp # Legacy alias retained for compatibility.
+R = ModRing(12)
+@assert R isa ModRing
+@assert R(5) isa ModInt
+@assert ModInt(R, 5) == R(5)
+
+# NTL-compatible names remain callable, but are not used in everyday examples.
+@assert ModRing === ZZPField
+@assert ModRing === ZZP
+@assert ModInt === ZZp
+@assert ModInt === ZZ_p
+@assert ZZP(12) == R
+@assert ZZPField(12) == R
 @assert ZZp(R, 5) == R(5)
+@assert ZZ_p(R, 5) == R(5)
 @assert modulus(R) == 12
 @assert characteristic(R) == 12
 @assert R(5) * R(5) == R(1)
@@ -87,7 +96,7 @@ R = ZZP(12)
 @test_throws ErrorException R(1) + zzp(7)(1)
 @assert length(VectorRandom(R, 2; rng = MersenneTwister(3))) == 2
 @assert VectorConv(R, [-1, 2, 13]) == R.([-1, 2, 13])
-@assert random_zzp(R; rng = MersenneTwister(4)) isa ZZp
+@assert random_zzp(R; rng = MersenneTwister(4)) isa ModInt
 
 # Number theory ----------------------------------------------------------------
 @assert ProbPrime(101)

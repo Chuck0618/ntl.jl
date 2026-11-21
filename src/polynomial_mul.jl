@@ -59,7 +59,7 @@ function _ntt_length_supported(F, total)
     P = modulus(F)
     n = nextpow(2, total)
     (P - 1) % n == 0 || return false
-    F isa ZZPField ? ProbPrime(P) : true
+    F isa ModRing ? ProbPrime(P) : true
 end
 
 function _poly_mul_ntt(f::ModPoly, g::ModPoly)
@@ -69,7 +69,7 @@ function _poly_mul_ntt(f::ModPoly, g::ModPoly)
     _make_poly(F, ntt_convolve(f._coeffs, g._coeffs))
 end
 
-_fft_parent_supported(F) = (F isa Type && F <: zzp) || F isa ZZPField || F == GF2
+_fft_parent_supported(F) = (F isa Type && F <: zzp) || F isa ModRing || F == GF2
 
 function _poly_mul_fft(f::ModPoly, g::ModPoly)
     F = _check_poly_parents(f, g)

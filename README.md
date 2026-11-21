@@ -4,7 +4,7 @@
 
 NTL.jl is inspired by C++ NTL, but it is not a wrapper or an API clone. It is designed to be approachable for new Julia users while providing efficient, tested implementations for research and teaching.
 
-Version: **0.8.0**<br>
+Version: **0.9.0**<br>
 Tested with: **Julia 1.11.7**<br>
 Compatibility target: **Julia 1.9+**
 
@@ -40,7 +40,7 @@ NTL.jl offers a coherent set of exact-mathematics tools rather than a loose coll
 
 - **Pure Julia:** no C++ compiler, NTL installation, binary artifact, or external Julia package is required for core functionality.
 - **Exact arithmetic:** canonical residues, BigInt coefficients, exact polynomial operations, and verifiable lattice transformations.
-- **Beginner-friendly parents:** `zzp{p}` stores a prime modulus in the type, while `ZZPField` and extension fields use explicit runtime parents.
+- **Beginner-friendly parents:** `zzp{p}` stores a prime modulus in the type, while `ModRing` and extension fields use explicit runtime parents.
 - **Fast when appropriate:** machine-word multiplication, Karatsuba, generalized FFT, Zech discrete-log tables, and fast LLL with exact verification.
 - **Safe fallbacks:** original schoolbook multiplication and exact LLL remain available. Fast paths never change mathematical results.
 - **Tested invariants:** arithmetic is checked against independent BigInt calculations, polynomial identities, factor reconstruction, matrix identities, LLL conditions, and direct convolution.
@@ -65,7 +65,7 @@ Replace `/path/to/NTLJulia` with the directory that contains `Project.toml`.
 julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.test()'
 ```
 
-The current suite contains **4,335,165 passing assertions**. Runtime code depends only on Julia's `Random` standard library; `Test` is used only by the test target.
+The current suite contains **4,335,171 passing assertions**. Runtime code depends only on Julia's `Random` standard library; `Test` is used only by the test target.
 
 ### HTML documentation
 
@@ -159,42 +159,42 @@ result = lll(A)  # fast by default, with exact verification
 | Need | Recommended parent | Why |
 |---|---|---|
 | Fast prime-field arithmetic with an `Int` modulus | `zzp(p)` | Type-level modulus, canonical `Int` representation, field iteration |
-| Arbitrary-precision modulus, including a composite one | `ZZP(n)` | BigInt representation and explicit runtime parent |
+| Arbitrary-precision modulus, including a composite one | `ModRing(n)` | BigInt representation and explicit runtime parent |
 | Binary field arithmetic | `GF2` | XOR/AND arithmetic and bit-packed polynomials |
 | General polynomial extension | `extension_field(F, m)` | Polynomial quotient `F[x]/(m)` |
 | Frequent arithmetic in a small extension | `zech_field(E)` | Discrete-log multiplication, inversion, and powers |
 
-### `zzp` versus `ZZP`
+### `zzp` versus `ModRing`
 
 ```julia
 using Test
 
-F = zzp(101)             # machine-word prime field
-R = ZZP(12)              # arbitrary-precision modular ring
+F = zzp(101)             # Machine-word prime field
+R = ModRing(12)          # Arbitrary-precision modular ring
 
 @assert R(5) * R(5) == R(1)
 @test_throws DomainError inv(R(6))
 ```
 
-`zzp` deliberately requires a prime modulus. `ZZP` also permits composite moduli, but only units are invertible.
+`zzp` deliberately requires a prime modulus. `ModRing` also permits composite moduli, but only units are invertible.
 
-The three names in the arbitrary-precision interface have different roles:
+The modular-ring interface has two primary names with distinct roles:
 
-- `ZZP(n)` constructs a reusable parent of type `ZZPField`;
-- `ZZp` is the element type, and `ZZp(R, a)` constructs an element directly;
-- `ZZ_p` is retained only as a compatibility alias for `ZZp`; new code should use `ZZp`.
+- `ModRing(n)` constructs a reusable parent of type `ModRing`;
+- `ModInt` is the element type. Prefer `R(a)` for ordinary construction and use `ModInt(R, a)` when an explicit type spelling is helpful.
 
 ```julia
-R = ZZP(12)
-a = ZZp(R, 17)
+R = ModRing(12)
+a = R(17)
 
-@assert R isa ZZPField
-@assert a isa ZZp
+@assert R isa ModRing
+@assert a isa ModInt
 @assert a == R(5)
 @assert rep(a) == 5
+@assert ModInt(R, 17) == a
 ```
 
-For extension fields, prefer the parent call `E(c)` in ordinary code. `ExtensionElem` provides a descriptive type name when an explicit annotation improves readability; the NTL naming correspondence is explained below.
+The older NTL-facing names remain available for compatibility: `ZZP` and `ZZPField` are aliases of `ModRing`; `ZZp` and `ZZ_p` are aliases of `ModInt`. They are intentionally kept out of everyday examples so that readers do not need to distinguish names that differ only by capitalization.
 
 ## Everyday operations
 
@@ -824,8 +824,8 @@ y = powermod(g, 42, 97)
 | `InvMod`, `InvModStatus` | Inverse or a nonthrowing status result |
 | `PowerMod` | Binary modular powering with negative-exponent support |
 | `muladd(x,y,z)` | Fused `x*y+z` |
-| `ZZP(n)` | Construct an arbitrary-precision modular parent |
-| `ZZPField`, `ZZp` | Parent and element types; `ZZp(R,a)` is direct element construction |
+| `ModRing(n)` | Construct an arbitrary-precision modular parent |
+| `ModRing`, `ModInt` | Parent and element types; `ModInt(R,a)` is direct element construction |
 | `rep`, `parent`, `modulus`, `characteristic` | Canonical representative and parent metadata |
 | `rand`, `VectorRandom`, `VectorConv` | Random elements and vector conversion |
 
@@ -877,7 +877,7 @@ NTLJulia/
 │   └── index.html
 ├── src/
 │   ├── NTL.jl              # Module entry, prime fields, low-level arithmetic
-│   ├── zzp_big.jl          # Arbitrary-precision modular rings
+│   ├── zzp_big.jl          # ModRing parents and ModInt elements
 │   ├── numbertheory.jl     # Primality, factorization, CRT, roots, discrete logs
 │   ├── polynomial.jl       # Dense polynomials and factorization
 │   ├── polynomial_mul.jl   # Schoolbook, Karatsuba, and acceleration strategies
@@ -1004,7 +1004,7 @@ Fast paths are checked against the original algorithms. A user can always reques
 
 ### Explicit mathematical parents
 
-`zzp{p}` keeps the modulus in the type, so different moduli cannot be mixed accidentally. `ZZPField`, `ExtensionField`, and `ZechField` make runtime parent relationships explicit.
+`zzp{p}` keeps the modulus in the type, so different moduli cannot be mixed accidentally. `ModRing`, `ExtensionField`, and `ZechField` make runtime parent relationships explicit.
 
 ### Canonical and exact representations
 
@@ -1031,7 +1031,7 @@ The LLL fast path checks the returned basis and transformation with exact ration
 
 ### Why does `zzp(15)` fail?
 
-`zzp` represents a prime field. Fifteen is composite. Use `ZZP(15)` if you intentionally need a modular ring, and remember that only units have inverses.
+`zzp` represents a prime field. Fifteen is composite. Use `ModRing(15)` if you intentionally need a modular ring, and remember that only units have inverses.
 
 ### Why is `F(2)` zero when `F = zzp(2)`?
 

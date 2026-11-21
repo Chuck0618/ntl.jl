@@ -55,7 +55,7 @@ modulus(E::ExtensionField) = defining_polynomial(E)
 characteristic(E::ExtensionField) = characteristic(base_field(E))
 
 cardinality(::Type{zzp{P}}) where {P} = BigInt(P)
-cardinality(F::ZZPField) = modulus(F)
+cardinality(F::ModRing) = modulus(F)
 cardinality(::Type{GF2}) = BigInt(2)
 cardinality(E::ExtensionField) = cardinality(base_field(E))^extension_degree(E)
 _field_order(E::ExtensionField) = cardinality(E)

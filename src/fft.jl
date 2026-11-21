@@ -26,7 +26,7 @@ function _fft_direct_supported(F, total)
     P = modulus(F)
     n = nextpow(2, total)
     (P - 1) % n == 0 || return false
-    F isa ZZPField ? ProbPrime(P) : true
+    F isa ModRing ? ProbPrime(P) : true
 end
 
 function _fft_prime_plan(bound::BigInt, total::Int)
@@ -106,7 +106,7 @@ function _fft_reconstruct(::Type{zzp{P}}, residues::Vector{BigInt}) where {P}
     zzp{P}.(residues)
 end
 
-function _fft_reconstruct(F::ZZPField, residues::Vector{BigInt})
+function _fft_reconstruct(F::ModRing, residues::Vector{BigInt})
     F.(residues)
 end
 
@@ -134,7 +134,7 @@ function fft_convolve(a::Vector{zzp{P}}, b::Vector{zzp{P}}) where {P}
     _fft_reconstruct(zzp{P}, _crt_coefficients(residues, moduli, total))
 end
 
-function fft_convolve(a::Vector{ZZp}, b::Vector{ZZp})
+function fft_convolve(a::Vector{ModInt}, b::Vector{ModInt})
     isempty(a) && return copy(a)
     isempty(b) && return copy(b)
     F = parent(a[1])

@@ -61,7 +61,7 @@ end
     @test fft_convolve(a, b) == convolve(a, b)
     @test NTL._crt_coefficients([[2, 2], [3, 2], [2, 5]], [3, 5, 7], 2) == BigInt[23, 47]
 
-    G = ZZP(12)
+    G = ModRing(12)
     a = G.([1, 5, 7, 11])
     b = G.([3, 2, 9])
     @test fft_convolve(a, b) == convolve(a, b)

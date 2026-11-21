@@ -1,89 +1,91 @@
 # Arbitrary-precision modular integers ----------------------------------------
 
-export ZZPField, ZZp, ZZ_p, ZZP, parent
+export ModRing, ModInt, ZZPField, ZZp, ZZ_p, ZZP, parent
 
 """A reusable parent object for arithmetic modulo an arbitrary positive BigInt."""
-struct ZZPField
+struct ModRing
     _modulus::BigInt
-    function ZZPField(n::Integer)
+    function ModRing(n::Integer)
         n > 0 || throw(DomainError(n, "the modulus must be positive"))
         new(BigInt(n))
     end
 end
 
-"""Construct a reusable arbitrary-precision modular parent."""
-ZZP(n::Integer) = ZZPField(n)
+# NTL-compatible spellings; new code should use ModRing and ModInt.
+const ZZPField = ModRing
+const ZZP = ModRing
 
-"""An arbitrary-precision modular integer. Use `R = ZZP(n); R(a)` or `ZZp(R, a)`."""
-struct ZZp <: Number
-    _parent::ZZPField
+"""An arbitrary-precision modular integer. Use `R = ModRing(n); R(a)` or `ModInt(R, a)`."""
+struct ModInt <: Number
+    _parent::ModRing
     _rep::BigInt
-    function ZZp(F::ZZPField, a::Integer)
+    function ModInt(F::ModRing, a::Integer)
         new(F, mod(BigInt(a), modulus(F)))
     end
 end
 
-const ZZ_p = ZZp
+const ZZp = ModInt
+const ZZ_p = ModInt
 
-(F::ZZPField)(a::Integer) = ZZp(F, a)
-(F::ZZPField)(a::ZZp) = (parent(a) == F || throw(ArgumentError("modulus mismatch")); a)
+(F::ModRing)(a::Integer) = ModInt(F, a)
+(F::ModRing)(a::ModInt) = (parent(a) == F || throw(ArgumentError("modulus mismatch")); a)
 
-modulus(F::ZZPField) = F._modulus
-modulus(a::ZZp) = modulus(parent(a))
-characteristic(F::ZZPField) = modulus(F)
-characteristic(a::ZZp) = modulus(a)
-parent(a::ZZp) = a._parent
+modulus(F::ModRing) = F._modulus
+modulus(a::ModInt) = modulus(parent(a))
+characteristic(F::ModRing) = modulus(F)
+characteristic(a::ModInt) = modulus(a)
+parent(a::ModInt) = a._parent
 parent(::zzp{P}) where {P} = zzp{P}
-rep(a::ZZp) = a._rep
+rep(a::ModInt) = a._rep
 
-==(F::ZZPField, G::ZZPField) = modulus(F) == modulus(G)
-isequal(F::ZZPField, G::ZZPField) = F == G
-hash(F::ZZPField, h::UInt) = hash(modulus(F), h)
+==(F::ModRing, G::ModRing) = modulus(F) == modulus(G)
+isequal(F::ModRing, G::ModRing) = F == G
+hash(F::ModRing, h::UInt) = hash(modulus(F), h)
 
-zero(F::ZZPField) = F(0)
-one(F::ZZPField) = F(1)
-oneunit(F::ZZPField) = F(1)
-zero(a::ZZp) = zero(parent(a))
-one(a::ZZp) = one(parent(a))
-oneunit(a::ZZp) = one(a)
-iszero(a::ZZp) = iszero(rep(a))
-isone(a::ZZp) = isone(rep(a))
+zero(F::ModRing) = F(0)
+one(F::ModRing) = F(1)
+oneunit(F::ModRing) = F(1)
+zero(a::ModInt) = zero(parent(a))
+one(a::ModInt) = one(parent(a))
+oneunit(a::ModInt) = one(a)
+iszero(a::ModInt) = iszero(rep(a))
+isone(a::ModInt) = isone(rep(a))
 
-function show(io::IO, F::ZZPField)
-    print(io, "ZZp(", modulus(F), ")")
+function show(io::IO, F::ModRing)
+    print(io, "ModRing(", modulus(F), ")")
 end
-function show(io::IO, a::ZZp)
-    print(io, "ZZp(", modulus(a), ")(", rep(a), ")")
+function show(io::IO, a::ModInt)
+    print(io, "ModInt(", modulus(a), ")(", rep(a), ")")
 end
 
-function _check_same_parent(x::ZZp, y::ZZp)
+function _check_same_parent(x::ModInt, y::ModInt)
     parent(x) == parent(y) || throw(ArgumentError("cannot mix different moduli"))
     parent(x)
 end
 
-+(x::ZZp, y::ZZp) = (F = _check_same_parent(x, y); F(rep(x) + rep(y)))
--(x::ZZp, y::ZZp) = (F = _check_same_parent(x, y); F(rep(x) - rep(y)))
--(x::ZZp) = parent(x)(-rep(x))
-*(x::ZZp, y::ZZp) = (F = _check_same_parent(x, y); F(rep(x) * rep(y)))
++(x::ModInt, y::ModInt) = (F = _check_same_parent(x, y); F(rep(x) + rep(y)))
+-(x::ModInt, y::ModInt) = (F = _check_same_parent(x, y); F(rep(x) - rep(y)))
+-(x::ModInt) = parent(x)(-rep(x))
+*(x::ModInt, y::ModInt) = (F = _check_same_parent(x, y); F(rep(x) * rep(y)))
 
-+(x::ZZp, y::Integer) = x + parent(x)(y)
-+(x::Integer, y::ZZp) = parent(y)(x) + y
--(x::ZZp, y::Integer) = x - parent(x)(y)
--(x::Integer, y::ZZp) = parent(y)(x) - y
-*(x::ZZp, y::Integer) = x * parent(x)(y)
-*(x::Integer, y::ZZp) = parent(y)(x) * y
++(x::ModInt, y::Integer) = x + parent(x)(y)
++(x::Integer, y::ModInt) = parent(y)(x) + y
+-(x::ModInt, y::Integer) = x - parent(x)(y)
+-(x::Integer, y::ModInt) = parent(y)(x) - y
+*(x::ModInt, y::Integer) = x * parent(x)(y)
+*(x::Integer, y::ModInt) = parent(y)(x) * y
 
-function inv(x::ZZp)
+function inv(x::ModInt)
     n = modulus(x)
     gcd(rep(x), n) == 1 || throw(DomainError(x, "inverse undefined for a nonunit"))
     parent(x)(invmod(rep(x), n))
 end
-/(x::ZZp, y::ZZp) = x * inv(y)
-/(x::ZZp, y::Integer) = x / parent(x)(y)
-/(x::Integer, y::ZZp) = parent(y)(x) / y
-sqr(x::ZZp) = x * x
+/(x::ModInt, y::ModInt) = x * inv(y)
+/(x::ModInt, y::Integer) = x / parent(x)(y)
+/(x::Integer, y::ModInt) = parent(y)(x) / y
+sqr(x::ModInt) = x * x
 
-function power(x::ZZp, e::Integer)
+function power(x::ModInt, e::Integer)
     base = x
     k = BigInt(e)
     if k < 0
@@ -98,17 +100,17 @@ function power(x::ZZp, e::Integer)
     end
     result
 end
-^(x::ZZp, e::Integer) = power(x, e)
+^(x::ModInt, e::Integer) = power(x, e)
 
-==(x::ZZp, y::ZZp) = parent(x) == parent(y) && rep(x) == rep(y)
-isequal(x::ZZp, y::ZZp) = x == y
-==(x::ZZp, y::Integer) = rep(x) == mod(BigInt(y), modulus(x))
-==(x::Integer, y::ZZp) = y == x
-isequal(x::ZZp, y::Integer) = x == y
-isequal(x::Integer, y::ZZp) = y == x
-hash(x::ZZp, h::UInt) = hash(rep(x), h)
-convert(::Type{BigInt}, x::ZZp) = BigInt(rep(x))
-Base.BigInt(x::ZZp) = rep(x)
+==(x::ModInt, y::ModInt) = parent(x) == parent(y) && rep(x) == rep(y)
+isequal(x::ModInt, y::ModInt) = x == y
+==(x::ModInt, y::Integer) = rep(x) == mod(BigInt(y), modulus(x))
+==(x::Integer, y::ModInt) = y == x
+isequal(x::ModInt, y::Integer) = x == y
+isequal(x::Integer, y::ModInt) = y == x
+hash(x::ModInt, h::UInt) = hash(rep(x), h)
+convert(::Type{BigInt}, x::ModInt) = BigInt(rep(x))
+Base.BigInt(x::ModInt) = rep(x)
 
 function _random_big_below(rng::AbstractRNG, n::BigInt)
     n > 0 || throw(DomainError(n, "the random bound must be positive"))
@@ -125,20 +127,20 @@ function _random_big_below(rng::AbstractRNG, n::BigInt)
     end
 end
 
-Random.rand(F::ZZPField) = Random.rand(Random.default_rng(), F)
-Random.rand(rng::AbstractRNG, F::ZZPField) = F(_random_big_below(rng, modulus(F)))
-Random.rand(F::ZZPField, dims::Dims) = Random.rand(Random.default_rng(), F, dims)
-Random.rand(F::ZZPField, d::Integer, dims::Integer...) = Random.rand(Random.default_rng(), F, (d, dims...))
-function Random.rand(rng::AbstractRNG, F::ZZPField, dims::Dims)
-    A = Array{ZZp}(undef, dims)
+Random.rand(F::ModRing) = Random.rand(Random.default_rng(), F)
+Random.rand(rng::AbstractRNG, F::ModRing) = F(_random_big_below(rng, modulus(F)))
+Random.rand(F::ModRing, dims::Dims) = Random.rand(Random.default_rng(), F, dims)
+Random.rand(F::ModRing, d::Integer, dims::Integer...) = Random.rand(Random.default_rng(), F, (d, dims...))
+function Random.rand(rng::AbstractRNG, F::ModRing, dims::Dims)
+    A = Array{ModInt}(undef, dims)
     for i in eachindex(A)
         A[i] = rand(rng, F)
     end
     A
 end
-function Random.rand(rng::AbstractRNG, F::ZZPField, d::Integer, dims::Integer...)
+function Random.rand(rng::AbstractRNG, F::ModRing, d::Integer, dims::Integer...)
     rand(rng, F, (d, dims...))
 end
-random_zzp(F::ZZPField; rng::AbstractRNG = Random.default_rng()) = rand(rng, F)
-VectorRandom(F::ZZPField, k::Integer; rng::AbstractRNG = Random.default_rng()) = rand(rng, F, Int(k))
-VectorConv(F::ZZPField, a::AbstractVector{<:Integer}) = [F(x) for x in a]
+random_zzp(F::ModRing; rng::AbstractRNG = Random.default_rng()) = rand(rng, F)
+VectorRandom(F::ModRing, k::Integer; rng::AbstractRNG = Random.default_rng()) = rand(rng, F, Int(k))
+VectorConv(F::ModRing, a::AbstractVector{<:Integer}) = [F(x) for x in a]

@@ -1,6 +1,6 @@
 @testset "Arbitrary-precision modular integers" begin
     for n in (2, 7, 12, 97)
-        F = ZZP(n)
+        F = ModRing(n)
         @test modulus(F) == n
         @test characteristic(F) == n
         for a in 0:(n - 1), b in 0:(n - 1)
@@ -21,20 +21,20 @@
         @test parent(F(2)) == F
         @test BigInt(F(2)) == mod(2, n)
     end
-    F = ZZP(big(10)^60 + 37)
+    F = ModRing(big(10)^60 + 37)
     a = F(-1)
     @test a * a == one(F)
     @test a^2 == one(F)
     @test a^(-1) == a
     @test rep(a) == modulus(F) - 1
-    @test_throws ArgumentError F(1) + ZZP(7)(1)
-    @test_throws DomainError inv(ZZP(12)(6))
-    @test ZZP(12)(5)^-1 == ZZP(12)(5)
-    @test VectorConv(ZZP(7), [-1, 8]) == ZZP(7).([-1, 8])
+    @test_throws ArgumentError F(1) + ModRing(7)(1)
+    @test_throws DomainError inv(ModRing(12)(6))
+    @test ModRing(12)(5)^-1 == ModRing(12)(5)
+    @test VectorConv(ModRing(7), [-1, 8]) == ModRing(7).([-1, 8])
     r1, r2 = MersenneTwister(3), MersenneTwister(3)
     @test rand(r1, F, 10) == rand(r2, F, 10)
     @test all(x -> 0 <= rep(x) < modulus(F), rand(MersenneTwister(4), F, 20))
-    @test random_zzp(F; rng = MersenneTwister(5)) isa ZZp
+    @test random_zzp(F; rng = MersenneTwister(5)) isa ModInt
     @test length(VectorRandom(F, 5; rng = MersenneTwister(6))) == 5
 end
 

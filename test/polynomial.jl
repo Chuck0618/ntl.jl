@@ -111,10 +111,10 @@ end
     @test sort([m for (_, m) in fac.factors]) == [2, 3]
 
     # The same algorithms work with arbitrary-precision prime moduli.
-    FB = ZZP(big(2)^61 - 1)
+    FB = ModRing(big(2)^61 - 1)
     xb = xpoly(FB)
     fb = (xb + 1)^2 * (xb^2 + xb + 1)
     facb = factor(fb; rng = rng)
     @test reconstruct(facb) == fb
-    @test_throws ArgumentError factor(poly(ZZP(12), [1, 1]))
+    @test_throws ArgumentError factor(poly(ModRing(12), [1, 1]))
 end

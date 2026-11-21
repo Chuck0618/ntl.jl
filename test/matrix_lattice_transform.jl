@@ -1,5 +1,5 @@
 @testset "Exact matrices over supported fields" begin
-    parents = Any[zzp(7), ZZP(11), GF2]
+    parents = Any[zzp(7), ModRing(11), GF2]
     F5 = zzp(5)
     E = extension_field(F5, xpoly(F5)^2 + 2)
     push!(parents, E)
@@ -55,7 +55,7 @@ end
 end
 
 @testset "NTT and convolution" begin
-    for F in (zzp(17), ZZP(17))
+    for F in (zzp(17), ModRing(17))
         g = primitive_root(F)
         @test g^(16) == one(F)
         @test g^8 != one(F)
