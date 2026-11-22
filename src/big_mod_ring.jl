@@ -1,6 +1,6 @@
 # Arbitrary-precision modular integers ----------------------------------------
 
-export BigModRing, ModRing, ModInt, ZZPField, ZZp, ZZ_p, ZZP, parent
+export BigModRing, ModInt, parent
 
 """A reusable parent object for arithmetic modulo an arbitrary positive BigInt."""
 struct BigModRing
@@ -11,11 +11,6 @@ struct BigModRing
     end
 end
 
-# NTL-compatible spellings; new code should use BigModRing and ModInt.
-const ModRing = BigModRing
-const ZZPField = BigModRing
-const ZZP = BigModRing
-
 """An arbitrary-precision modular integer. Use `R = BigModRing(n); R(a)` or `ModInt(R, a)`."""
 struct ModInt <: Number
     _parent::BigModRing
@@ -24,9 +19,6 @@ struct ModInt <: Number
         new(F, mod(BigInt(a), modulus(F)))
     end
 end
-
-const ZZp = ModInt
-const ZZ_p = ModInt
 
 (F::BigModRing)(a::Integer) = ModInt(F, a)
 (F::BigModRing)(a::ModInt) = (parent(a) == F || throw(ArgumentError("modulus mismatch")); a)
@@ -142,6 +134,5 @@ end
 function Random.rand(rng::AbstractRNG, F::BigModRing, d::Integer, dims::Integer...)
     rand(rng, F, (d, dims...))
 end
-random_zzp(F::BigModRing; rng::AbstractRNG = Random.default_rng()) = rand(rng, F)
 VectorRandom(F::BigModRing, k::Integer; rng::AbstractRNG = Random.default_rng()) = rand(rng, F, Int(k))
 VectorConv(F::BigModRing, a::AbstractVector{<:Integer}) = [F(x) for x in a]

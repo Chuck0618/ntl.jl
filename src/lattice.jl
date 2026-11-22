@@ -1,6 +1,6 @@
 # Exact LLL lattice reduction --------------------------------------------------
 
-export gram_schmidt_exact, lll, LLL
+export gram_schmidt_exact, lll
 
 function _dot_exact(a, b)
     sum(a[i] * b[i] for i in eachindex(a, b))
@@ -80,5 +80,3 @@ function _lll_exact_legacy(A::AbstractMatrix{<:Integer}; delta = BigInt(3) // Bi
     end
     (basis = B, transform = U)
 end
-
-LLL(A::AbstractMatrix{<:Integer}; kwargs...) = lll(A; kwargs...)

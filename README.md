@@ -4,7 +4,7 @@
 
 NTL.jl is inspired by C++ NTL, but it is not a wrapper or an API clone. It is designed to be approachable for new Julia users while providing efficient, tested implementations for research and teaching.
 
-Version: **0.11.0**<br>
+Version: **0.12.0**<br>
 Tested with: **Julia 1.11.7**<br>
 Compatibility target: **Julia 1.9+**
 
@@ -66,7 +66,7 @@ Replace `/path/to/NTLJulia` with the directory that contains `Project.toml`.
 julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.test()'
 ```
 
-The current suite contains **4,336,879 passing assertions**. Runtime code depends only on Julia's `Random` standard library; `Test` is used only by the test target.
+The current suite contains **4,336,875 passing assertions**. Runtime code depends only on Julia's `Random` standard library; `Test` is used only by the test target.
 
 ### HTML documentation
 
@@ -195,7 +195,7 @@ a = R(17)
 @assert ModInt(R, 17) == a
 ```
 
-Compatibility names are retained but kept out of everyday examples: `zzp` is an alias of `PrimeField`; `ModRing` is an alias of `BigModRing`; `ZZP` and `ZZPField` are also aliases of `BigModRing`; and `ZZp` and `ZZ_p` are aliases of `ModInt`. New readers therefore do not need to distinguish names that differ only by capitalization.
+The public interface uses only the canonical names shown above. Legacy capitalization aliases have been removed in version 0.12.0, so new readers do not need to distinguish names that differ only by capitalization.
 
 ## Everyday operations
 
@@ -389,7 +389,7 @@ Useful functions include `bits`, `weight`, `NumBits`, `NumBytes`, `DivRem`, `XGC
 - every element has a unique representative \(a_0+a_1t+\cdots+a_{d-1}t^{d-1}\);
 - `ExtensionElem` is the element type, while `ExtensionField` is the parent type.
 
-Everyday code normally does not need to name the element type: use `E(...)`. When an explicit descriptive type name helps, use `ExtensionElem`. For readers comparing with C++ NTL, `ZZpE` is the NTL-facing spelling corresponding to C++ `ZZ_pE`; both names denote exactly the same Julia type: `ExtensionElem === ZZpE`.
+Everyday code normally does not need to name the element type: use `E(...)`. `ExtensionElem` is the actual concrete element type when an explicit descriptive name is useful.
 
 ### Construct a field and its elements
 
@@ -819,7 +819,7 @@ y = powermod(g, 42, 97)
 | Function | Purpose |
 |---|---|
 | `PrimeField(p)` | Validate a prime and return `PrimeField{p}` |
-| `zzp_Min`, `zzp_Max` | Bounds of supported machine-word prime moduli |
+| `PRIME_FIELD_MIN`, `PRIME_FIELD_MAX` | Bounds of supported machine-word prime moduli |
 | `AddMod`, `SubMod`, `NegateMod` | Overflow-safe modular add/subtract/negate on reduced `Int` values |
 | `MulMod`, `SqrMod` | Modular multiplication and squaring |
 | `InvMod`, `InvModStatus` | Inverse or a nonthrowing status result |
@@ -878,7 +878,7 @@ NTLJulia/
 │   └── index.html
 ├── src/
 │   ├── NTL.jl              # Module entry, prime fields, low-level arithmetic
-│   ├── zzp_big.jl          # BigModRing parents and ModInt elements
+│   ├── big_mod_ring.jl          # BigModRing parents and ModInt elements
 │   ├── numbertheory.jl     # Primality, factorization, CRT, roots, discrete logs
 │   ├── polynomial.jl       # Dense polynomials and factorization
 │   ├── polynomial_mul.jl   # Schoolbook, Karatsuba, and acceleration strategies
@@ -907,7 +907,7 @@ NTLJulia/
 │   └── api_tour.jl          # At least one executable call for every exported API
 └── test/
     ├── runtests.jl
-    ├── zzp_numtheory.jl
+    ├── primefield_numtheory.jl
     ├── polynomial.jl
     ├── binary_extension.jl
     ├── matrix_lattice_transform.jl

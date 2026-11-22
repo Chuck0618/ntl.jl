@@ -27,13 +27,13 @@ end
 
 @testset "NTL single-word prime fields" begin
     @testset "modulus discovery and validation" begin
-        @test zzp_Min == 2
-        @test NTL._is_prime(zzp_Max)
-        @test zzp_Max <= typemax(Int)
-        @test all(!NTL._is_prime(n) for n in (zzp_Max + 1):typemax(Int))
+        @test PRIME_FIELD_MIN == 2
+        @test NTL._is_prime(PRIME_FIELD_MAX)
+        @test PRIME_FIELD_MAX <= typemax(Int)
+        @test all(!NTL._is_prime(n) for n in (PRIME_FIELD_MAX + 1):typemax(Int))
         @test PrimeField(7) === PrimeField{7}
         @test PrimeField(big(97)) === PrimeField{97}
-        @test PrimeField(zzp_Max) === PrimeField{zzp_Max}
+        @test PrimeField(PRIME_FIELD_MAX) === PrimeField{PRIME_FIELD_MAX}
         for p in (2, 3, 5, 7, 11, 37, 41, 97, 65537)
             @test PrimeField(p) === PrimeField{p}
         end
@@ -77,7 +77,7 @@ end
         @test isone(F(8))
         @test !isone(F(0))
         @test info(PrimeField).minimum_modulus == 2
-        @test info(PrimeField).maximum_modulus == zzp_Max
+        @test info(PrimeField).maximum_modulus == PRIME_FIELD_MAX
         @test info(F).modulus == 7
         @test info(F).storage == Int
         @test info(F(6)).representative == 6
@@ -205,7 +205,7 @@ end
     end
 
     @testset "largest supported modulus and overflow boundaries" begin
-        p = zzp_Max
+        p = PRIME_FIELD_MAX
         F = PrimeField(p)
         samples = unique((0, 1, 2, p ÷ 2, p - 3, p - 2, p - 1))
         for a in samples, b in samples
@@ -249,7 +249,7 @@ end
         @test length(a) == 100
         @test all(x -> 0 <= rep(x) < 97, a)
         @test size(rand(MersenneTwister(1), F, 2, 3)) == (2, 3)
-        @test random_zzp(F; rng = MersenneTwister(9)) isa F
+        @test rand(MersenneTwister(9), F) isa F
         v = VectorRandom(F, 20; rng = MersenneTwister(10))
         @test length(v) == 20
         @test all(x -> x isa F, v)
@@ -270,7 +270,7 @@ end
     end
 end
 
-include("zzp_numtheory.jl")
+include("primefield_numtheory.jl")
 include("polynomial.jl")
 include("binary_extension.jl")
 include("matrix_lattice_transform.jl")

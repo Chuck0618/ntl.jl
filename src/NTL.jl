@@ -5,12 +5,12 @@ using Random
 import Base: +, -, *, /, ^, inv, zero, one, oneunit, iszero, isone
 import Base: ==, isequal, hash, convert, promote_rule, show, parent, diff, truncate, muladd
 
-export PrimeField, zzp, zzp_Min, zzp_Max
+export PrimeField, PRIME_FIELD_MIN, PRIME_FIELD_MAX
 export rep, modulus, characteristic, info
 export AddMod, SubMod, NegateMod, MulMod, SqrMod
 export InvMod, InvModStatus, PowerMod
 export add, sub, negate, mul, sqr, divide, power, muladd
-export random_zzp, VectorRandom, VectorConv, VectorMulMod, VectorMulMod!, swap
+export VectorRandom, VectorConv, VectorMulMod, VectorMulMod!, swap
 
 # Internal marker used to construct an already reduced representative.
 struct _UnsafeRep end
@@ -34,9 +34,6 @@ struct PrimeField{P} <: Number
         new{P}(r)
     end
 end
-
-# Legacy NTL spelling; new code should use PrimeField.
-const zzp = PrimeField
 
 @inline _raw(::Val{P}, r::Int) where {P} = PrimeField{P}(r, _unsafe_rep)
 
@@ -142,20 +139,20 @@ function _previous_prime(n::Int)
 end
 
 """Minimum supported prime modulus."""
-const zzp_Min = 2
+const PRIME_FIELD_MIN = 2
 
 """Largest prime representable by the platform's signed `Int` type."""
-const zzp_Max = _previous_prime(typemax(Int))
+const PRIME_FIELD_MAX = _previous_prime(typemax(Int))
 
 function _require_prime(p::Int)
-    p >= zzp_Min || throw(DomainError(p, "the modulus must be at least 2"))
+    p >= PRIME_FIELD_MIN || throw(DomainError(p, "the modulus must be at least 2"))
     _is_prime(p) || throw(ArgumentError("the modulus $p is not prime"))
     p
 end
 
 @generated function _checked_modulus(::Val{P}) where {P}
     P isa Int || return :(throw(ArgumentError("the modulus type parameter must be an Int")))
-    P < zzp_Min && return :(throw(DomainError($P, "the modulus must be at least 2")))
+    P < PRIME_FIELD_MIN && return :(throw(DomainError($P, "the modulus must be at least 2")))
     _is_prime(P) || return :(throw(ArgumentError("the modulus is not prime")))
     P
 end
@@ -213,8 +210,8 @@ Base.last(F::Type{PrimeField{P}}) where {P} = (_checked_modulus(Val{P}()); _raw(
 """Return summary information about the implementation or a specific field."""
 info(::Type{PrimeField}) = (
     description = "Single-word prime-field arithmetic inspired by NTL lzz_p/zz_p",
-    minimum_modulus = zzp_Min,
-    maximum_modulus = zzp_Max,
+    minimum_modulus = PRIME_FIELD_MIN,
+    maximum_modulus = PRIME_FIELD_MAX,
     representation = "canonical signed-Int residue",
 )
 function info(F::Type{PrimeField{P}}) where {P}
@@ -389,7 +386,6 @@ sqr(x::PrimeField{P}) where {P} = _raw(Val{P}(), _mulmod_raw(rep(x), rep(x), P))
 divide(x, y) = x / y
 
 """Return a uniform random field element; equivalent to `rand(F)`."""
-random_zzp(F::Type{PrimeField{P}}; rng::AbstractRNG = Random.default_rng()) where {P} = rand(rng, F)
 
 function Random.rand(rng::AbstractRNG, ::Random.SamplerType{PrimeField{P}}) where {P}
     _checked_modulus(Val{P}())
@@ -432,7 +428,7 @@ end
 """Return the pair `(y,x)`; Julia's immutable field elements are not swapped in place."""
 swap(x::PrimeField{P}, y::PrimeField{P}) where {P} = (y, x)
 
-include("zzp_big.jl")
+include("big_mod_ring.jl")
 include("numbertheory.jl")
 include("polynomial.jl")
 include("binary.jl")

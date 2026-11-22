@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Complete NTL.jl 0.11.0 manual: PrimeField, BigModRing, optimized FFT, matrices, factorization, and executable examples.">
-  <link rel="icon" href="data:,"><title>NTL.jl 0.11.0 — Complete Manual
+  <meta name="description" content="Complete NTL.jl 0.12.0 manual with a cleaned canonical API, optimized FFT, matrices, factorization, and executable examples.">
+  <link rel="icon" href="data:,"><title>NTL.jl 0.12.0 — Complete Manual
 and API Tour</title><style>
     :root {
       --paper: oklch(97.8% 0.002 90);
@@ -237,11 +237,11 @@ and API Tour</title><style>
 </style>
 </head>
 <body><div class="page">
-  <header class="masthead"><a class="brand" href="#top">NTL.jl / complete manual</a><div class="masthead-meta">Version 0.11.0 · Julia 1.9+ · Pure Julia · Offline reference</div></header>
+  <header class="masthead"><a class="brand" href="#top">NTL.jl / complete manual</a><div class="masthead-meta">Version 0.12.0 · Julia 1.9+ · Pure Julia · Offline reference</div></header>
   <div id="top" class="hero"><div class="hero-copy">
     <p class="kicker">Exact arithmetic, documented from first construction to verification</p><h1>The complete NTL.jl manual.</h1>
-    <p class="lede">The full project README, clear <code>PrimeField</code> and <code>BigModRing</code> arithmetic, measured FFT / matrix / factorization optimizations, and an executable call for every exported interface.</p>
-    <ul class="hero-facts"><li><strong>Verified</strong><span>4,336,879 passing assertions on Julia 1.11.7</span></li><li><strong>Coverage</strong><span>140 exported names demonstrated in one API tour</span></li><li><strong>Included</strong><span>README + optimization data + full tour source + API index</span></li></ul>
+    <p class="lede">The full project README, a canonical interface without legacy aliases, clear <code>PrimeField</code> and <code>BigModRing</code> arithmetic, measured optimizations, and an executable call for every exported interface.</p>
+    <ul class="hero-facts"><li><strong>Verified</strong><span>4,336,875 passing assertions on Julia 1.11.7</span></li><li><strong>Coverage</strong><span>131 exported names demonstrated in one API tour</span></li><li><strong>Included</strong><span>README + clean API index + full tour source</span></li></ul>
   </div><div class="hero-demo code-panel"><div class="code-caption">Prime fields and big modular rings</div><pre><code>using NTL
 
 F = PrimeField(101)
@@ -312,7 +312,7 @@ algebra, generalized FFT, and lattice reduction.</strong></p>
 clone. It is designed to be approachable for new Julia users while
 providing efficient, tested implementations for research and
 teaching.</p>
-<p>Version: <strong>0.11.0</strong><br> Tested with: <strong>Julia
+<p>Version: <strong>0.12.0</strong><br> Tested with: <strong>Julia
 1.11.7</strong><br> Compatibility target: <strong>Julia
 1.9+</strong></p>
 <h2 id="contents">Contents</h2>
@@ -385,7 +385,7 @@ using NTL</code></pre>
 contains <code>Project.toml</code>.</p>
 <h3 id="run-the-complete-test-suite">Run the complete test suite</h3>
 <pre class="bash"><code>julia --project=. -e &#39;using Pkg; Pkg.instantiate(); Pkg.test()&#39;</code></pre>
-<p>The current suite contains <strong>4,336,879 passing
+<p>The current suite contains <strong>4,336,875 passing
 assertions</strong>. Runtime code depends only on Julia’s
 <code>Random</code> standard library; <code>Test</code> is used only by
 the test target.</p>
@@ -531,13 +531,10 @@ a = R(17)
 @assert a == R(5)
 @assert rep(a) == 5
 @assert ModInt(R, 17) == a</code></pre>
-<p>Compatibility names are retained but kept out of everyday examples:
-<code>zzp</code> is an alias of <code>PrimeField</code>;
-<code>ModRing</code> is an alias of <code>BigModRing</code>;
-<code>ZZP</code> and <code>ZZPField</code> are also aliases of
-<code>BigModRing</code>; and <code>ZZp</code> and <code>ZZ_p</code> are
-aliases of <code>ModInt</code>. New readers therefore do not need to
-distinguish names that differ only by capitalization.</p>
+<p>The public interface uses only the canonical names shown above.
+Legacy capitalization aliases have been removed in version 0.12.0, so
+new readers do not need to distinguish names that differ only by
+capitalization.</p>
 <h2 id="everyday-operations">Everyday operations</h2>
 <h3 id="construction-and-metadata">Construction and metadata</h3>
 <pre class="julia"><code>F = PrimeField(97)
@@ -801,11 +798,8 @@ in <code>E</code>;</li>
 <code>ExtensionField</code> is the parent type.</li>
 </ul>
 <p>Everyday code normally does not need to name the element type: use
-<code>E(...)</code>. When an explicit descriptive type name helps, use
-<code>ExtensionElem</code>. For readers comparing with C++ NTL,
-<code>ZZpE</code> is the NTL-facing spelling corresponding to C++
-<code>ZZ_pE</code>; both names denote exactly the same Julia type:
-<code>ExtensionElem === ZZpE</code>.</p>
+<code>E(...)</code>. <code>ExtensionElem</code> is the actual concrete
+element type when an explicit descriptive name is useful.</p>
 <h3 id="construct-a-field-and-its-elements">Construct a field and its
 elements</h3>
 <p>The following example builds
@@ -1478,7 +1472,7 @@ arithmetic</h3>
 <td>Validate a prime and return <code>PrimeField{p}</code></td>
 </tr>
 <tr class="even">
-<td><code>zzp_Min</code>, <code>zzp_Max</code></td>
+<td><code>PRIME_FIELD_MIN</code>, <code>PRIME_FIELD_MAX</code></td>
 <td>Bounds of supported machine-word prime moduli</td>
 </tr>
 <tr class="odd">
@@ -1680,7 +1674,7 @@ polynomial</td>
 │   └── index.html
 ├── src/
 │   ├── NTL.jl              # Module entry, prime fields, low-level arithmetic
-│   ├── zzp_big.jl          # BigModRing parents and ModInt elements
+│   ├── big_mod_ring.jl          # BigModRing parents and ModInt elements
 │   ├── numbertheory.jl     # Primality, factorization, CRT, roots, discrete logs
 │   ├── polynomial.jl       # Dense polynomials and factorization
 │   ├── polynomial_mul.jl   # Schoolbook, Karatsuba, and acceleration strategies
@@ -1709,7 +1703,7 @@ polynomial</td>
 │   └── api_tour.jl          # At least one executable call for every exported API
 └── test/
     ├── runtests.jl
-    ├── zzp_numtheory.jl
+    ├── primefield_numtheory.jl
     ├── polynomial.jl
     ├── binary_extension.jl
     ├── matrix_lattice_transform.jl
@@ -2165,9 +2159,8 @@ root, run:</p>
 <pre class="bash"><code>julia --project=. examples/api_tour.jl</code></pre>
 <p>A successful run ends with
 <code>API tour completed successfully.</code> The tour covers all
-<strong>140 exported names</strong>, including compatibility and
-NTL-facing aliases, and checks results with assertions rather than
-merely printing them.</p>
+<strong>131 exported names</strong> and checks results with assertions
+rather than merely printing them.</p>
 <h2 id="b.-complete-executable-api-tour">B. Complete executable API
 tour</h2>
 <pre class="julia"><code>using NTL
@@ -2178,12 +2171,9 @@ using Statistics
 # This tour exercises every exported interface in the current module.
 
 # Prime-field metadata and arithmetic -----------------------------------------
-@assert zzp_Min == 2
-@assert zzp_Max &gt; zzp_Min
+@assert PRIME_FIELD_MIN == 2
+@assert PRIME_FIELD_MAX &gt; PRIME_FIELD_MIN
 F = PrimeField(101)
-@assert PrimeField === zzp
-@assert zzp(101) === F
-@assert zzp{101}(3) == F(3)
 @assert modulus(F) == 101
 @assert characteristic(F) == 101
 @assert parent(F(1)) == F
@@ -2235,7 +2225,7 @@ x, y = F(3), F(4)
 
 @assert VectorConv(F, [-1, 0, 2, 103]) == F.([100, 0, 2, 2])
 @assert length(VectorRandom(F, 4; rng = MersenneTwister(1))) == 4
-@assert random_zzp(F; rng = MersenneTwister(2)) isa F
+@assert rand(MersenneTwister(2), F) isa F
 @assert VectorMulMod([1, 2, 3], 3, 101) == [3, 6, 9]
 out = zeros(Int, 3)
 @assert VectorMulMod!(out, [1, 2, 3], 3, 101) === out
@@ -2247,17 +2237,6 @@ R = BigModRing(12)
 @assert R(5) isa ModInt
 @assert ModInt(R, 5) == R(5)
 
-# Legacy names remain callable, but are not used in everyday examples.
-@assert BigModRing === ModRing
-@assert BigModRing === ZZPField
-@assert BigModRing === ZZP
-@assert ModInt === ZZp
-@assert ModInt === ZZ_p
-@assert ModRing(12) == R
-@assert ZZP(12) == R
-@assert ZZPField(12) == R
-@assert ZZp(R, 5) == R(5)
-@assert ZZ_p(R, 5) == R(5)
 @assert modulus(R) == 12
 @assert characteristic(R) == 12
 @assert R(5) * R(5) == R(1)
@@ -2273,7 +2252,7 @@ R = BigModRing(12)
 @test_throws ErrorException R(1) + PrimeField(7)(1)
 @assert length(VectorRandom(R, 2; rng = MersenneTwister(3))) == 2
 @assert VectorConv(R, [-1, 2, 13]) == R.([-1, 2, 13])
-@assert random_zzp(R; rng = MersenneTwister(4)) isa ModInt
+@assert rand(MersenneTwister(4), R) isa ModInt
 
 # Number theory ----------------------------------------------------------------
 @assert ProbPrime(101)
@@ -2377,8 +2356,7 @@ facg = factor((g + 1)^3 * (g^2 + g + 1)^2)
 # Extension fields --------------------------------------------------------------
 E = extension_field(P, x^2 + 2)
 @assert E isa ExtensionField
-@assert ExtensionElem === ZZpE # Descriptive and NTL-facing names for the same type.
-@assert ZZpE(E, gen(E)) == gen(E) # Retain the NTL-facing constructor spelling.
+@assert ExtensionElem(E, gen(E)) == gen(E) # Retain the NTL-facing constructor spelling.
 @assert base_field(E) == P
 @assert defining_polynomial(E) == x^2 + 2
 @assert extension_degree(E) == 2
@@ -2477,7 +2455,7 @@ result = lll(B)
 @assert abs(det_exact(result.transform)) == 1
 @assert result.verified
 @assert result.mode == :fast
-@assert LLL(B).basis == result.basis
+@assert lll(B).basis == result.basis
 @assert gram_schmidt_exact(result.basis) isa Tuple
 
 # NTT, generalized FFT, and acceleration -----------------------------------------
@@ -2499,9 +2477,8 @@ set_polynomial_acceleration!(true)
 println(&quot;API tour completed successfully.&quot;)</code></pre>
 <h2 id="c.-exported-interface-index">C. Exported-interface index</h2>
 <p>This index complements the task-oriented API tables in the README. It
-is grouped by implementation layer so that a reader can move from a
-mathematical operation to its source file and then to the corresponding
-call in the tour.</p>
+contains only the canonical public interface after the 0.12.0
+cleanup.</p>
 <div class="table-wrap"><table>
 <colgroup>
 <col style="width: 50%" />
@@ -2516,41 +2493,45 @@ call in the tour.</p>
 <tbody>
 <tr class="odd">
 <td><code>NTL.jl</code></td>
-<td>PrimeField, zzp, zzp_Min, zzp_Max, rep, modulus, characteristic,
-info, AddMod, SubMod, NegateMod, MulMod, SqrMod, InvMod, InvModStatus,
-PowerMod, add, sub, negate, mul, sqr, divide, power, muladd, random_zzp,
-VectorRandom, VectorConv, VectorMulMod, VectorMulMod!, swap</td>
+<td>PrimeField, PRIME_FIELD_MIN, PRIME_FIELD_MAX, rep, modulus,
+characteristic, info, AddMod, SubMod, NegateMod, MulMod, SqrMod, InvMod,
+InvModStatus, PowerMod, add, sub, negate, mul, sqr, divide, power,
+muladd, VectorRandom, VectorConv, VectorMulMod, VectorMulMod!, swap</td>
 </tr>
 <tr class="even">
+<td><code>big_mod_ring.jl</code></td>
+<td>BigModRing, ModInt, parent</td>
+</tr>
+<tr class="odd">
 <td><code>binary.jl</code></td>
 <td>GF2, GF2X, bits, weight, NumBits, NumBytes, random_GF2X,
 GF2XFactorization, BuildIrredGF2X, to_modpoly, from_modpoly</td>
 </tr>
-<tr class="odd">
-<td><code>extension.jl</code></td>
-<td>ExtensionField, ExtensionElem, ZZpE, extension_field, GF2E,
-base_field, defining_polynomial, extension_degree, cardinality, gen,
-trace, norm</td>
-</tr>
 <tr class="even">
+<td><code>extension.jl</code></td>
+<td>ExtensionField, ExtensionElem, extension_field, GF2E, base_field,
+defining_polynomial, extension_degree, cardinality, gen, trace,
+norm</td>
+</tr>
+<tr class="odd">
 <td><code>fft.jl</code></td>
 <td>fft_convolve, FFT_PRIMES</td>
 </tr>
-<tr class="odd">
-<td><code>lattice.jl</code></td>
-<td>gram_schmidt_exact, lll, LLL</td>
-</tr>
 <tr class="even">
+<td><code>lattice.jl</code></td>
+<td>gram_schmidt_exact, lll</td>
+</tr>
+<tr class="odd">
 <td><code>matrix.jl</code></td>
 <td>det, matrix_inverse, solve, rank, nullspace, rref, det_exact</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>numbertheory.jl</code></td>
 <td>ProbPrime, MillerWitness, NextPrime, PrevPrime, GenPrime,
 RandomBits, RandomLen, RandomBnd, FactorInt, EulerPhi, CRT, SqrRootMod,
 DiscreteLog, PrimitiveRoot</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>polynomial.jl</code></td>
 <td>ModPoly, poly, xpoly, field, coefficients, coeff, degree, deg,
 LeadCoeff, ConstTerm, leading, setcoeff!, monic, ismonic, DivRem, GCD,
@@ -2560,33 +2541,29 @@ CompMod, random_poly, BuildFromRoots, interpolate, SquareFreeDecomp,
 DistinctDegreeDecomp, EqualDegreeSplit, PolyFactorization, factor,
 reconstruct, is_irreducible, BuildIrred, FindRoots, FindRoot</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>polynomial_mul.jl</code></td>
 <td>set_polynomial_acceleration!, polynomial_acceleration, poly_mul</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>transform.jl</code></td>
 <td>primitive_root, root_of_unity, ntt, intt, convolve,
 ntt_convolve</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>zech.jl</code></td>
 <td>ZechField, ZechElem, zech_field, extension_element</td>
-</tr>
-<tr class="even">
-<td><code>zzp_big.jl</code></td>
-<td>BigModRing, ModRing, ModInt, ZZPField, ZZp, ZZ_p, ZZP, parent</td>
 </tr>
 </tbody>
 </table></div>
 <h2 id="d.-documentation-and-verification-checklist">D. Documentation
 and verification checklist</h2>
 <ul>
-<li>Release documented here: <strong>NTL.jl 0.11.0</strong>, targeting
+<li>Release documented here: <strong>NTL.jl 0.12.0</strong>, targeting
 Julia 1.9 or later and tested with Julia 1.11.7.</li>
-<li>Full regression suite: <strong>4,336,879 passing
-assertions</strong>, including delayed-determinant overflow fallback,
-buffered long division, and single-/multi-prime FFT boundaries.</li>
+<li>Full regression suite: <strong>4,336,875 passing
+assertions</strong>, including explicit checks that removed legacy
+symbols no longer exist in the module.</li>
 <li>Every exported name occurs in at least one executable example in
 <code>api_tour.jl</code>.</li>
 <li><code>PrimeField(p)</code> is the machine-word prime-field
@@ -2596,20 +2573,14 @@ the type level.</li>
 parent and <code>ModInt</code> is its element type. Everyday
 construction uses <code>R = BigModRing(n)</code> followed by
 <code>R(a)</code>.</li>
-<li>Legacy names are confined to the compatibility paragraph, executable
-compatibility checks, and this complete export index.</li>
+<li><code>ExtensionElem</code> is the actual concrete extension-element
+type; ordinary extension construction continues to use
+<code>E(...)</code>.</li>
 <li>The performance section reports independent same-server before/after
 medians and allocations, rather than copying prototype figures from
 different hardware.</li>
-<li>The extension-field guide uses <code>E(...)</code> for ordinary
-construction and <code>ExtensionElem</code> for explicit descriptive
-type checks.</li>
-<li><code>E(p)</code> and <code>ExtensionElem(E, p)</code> both reduce
-polynomial input before storing it; the regression suite checks this
-invariant over <code>PrimeField</code>, <code>BigModRing</code>, and
-<code>GF2</code> base fields.</li>
 <li>This page is self-contained: equations use MathML, styling is
 embedded, and no web framework or network connection is required.</li>
 </ul></main></div>
-  <footer class="footer"><div>NTL.jl · Exact mathematical core · Version 0.11.0</div><div><a href="#top">Return to top</a> · <a href="../examples/api_tour.jl">API tour source</a></div></footer>
+  <footer class="footer"><div>NTL.jl · Exact mathematical core · Version 0.12.0</div><div><a href="#top">Return to top</a> · <a href="../examples/api_tour.jl">API tour source</a></div></footer>
 </div></body></html>

@@ -34,7 +34,7 @@
     r1, r2 = MersenneTwister(3), MersenneTwister(3)
     @test rand(r1, F, 10) == rand(r2, F, 10)
     @test all(x -> 0 <= rep(x) < modulus(F), rand(MersenneTwister(4), F, 20))
-    @test random_zzp(F; rng = MersenneTwister(5)) isa ModInt
+    @test rand(MersenneTwister(5), F) isa ModInt
     @test length(VectorRandom(F, 5; rng = MersenneTwister(6))) == 5
 end
 

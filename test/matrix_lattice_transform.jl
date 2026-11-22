@@ -33,7 +33,7 @@
 end
 
 @testset "Delayed prime-field determinant and overflow fallback" begin
-    for P in (2, 3, 5, 101, 257, 998244353, zzp_Max), n in (1, 2, 3, 5, 8), trial in 1:3
+    for P in (2, 3, 5, 101, 257, 998244353, PRIME_FIELD_MAX), n in (1, 2, 3, 5, 8), trial in 1:3
         F = PrimeField(P)
         A = rand(MersenneTwister(P % 1000 + n * 10 + trial), F, n, n)
         @test det(A) == NTL._det_generic(A, n)
@@ -45,7 +45,7 @@ end
         @test iszero(det(A))
     end
     @test NTL._delayed_det_supported(256, 101)
-    @test !NTL._delayed_det_supported(8, zzp_Max)
+    @test !NTL._delayed_det_supported(8, PRIME_FIELD_MAX)
 end
 
 @testset "Exact LLL lattice reduction" begin
@@ -61,7 +61,7 @@ end
     for k in 2:size(B, 1)
         @test norms[k] >= (BigInt(3) // BigInt(4) - mu[k, k - 1]^2) * norms[k - 1]
     end
-    @test LLL(A).basis == B
+    @test lll(A).basis == B
     identity_result = lll([1 0; 0 1])
     @test identity_result.basis == BigInt[1 0; 0 1]
     @test identity_result.transform == BigInt[1 0; 0 1]

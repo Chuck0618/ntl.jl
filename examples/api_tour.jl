@@ -6,12 +6,9 @@ using Statistics
 # This tour exercises every exported interface in the current module.
 
 # Prime-field metadata and arithmetic -----------------------------------------
-@assert zzp_Min == 2
-@assert zzp_Max > zzp_Min
+@assert PRIME_FIELD_MIN == 2
+@assert PRIME_FIELD_MAX > PRIME_FIELD_MIN
 F = PrimeField(101)
-@assert PrimeField === zzp
-@assert zzp(101) === F
-@assert zzp{101}(3) == F(3)
 @assert modulus(F) == 101
 @assert characteristic(F) == 101
 @assert parent(F(1)) == F
@@ -63,7 +60,7 @@ x, y = F(3), F(4)
 
 @assert VectorConv(F, [-1, 0, 2, 103]) == F.([100, 0, 2, 2])
 @assert length(VectorRandom(F, 4; rng = MersenneTwister(1))) == 4
-@assert random_zzp(F; rng = MersenneTwister(2)) isa F
+@assert rand(MersenneTwister(2), F) isa F
 @assert VectorMulMod([1, 2, 3], 3, 101) == [3, 6, 9]
 out = zeros(Int, 3)
 @assert VectorMulMod!(out, [1, 2, 3], 3, 101) === out
@@ -75,17 +72,6 @@ R = BigModRing(12)
 @assert R(5) isa ModInt
 @assert ModInt(R, 5) == R(5)
 
-# Legacy names remain callable, but are not used in everyday examples.
-@assert BigModRing === ModRing
-@assert BigModRing === ZZPField
-@assert BigModRing === ZZP
-@assert ModInt === ZZp
-@assert ModInt === ZZ_p
-@assert ModRing(12) == R
-@assert ZZP(12) == R
-@assert ZZPField(12) == R
-@assert ZZp(R, 5) == R(5)
-@assert ZZ_p(R, 5) == R(5)
 @assert modulus(R) == 12
 @assert characteristic(R) == 12
 @assert R(5) * R(5) == R(1)
@@ -101,7 +87,7 @@ R = BigModRing(12)
 @test_throws ErrorException R(1) + PrimeField(7)(1)
 @assert length(VectorRandom(R, 2; rng = MersenneTwister(3))) == 2
 @assert VectorConv(R, [-1, 2, 13]) == R.([-1, 2, 13])
-@assert random_zzp(R; rng = MersenneTwister(4)) isa ModInt
+@assert rand(MersenneTwister(4), R) isa ModInt
 
 # Number theory ----------------------------------------------------------------
 @assert ProbPrime(101)
@@ -205,8 +191,7 @@ facg = factor((g + 1)^3 * (g^2 + g + 1)^2)
 # Extension fields --------------------------------------------------------------
 E = extension_field(P, x^2 + 2)
 @assert E isa ExtensionField
-@assert ExtensionElem === ZZpE # Descriptive and NTL-facing names for the same type.
-@assert ZZpE(E, gen(E)) == gen(E) # Retain the NTL-facing constructor spelling.
+@assert ExtensionElem(E, gen(E)) == gen(E) # Retain the NTL-facing constructor spelling.
 @assert base_field(E) == P
 @assert defining_polynomial(E) == x^2 + 2
 @assert extension_degree(E) == 2
@@ -305,7 +290,7 @@ result = lll(B)
 @assert abs(det_exact(result.transform)) == 1
 @assert result.verified
 @assert result.mode == :fast
-@assert LLL(B).basis == result.basis
+@assert lll(B).basis == result.basis
 @assert gram_schmidt_exact(result.basis) isa Tuple
 
 # NTT, generalized FFT, and acceleration -----------------------------------------

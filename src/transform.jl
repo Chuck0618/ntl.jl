@@ -16,7 +16,7 @@ end
 # Specialized in-place NTT for machine-word prime fields. The generic methods
 # below remain available for other parents, while this path avoids dynamic
 # field dispatch in every butterfly operation.
-function _ntt_zzp_root!(A::Vector{PrimeField{P}}, omega::PrimeField{P}, inverse::Bool) where {P}
+function _ntt_primefield_root!(A::Vector{PrimeField{P}}, omega::PrimeField{P}, inverse::Bool) where {P}
     n = length(A)
     n > 0 || throw(ArgumentError("NTT input must be nonempty"))
     n & (n - 1) == 0 || throw(ArgumentError("the NTT length must be a power of two"))
@@ -64,15 +64,15 @@ function _ntt_zzp_root!(A::Vector{PrimeField{P}}, omega::PrimeField{P}, inverse:
     A
 end
 
-function _ntt_zzp!(A::Vector{PrimeField{P}}, inverse::Bool = false) where {P}
+function _ntt_primefield!(A::Vector{PrimeField{P}}, inverse::Bool = false) where {P}
     length(A) == 1 && return A
     omega = inverse ? inv(root_of_unity(length(A), PrimeField{P})) :
                       root_of_unity(length(A), PrimeField{P})
-    _ntt_zzp_root!(A, omega, inverse)
+    _ntt_primefield_root!(A, omega, inverse)
 end
 
-ntt(a::Vector{PrimeField{P}}) where {P} = _ntt_zzp!(collect(a), false)
-intt(a::Vector{PrimeField{P}}) where {P} = _ntt_zzp!(collect(a), true)
+ntt(a::Vector{PrimeField{P}}) where {P} = _ntt_primefield!(collect(a), false)
+intt(a::Vector{PrimeField{P}}) where {P} = _ntt_primefield!(collect(a), true)
 
 function ntt_convolve(a::Vector{PrimeField{P}}, b::Vector{PrimeField{P}}) where {P}
     isempty(a) && return copy(a)
@@ -88,12 +88,12 @@ function ntt_convolve(a::Vector{PrimeField{P}}, b::Vector{PrimeField{P}}) where 
     # One primitive root computation is shared by both forward transforms and
     # the inverse transform of this convolution.
     omega = root_of_unity(n, F)
-    _ntt_zzp_root!(A, omega, false)
-    _ntt_zzp_root!(B, omega, false)
+    _ntt_primefield_root!(A, omega, false)
+    _ntt_primefield_root!(B, omega, false)
     @inbounds for i in 1:n
         A[i] = _raw(Val{P}(), _mulmod_raw(rep(A[i]), rep(B[i]), P))
     end
-    _ntt_zzp_root!(A, inv(omega), true)
+    _ntt_primefield_root!(A, inv(omega), true)
     A[1:total]
 end
 
