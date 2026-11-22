@@ -1,5 +1,5 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Complete NTL.jl 0.12.0 manual with canonical API and random-prime performance comparisons."><link rel="icon" href="data:,"><title>NTL.jl
-0.12.0 — Complete Manual and API Tour</title><style>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Complete NTL.jl 0.13.0 manual with optimized kernels and random-prime performance comparisons."><link rel="icon" href="data:,"><title>NTL.jl
+0.13.0 — Complete Manual and API Tour</title><style>
     :root {
       --paper: oklch(97.8% 0.002 90);
       --ink: oklch(18% 0.004 90);
@@ -229,7 +229,7 @@
       .sidebar #TOC { max-height: 320px; overflow-y: auto; margin-bottom: 24px; }
       main pre code { min-width: 0; }
     }
-</style></head><body><div class="page"><header class="masthead"><a class="brand" href="#top">NTL.jl / complete manual</a><div class="masthead-meta">Version 0.12.0 · Julia 1.9+ · Pure Julia · Offline reference</div></header><div id="top" class="hero"><div class="hero-copy"><p class="kicker">Exact arithmetic, documented from first construction to verification</p><h1>The complete NTL.jl manual.</h1><p class="lede">The full project README, a canonical interface without legacy aliases, measured optimizations, random-prime comparisons, and an executable call for every exported interface.</p><ul class="hero-facts"><li><strong>Verified</strong><span>4,336,875 passing assertions on Julia 1.11.7</span></li><li><strong>Coverage</strong><span>131 exported names demonstrated in one API tour</span></li><li><strong>Included</strong><span>README + clean API index + full tour source</span></li></ul></div><div class="hero-demo code-panel"><div class="code-caption">Prime fields and big modular rings</div><pre><code>using NTL
+</style></head><body><div class="page"><header class="masthead"><a class="brand" href="#top">NTL.jl / complete manual</a><div class="masthead-meta">Version 0.13.0 · Julia 1.9+ · Pure Julia · Offline reference</div></header><div id="top" class="hero"><div class="hero-copy"><p class="kicker">Exact arithmetic, documented from first construction to verification</p><h1>The complete NTL.jl manual.</h1><p class="lede">The full project README, optimized field / polynomial / lattice kernels, random-prime comparisons, and an executable call for every exported interface.</p><ul class="hero-facts"><li><strong>Verified</strong><span>4,338,862 passing assertions on Julia 1.11.7</span></li><li><strong>Coverage</strong><span>131 exported names demonstrated in one API tour</span></li><li><strong>Included</strong><span>README + clean API index + full tour source</span></li></ul></div><div class="hero-demo code-panel"><div class="code-caption">Prime fields and big modular rings</div><pre><code>using NTL
 
 F = PrimeField(101)
 a = F(120)       # Machine-word prime field
@@ -298,7 +298,7 @@ algebra, generalized FFT, and lattice reduction.</strong></p>
 clone. It is designed to be approachable for new Julia users while
 providing efficient, tested implementations for research and
 teaching.</p>
-<p>Version: <strong>0.12.0</strong><br> Tested with: <strong>Julia
+<p>Version: <strong>0.13.0</strong><br> Tested with: <strong>Julia
 1.11.7</strong><br> Compatibility target: <strong>Julia
 1.9+</strong></p>
 <h2 id="contents">Contents</h2>
@@ -371,7 +371,7 @@ using NTL</code></pre>
 contains <code>Project.toml</code>.</p>
 <h3 id="run-the-complete-test-suite">Run the complete test suite</h3>
 <pre class="bash"><code>julia --project=. -e &#39;using Pkg; Pkg.instantiate(); Pkg.test()&#39;</code></pre>
-<p>The current suite contains <strong>4,336,875 passing
+<p>The current suite contains <strong>4,338,862 passing
 assertions</strong>. Runtime code depends only on Julia’s
 <code>Random</code> standard library; <code>Test</code> is used only by
 the test target.</p>
@@ -1789,93 +1789,141 @@ workflow</td>
 </table></div>
 <h2 id="comparison-with-c-ntl">Comparison with C++ NTL</h2>
 <p>The following table was rerun on <strong>2026-11-22</strong> using
-NTL.jl 0.12.0, official C++ NTL 11.4.2, and Julia 1.11.7 on the 2-core
-project server. Each value is the median of 31 runs after warm-up. Input
-construction is excluded; the NTL.jl measurements use a process that
-loads only NTL.jl. These are workload-specific examples, not universal
-performance guarantees.</p>
+NTL.jl 0.12.0 as the baseline, the 0.13.0 optimized kernels, official
+C++ NTL 11.4.2, and Julia 1.11.7 on the 2-core project server. Each
+value is the median of 31 runs after warm-up, with input construction
+excluded and the NTL-only process used for these measurements. These are
+workload-specific examples, not universal performance guarantees.</p>
 <div class="table-wrap"><table>
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 21%" />
+<col style="width: 21%" />
+<col style="width: 21%" />
+<col style="width: 21%" />
+</colgroup>
 <thead>
 <tr class="header">
 <th>Operation</th>
 <th style="text-align: right;">C++ NTL (ms)</th>
-<th style="text-align: right;">NTL.jl (ms)</th>
-<th style="text-align: right;">NTL.jl / C++</th>
+<th style="text-align: right;">0.12.0 baseline (ms)</th>
+<th style="text-align: right;">0.13.0 optimized (ms)</th>
+<th style="text-align: right;">Optimized / C++</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
 <td>Small modular mul/add</td>
-<td style="text-align: right;">8.4664</td>
-<td style="text-align: right;">68.6621</td>
-<td style="text-align: right;">8.11x</td>
+<td style="text-align: right;">8.4191</td>
+<td style="text-align: right;">65.2180</td>
+<td style="text-align: right;">70.4097</td>
+<td style="text-align: right;">8.36x</td>
 </tr>
 <tr class="even">
 <td>BigInt modular exponentiation</td>
-<td style="text-align: right;">0.0130</td>
-<td style="text-align: right;">0.0243</td>
-<td style="text-align: right;">1.87x</td>
+<td style="text-align: right;">0.0129</td>
+<td style="text-align: right;">0.0224</td>
+<td style="text-align: right;">0.0046</td>
+<td style="text-align: right;">0.36x</td>
 </tr>
 <tr class="odd">
 <td>Polynomial multiplication</td>
-<td style="text-align: right;">0.0655</td>
-<td style="text-align: right;">0.2717</td>
-<td style="text-align: right;">4.15x</td>
+<td style="text-align: right;">0.0654</td>
+<td style="text-align: right;">0.2609</td>
+<td style="text-align: right;">0.0671</td>
+<td style="text-align: right;">1.03x</td>
 </tr>
 <tr class="even">
 <td>NTT convolution</td>
-<td style="text-align: right;">0.6629</td>
-<td style="text-align: right;">1.0280</td>
-<td style="text-align: right;">1.55x</td>
+<td style="text-align: right;">0.6519</td>
+<td style="text-align: right;">1.0235</td>
+<td style="text-align: right;">0.5717</td>
+<td style="text-align: right;">0.88x</td>
 </tr>
 <tr class="odd">
 <td>Polynomial factorization</td>
-<td style="text-align: right;">0.0277</td>
-<td style="text-align: right;">0.6428</td>
-<td style="text-align: right;">23.18x</td>
+<td style="text-align: right;">0.0257</td>
+<td style="text-align: right;">0.6673</td>
+<td style="text-align: right;">0.0751</td>
+<td style="text-align: right;">2.92x</td>
 </tr>
 <tr class="even">
 <td>Finite-field determinant</td>
-<td style="text-align: right;">0.0303</td>
+<td style="text-align: right;">0.0299</td>
 <td style="text-align: right;">0.0373</td>
-<td style="text-align: right;">1.23x</td>
+<td style="text-align: right;">0.0146</td>
+<td style="text-align: right;">0.49x</td>
 </tr>
 <tr class="odd">
 <td>LLL (with exact verification)</td>
-<td style="text-align: right;">0.0697</td>
-<td style="text-align: right;">1.8148</td>
-<td style="text-align: right;">26.03x</td>
+<td style="text-align: right;">0.0704</td>
+<td style="text-align: right;">1.7875</td>
+<td style="text-align: right;">0.1794</td>
+<td style="text-align: right;">2.55x</td>
 </tr>
 <tr class="even">
 <td>LLL (reduction only)</td>
-<td style="text-align: right;">0.0691</td>
-<td style="text-align: right;">0.3160</td>
-<td style="text-align: right;">4.58x</td>
+<td style="text-align: right;">0.0693</td>
+<td style="text-align: right;">0.2674</td>
+<td style="text-align: right;">0.0278</td>
+<td style="text-align: right;">0.40x</td>
 </tr>
 <tr class="odd">
 <td>Primality test (per call)</td>
-<td style="text-align: right;">0.0697</td>
-<td style="text-align: right;">0.0308</td>
-<td style="text-align: right;">0.44x</td>
+<td style="text-align: right;">0.0690</td>
+<td style="text-align: right;">0.0258</td>
+<td style="text-align: right;">0.0258</td>
+<td style="text-align: right;">0.37x</td>
 </tr>
 </tbody>
 </table></div>
 <h3 id="what-these-results-mean">What these results mean</h3>
 <ul>
-<li>The current generalized FFT and matrix paths substantially reduced
-the polynomial multiplication, NTT, and determinant gaps compared with
-the older table.</li>
-<li>The small scalar mul/add loop still has a significant gap in this
-measurement.</li>
-<li>LLL now distinguishes the default exact post-verification from
-reduction-only timing. Exact verification is the dominant cost in this
-12×12 example; <code>verify = false</code> is faster but does not
-provide the same exact guarantee.</li>
-<li>The primality row is normalized per call. C++ uses 16 Miller–Rabin
-rounds, whereas NTL.jl uses the deterministic signed-<code>Int</code>
-witness set, so this is not a general primality-performance claim.</li>
+<li>The packed polynomial path is close to C++ NTL in this degree-999
+example, and the DIF/DIT convolution is faster than C++ NTL in the
+measured 4096-coefficient case.</li>
+<li>The optimized determinant and LLL reduction-only paths are also
+faster than C++ NTL here. Default LLL still includes exact
+post-verification and remains slower than the C++ call.</li>
+<li><code>small_modmul</code> did not improve in this run. Typed
+hot-loop examples show that Julia dispatch boundaries materially affect
+this workload, so the table should not be read as proof of a universal
+scalar speedup.</li>
+<li>Factorization improved substantially but remains slower than C++
+NTL. Primality uses different witness strategies and is shown only as a
+reference.</li>
 </ul>
 <h2 id="performance-optimizations">Performance optimizations</h2>
+<p>Version 0.13.0 adds a larger set of specialized kernels while
+preserving generic fallbacks and exact verification:</p>
+<ol type="1">
+<li><strong>PrimeField:</strong> specialized unsigned multiplication,
+Barrett reduction for large machine-word moduli, and Montgomery powering
+on 64-bit builds.</li>
+<li><strong>BigModRing:</strong> conditional add/subtract corrections,
+GMP-backed inversion and <code>powermod</code>, with no shared mutable
+global workspace.</li>
+<li><strong>Polynomials:</strong> exact packed-integer multiplication
+when the coefficient bound fits one digit, typed auxiliary NTT, DIF/DIT
+convolution, and <code>UInt128</code> CRT for at most four auxiliary
+primes.</li>
+<li><strong>Determinants:</strong> column-major elimination with a
+computed refresh interval for delayed modular reduction and a generic
+fallback.</li>
+<li><strong>Factorization:</strong> typed polynomial parents, buffered
+modular powers, and no repeated leading-inverse work in small-degree
+cases.</li>
+<li><strong>LLL:</strong> incremental floating GSO updates, checked
+machine-integer row operations with BigInt fallback, and exact
+fraction-free verification of transformation, unimodularity, size
+reduction, and the Lovász condition.</li>
+</ol>
+<p>The accompanying <code>test/performance_regressions.jl</code> adds
+1,987 assertions for these paths, including large prime moduli,
+packed-digit boundaries, CRT reconstruction, negative exponents,
+root-of-unity selection, singular matrices, and exact LLL
+invariants.</p>
+<h3 id="version-0.11.0">Version 0.11.0</h3>
 <p>Version 0.11.0 implements three measured optimizations while
 preserving the original algorithms as fallbacks:</p>
 <ol type="1">
@@ -1964,12 +2012,12 @@ universal guarantees.</p>
 GaloisFields.jl</h2>
 <p>GaloisFields.jl is particularly strong for small finite fields and
 extension arithmetic. This table was rerun on
-<strong>2026-11-22</strong> with NTL.jl 0.12.0, GaloisFields.jl 1.4, and
-Julia 1.11.7. The fixed p=101 choice has been replaced by <strong>the
-same eight random 7-bit primes for every workload</strong>:
+<strong>2026-11-22</strong> with NTL.jl 0.13.0, GaloisFields.jl 1.4, and
+Julia 1.11.7. Every workload uses <strong>the same eight random 7-bit
+primes for both packages</strong>:
 <code>[67, 73, 83, 89, 97, 101, 107, 113]</code>. Each per-prime value
-is the median of 31 runs after warm-up; the table then reports the
-median across primes. Input construction is excluded.</p>
+is the median of 31 runs after warm-up; the table reports the median
+across primes. Input construction is excluded.</p>
 <div class="table-wrap"><table>
 <thead>
 <tr class="header">
@@ -1981,48 +2029,48 @@ median across primes. Input construction is excluded.</p>
 <tbody>
 <tr class="odd">
 <td>Prime-field mul/add x1e6</td>
-<td style="text-align: right;">69.2760</td>
-<td style="text-align: right;">71.2422</td>
+<td style="text-align: right;">69.9130</td>
+<td style="text-align: right;">72.0840</td>
 </tr>
 <tr class="even">
 <td>Prime-field fused muladd x1e6</td>
-<td style="text-align: right;">10.7357</td>
-<td style="text-align: right;">15.0006</td>
+<td style="text-align: right;">9.9001</td>
+<td style="text-align: right;">14.9645</td>
 </tr>
 <tr class="odd">
 <td>Prime-field power x10000</td>
-<td style="text-align: right;">0.3870</td>
-<td style="text-align: right;">0.4293</td>
+<td style="text-align: right;">0.3935</td>
+<td style="text-align: right;">0.4288</td>
 </tr>
 <tr class="even">
 <td>Prime-field inverse x10000</td>
-<td style="text-align: right;">0.2384</td>
-<td style="text-align: right;">0.2315</td>
+<td style="text-align: right;">0.2408</td>
+<td style="text-align: right;">0.2339</td>
 </tr>
 <tr class="odd">
 <td>Zech extension ops x10000</td>
-<td style="text-align: right;">0.4958</td>
-<td style="text-align: right;">0.8573</td>
+<td style="text-align: right;">0.5010</td>
+<td style="text-align: right;">0.8568</td>
 </tr>
 <tr class="even">
 <td>Zech muladd x10000</td>
-<td style="text-align: right;">0.6014</td>
-<td style="text-align: right;">0.8584</td>
+<td style="text-align: right;">0.5971</td>
+<td style="text-align: right;">0.8385</td>
 </tr>
 <tr class="odd">
 <td>Zech inverse x10000</td>
-<td style="text-align: right;">0.3816</td>
-<td style="text-align: right;">0.4565</td>
+<td style="text-align: right;">0.3940</td>
+<td style="text-align: right;">0.4656</td>
 </tr>
 <tr class="even">
 <td>Zech power x10000</td>
-<td style="text-align: right;">0.4852</td>
-<td style="text-align: right;">0.3799</td>
+<td style="text-align: right;">0.4858</td>
+<td style="text-align: right;">0.3820</td>
 </tr>
 <tr class="odd">
 <td>Polynomial multiplication, deg 999</td>
-<td style="text-align: right;">0.2839</td>
-<td style="text-align: right;">6.5600</td>
+<td style="text-align: right;">0.0649</td>
+<td style="text-align: right;">6.5789</td>
 </tr>
 </tbody>
 </table></div>
@@ -2034,9 +2082,9 @@ slightly faster for the median inverse workload.</li>
 <li>In the Zech comparison, NTL.jl was faster for extension ops, fused
 muladd, and inversion, while GaloisFields was faster for the tested
 power loop.</li>
-<li>NTL.jl was faster for the degree-999 polynomial multiplication
-across these primes. The full report also includes min–max ranges
-because per-prime timing is not constant.</li>
+<li>The 0.13.0 packed polynomial path substantially improved degree-999
+multiplication. The full report includes per-prime ranges, so these are
+not single-prime conclusions.</li>
 <li>The random-prime report separately covers larger moduli and the
 GaloisFields signed-<code>Int128</code> boundary. GaloisFields remains a
 strong choice for compact small-field code; NTL.jl additionally covers
@@ -2478,7 +2526,8 @@ set_polynomial_acceleration!(true)
 println(&quot;API tour completed successfully.&quot;)</code></pre>
 <h2 id="c.-exported-interface-index">C. Exported-interface index</h2>
 <p>This index contains only the canonical public interface after the
-0.12.0 cleanup.</p>
+0.12.0 cleanup. The 0.13.0 optimization work changes kernels rather than
+adding public names.</p>
 <div class="table-wrap"><table>
 <colgroup>
 <col style="width: 50%" />
@@ -2559,25 +2608,31 @@ ntt_convolve</td>
 <h2 id="d.-documentation-and-verification-checklist">D. Documentation
 and verification checklist</h2>
 <ul>
-<li>Release documented here: <strong>NTL.jl 0.12.0</strong>, targeting
+<li>Release documented here: <strong>NTL.jl 0.13.0</strong>, targeting
 Julia 1.9 or later and tested with Julia 1.11.7.</li>
-<li>Full regression suite: <strong>4,336,875 passing
-assertions</strong>, including explicit checks that removed legacy
-symbols no longer exist in the module.</li>
+<li>Full regression suite: <strong>4,338,862 passing
+assertions</strong>, including 1,987 optimized-kernel checks and
+explicit checks that removed legacy symbols no longer exist in the
+module.</li>
 <li>Every exported name occurs in at least one executable example in
-<code>api_tour.jl</code>.</li>
+<code>api_tour.jl</code>; all 14 package examples also passed on the
+optimized server build.</li>
 <li><code>PrimeField(p)</code> is the machine-word prime-field
 constructor, with the modulus carried by <code>PrimeField{p}</code> at
 the type level.</li>
 <li><code>BigModRing(n)</code> is the arbitrary-precision modular-ring
-parent and <code>ModInt</code> is its element type.</li>
+parent and <code>ModInt</code> is its element type. Everyday
+construction uses <code>R = BigModRing(n)</code> followed by
+<code>R(a)</code>.</li>
 <li><code>ExtensionElem</code> is the actual concrete extension-element
 type; ordinary extension construction continues to use
 <code>E(...)</code>.</li>
-<li>Performance tables use current same-server measurements. The
-GaloisFields table uses eight random 7-bit primes, per-prime medians of
-31 runs, and a median across primes; the full report additionally
-records ranges.</li>
+<li>Performance tables distinguish baseline, optimized, and C++ results,
+and explicitly retain non-improvements such as
+<code>small_modmul</code>.</li>
+<li>The GaloisFields comparison uses eight random 7-bit primes,
+per-prime medians of 31 runs, a median across primes, and min–max ranges
+in the full report.</li>
 <li>This page is self-contained: equations use MathML, styling is
 embedded, and no web framework or network connection is required.</li>
-</ul></main></div><footer class="footer"><div>NTL.jl · Exact mathematical core · Version 0.12.0</div><div><a href="#top">Return to top</a> · <a href="../examples/api_tour.jl">API tour source</a></div></footer></div></body></html>
+</ul></main></div><footer class="footer"><div>NTL.jl · Exact mathematical core · Version 0.13.0</div><div><a href="#top">Return to top</a> · <a href="../examples/api_tour.jl">API tour source</a></div></footer></div></body></html>

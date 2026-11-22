@@ -44,8 +44,8 @@ end
         A[end, :] = A[1, :]
         @test iszero(det(A))
     end
-    @test NTL._delayed_det_supported(256, 101)
-    @test !NTL._delayed_det_supported(8, PRIME_FIELD_MAX)
+    @test NTL._det_refresh_interval(101) >= 256
+    @test NTL._det_refresh_interval(PRIME_FIELD_MAX) < 2
 end
 
 @testset "Exact LLL lattice reduction" begin

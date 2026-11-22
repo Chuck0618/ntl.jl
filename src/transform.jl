@@ -74,27 +74,92 @@ end
 ntt(a::Vector{PrimeField{P}}) where {P} = _ntt_primefield!(collect(a), false)
 intt(a::Vector{PrimeField{P}}) where {P} = _ntt_primefield!(collect(a), true)
 
+# For a power-of-two length, one half-order exponentiation certifies that
+# the candidate has exact order n. Convolution is independent of which
+# such root is chosen. The public ntt/intt ordering still uses its usual root.
+function _convolution_root(::Val{P}, n::Int) where {P}
+    (P - 1) % n == 0 || throw(ArgumentError("n must divide p-1"))
+    for a in 2:(P - 1)
+        w = power(_raw(Val{P}(), a), (P - 1) ÷ n)
+        rep(power(w, n >> 1)) == P - 1 && return w
+    end
+    error("no root of the required order")
+end
+
+function _convolution_twiddles(root::PrimeField{P}, n::Int) where {P}
+    table = Vector{Int}(undef, n - 1)
+    @inbounds for half in (n >> k for k in 1:trailing_zeros(n))
+        step = rep(root^((n >> 1) ÷ half))
+        w = 1
+        for j in half:(2half - 1)
+            table[j] = w
+            w = _mulmod_field(w, step, Val{P}())
+        end
+    end
+    table
+end
+
+# Forward DIF produces bit-reversed order. Inverse DIT consumes that same
+# order, so the pointwise product needs no explicit permutation.
+function _convolution_forward!(A::Vector{PrimeField{P}}, table::Vector{Int}) where {P}
+    n = length(A)
+    half = n >> 1
+    while half > 0
+        @inbounds for start in 1:2half:n
+            for j in 0:(half - 1)
+                i, k = start + j, start + j + half
+                u, v = rep(A[i]), rep(A[k])
+                A[i] = _raw(Val{P}(), _addmod_raw(u, v, P))
+                d = _submod_raw(u, v, P)
+                A[k] = _raw(Val{P}(), _mulmod_field(d, table[half + j], Val{P}()))
+            end
+        end
+        half >>= 1
+    end
+end
+
+function _convolution_inverse!(A::Vector{PrimeField{P}}, table::Vector{Int}) where {P}
+    n = length(A)
+    half = 1
+    while half < n
+        @inbounds for start in 1:2half:n
+            for j in 0:(half - 1)
+                i, k = start + j, start + j + half
+                u = rep(A[i])
+                v = _mulmod_field(rep(A[k]), table[half + j], Val{P}())
+                A[i] = _raw(Val{P}(), _addmod_raw(u, v, P))
+                A[k] = _raw(Val{P}(), _submod_raw(u, v, P))
+            end
+        end
+        half <<= 1
+    end
+end
+
 function ntt_convolve(a::Vector{PrimeField{P}}, b::Vector{PrimeField{P}}) where {P}
     isempty(a) && return copy(a)
     isempty(b) && return copy(b)
     total = length(a) + length(b) - 1
     n = nextpow(2, total)
-    F = PrimeField{P}
+    n == 1 && return [a[1] * b[1]]
     z = _raw(Val{P}(), 0)
     A = fill(z, n)
     B = fill(z, n)
     copyto!(A, 1, a, 1, length(a))
     copyto!(B, 1, b, 1, length(b))
-    # One primitive root computation is shared by both forward transforms and
-    # the inverse transform of this convolution.
-    omega = root_of_unity(n, F)
-    _ntt_primefield_root!(A, omega, false)
-    _ntt_primefield_root!(B, omega, false)
+    omega = _convolution_root(Val{P}(), n)
+    forward = _convolution_twiddles(omega, n)
+    _convolution_forward!(A, forward)
+    _convolution_forward!(B, forward)
     @inbounds for i in 1:n
-        A[i] = _raw(Val{P}(), _mulmod_raw(rep(A[i]), rep(B[i]), P))
+        A[i] *= B[i]
     end
-    _ntt_primefield_root!(A, inv(omega), true)
-    A[1:total]
+    _convolution_inverse!(A, _convolution_twiddles(inv(omega), n))
+    resize!(A, total)
+    scale = _raw(Val{P}(), _invmod_reduced(n, P))
+    @inbounds for i in eachindex(A)
+        A[i] *= scale
+    end
+    A
 end
 
 """In-place iterative radix-two Cooley–Tukey NTT on a copied vector."""

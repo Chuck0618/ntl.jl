@@ -18,6 +18,7 @@ struct ModInt <: Number
     function ModInt(F::BigModRing, a::Integer)
         new(F, mod(BigInt(a), modulus(F)))
     end
+    ModInt(F::BigModRing, a::BigInt, ::_UnsafeRep) = new(F, a)
 end
 
 (F::BigModRing)(a::Integer) = ModInt(F, a)
@@ -52,14 +53,34 @@ function show(io::IO, a::ModInt)
 end
 
 function _check_same_parent(x::ModInt, y::ModInt)
-    parent(x) == parent(y) || throw(ArgumentError("cannot mix different moduli"))
-    parent(x)
+    F, G = parent(x), parent(y)
+    (F === G || F == G) || throw(ArgumentError("cannot mix different moduli"))
+    F
 end
 
-+(x::ModInt, y::ModInt) = (F = _check_same_parent(x, y); F(rep(x) + rep(y)))
--(x::ModInt, y::ModInt) = (F = _check_same_parent(x, y); F(rep(x) - rep(y)))
+function +(x::ModInt, y::ModInt)
+    F = _check_same_parent(x, y)
+    result = rep(x) + rep(y)
+    # Reduced inputs imply that one subtraction suffices. Only mutate the
+    # newly allocated result, which cannot alias a user-visible representative.
+    result >= modulus(F) && Base.GMP.MPZ.sub!(result, result, modulus(F))
+    ModInt(F, result, _unsafe_rep)
+end
+
+function -(x::ModInt, y::ModInt)
+    F = _check_same_parent(x, y)
+    result = rep(x) - rep(y)
+    result < 0 && Base.GMP.MPZ.add!(result, result, modulus(F))
+    ModInt(F, result, _unsafe_rep)
+end
+
 -(x::ModInt) = parent(x)(-rep(x))
-*(x::ModInt, y::ModInt) = (F = _check_same_parent(x, y); F(rep(x) * rep(y)))
+function *(x::ModInt, y::ModInt)
+    F = _check_same_parent(x, y)
+    result = rep(x) * rep(y)
+    Base.GMP.MPZ.fdiv_r!(result, result, modulus(F))
+    ModInt(F, result, _unsafe_rep)
+end
 
 +(x::ModInt, y::Integer) = x + parent(x)(y)
 +(x::Integer, y::ModInt) = parent(y)(x) + y
@@ -70,8 +91,10 @@ end
 
 function inv(x::ModInt)
     n = modulus(x)
-    gcd(rep(x), n) == 1 || throw(DomainError(x, "inverse undefined for a nonunit"))
-    parent(x)(invmod(rep(x), n))
+    result = BigInt(0)
+    Base.GMP.MPZ.invert!(result, rep(x), n) != 0 ||
+        throw(DomainError(x, "inverse undefined for a nonunit"))
+    ModInt(parent(x), result, _unsafe_rep)
 end
 /(x::ModInt, y::ModInt) = x * inv(y)
 /(x::ModInt, y::Integer) = x / parent(x)(y)
@@ -79,19 +102,10 @@ end
 sqr(x::ModInt) = x * x
 
 function power(x::ModInt, e::Integer)
-    base = x
-    k = BigInt(e)
-    if k < 0
-        base = inv(base)
-        k = -k
-    end
-    result = one(parent(x))
-    while k > 0
-        isodd(k) && (result *= base)
-        k >>= 1
-        k > 0 && (base *= base)
-    end
-    result
+    exponent = BigInt(e)
+    base = exponent < 0 ? rep(inv(x)) : rep(x)
+    result = powermod(base, abs(exponent), modulus(x))
+    ModInt(parent(x), result, _unsafe_rep)
 end
 ^(x::ModInt, e::Integer) = power(x, e)
 

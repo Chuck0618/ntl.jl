@@ -2,28 +2,50 @@
 
 export gram_schmidt_exact, lll
 
-function _dot_exact(a, b)
-    sum(a[i] * b[i] for i in eachindex(a, b))
+function _gram_bareiss(B::AbstractMatrix{<:Integer})
+    n, m = size(B)
+    n > 0 && m > 0 || throw(ArgumentError("the basis must be nonempty"))
+    Z = Matrix{BigInt}(B)
+    gram = Matrix{BigInt}(undef, n, n)
+    left, right = BigInt(0), BigInt(0)
+    for j in 1:n, i in j:n
+        sum = BigInt(0)
+        for k in 1:m
+            Base.GMP.MPZ.mul!(left, Z[i, k], Z[j, k])
+            Base.GMP.MPZ.add!(sum, sum, left)
+        end
+        gram[i, j] = sum
+    end
+    previous = BigInt(1)
+    # Bareiss elimination on the lower triangle of the Gram matrix.
+    # The pivot is the leading principal determinant, and each entry
+    # below it is that pivot times the corresponding GSO coefficient.
+    for j in 1:n
+        pivot = gram[j, j]
+        iszero(pivot) && throw(ArgumentError("the input rows must be linearly independent"))
+        for k in (j + 1):n, i in k:n
+            _bareiss_update!(gram[i, k], pivot, gram[i, j], gram[k, j], previous, left, right)
+        end
+        previous = pivot
+    end
+    gram
 end
 
 """Exact rational Gram–Schmidt data for a full-rank row basis."""
 function gram_schmidt_exact(B::AbstractMatrix{<:Integer})
-    n, m = size(B)
-    n > 0 && m > 0 || throw(ArgumentError("the basis must be nonempty"))
+    gram = _gram_bareiss(B)
+    n = size(gram, 1)
     Q = Rational{BigInt}
-    bstar = Vector{Vector{Q}}()
     mu = zeros(Q, n, n)
     norms = zeros(Q, n)
-    for i in 1:n
-        v = Q.(B[i, :])
-        for j in 1:(i - 1)
-            iszero(norms[j]) && throw(ArgumentError("the input rows must be linearly independent"))
-            mu[i, j] = _dot_exact(Q.(B[i, :]), bstar[j]) / norms[j]
-            v -= mu[i, j] .* bstar[j]
+    previous = BigInt(1)
+    for j in 1:n
+        pivot = gram[j, j]
+        norms[j] = pivot // previous
+        for i in (j + 1):n
+            mu[i, j] = gram[i, j] // pivot
         end
-        push!(bstar, v)
-        norms[i] = _dot_exact(v, v)
-        iszero(norms[i]) && throw(ArgumentError("the input rows must be linearly independent"))
+        previous = pivot
     end
     mu, norms
 end
@@ -33,7 +55,7 @@ function _nearest_integer(x::Rational{BigInt})
 end
 
 function _lll_delta(delta)
-    d = delta isa Rational{BigInt} ? delta : rationalize(BigInt, delta)
+    d = delta isa Union{Rational,Integer} ? Rational{BigInt}(delta) : rationalize(BigInt, delta)
     BigInt(1) // BigInt(4) < d < 1 || throw(DomainError(delta, "LLL delta must lie strictly between 1/4 and 1"))
     d
 end

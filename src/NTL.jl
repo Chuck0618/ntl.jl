@@ -45,7 +45,29 @@ const _MULMOD_DIRECT_MAX = isqrt(typemax(Int))
     n <= _MULMOD_DIRECT_MAX ? (a * b) % n : Int(mod(UInt128(a) * UInt128(b), UInt128(n)))
 end
 
-@inline _muladd_raw(a::Int, b::Int, c::Int, n::Int) = _addmod_raw(_mulmod_raw(a, b, n), c, n)
+# Compute the reciprocal at specialization time. For x < P², the high
+# half of x * floor(2^128 / P) underestimates x ÷ P by at most one.
+@generated function _field_reciprocal(::Val{P}) where {P}
+    return :($(UInt128((BigInt(1) << 128) ÷ P)))
+end
+
+@inline function _mulmod_field(a::Int, b::Int, field::Val{P}) where {P}
+    if P - 1 <= isqrt(typemax(UInt))
+        return Int((UInt(a) * UInt(b)) % UInt(P))
+    end
+    if Sys.WORD_SIZE != 64
+        return _mulmod_raw(a, b, P)
+    end
+    product = UInt128(a) * UInt128(b)
+    reciprocal = _field_reciprocal(field)
+    x0, x1 = product % UInt64, UInt64(product >> 64)
+    m0, m1 = reciprocal % UInt64, UInt64(reciprocal >> 64)
+    cross1 = widemul(x0, m1) + (widemul(x0, m0) >> 64)
+    cross2 = widemul(x1, m0) + (cross1 % UInt64)
+    quotient = (widemul(x1, m1) + (cross1 >> 64) + (cross2 >> 64)) % UInt64
+    residue = x0 - quotient * UInt64(P)
+    Int(ifelse(residue >= UInt64(P), residue - UInt64(P), residue))
+end
 
 # Overflow-free addition. The branch guarantees that a+b < n when it is used.
 @inline function _addmod_raw(a::Int, b::Int, n::Int)
@@ -347,12 +369,19 @@ end
 -(x::Integer, y::PrimeField{P}) where {P} = _from_integer(Val{P}(), x) - y
 -(x::PrimeField{P}) where {P} = _raw(Val{P}(), _negatemod_raw(rep(x), P))
 
-*(x::PrimeField{P}, y::PrimeField{P}) where {P} = _raw(Val{P}(), _mulmod_raw(rep(x), rep(y), P))
+@inline *(x::PrimeField{P}, y::PrimeField{P}) where {P} = _raw(Val{P}(), _mulmod_field(rep(x), rep(y), Val{P}()))
 *(x::PrimeField, y::PrimeField) = throw(ArgumentError("cannot multiply elements with different moduli"))
 *(x::PrimeField{P}, y::Integer) where {P} = x * _from_integer(Val{P}(), y)
 *(x::Integer, y::PrimeField{P}) where {P} = _from_integer(Val{P}(), x) * y
 
-@inline muladd(x::PrimeField{P}, y::PrimeField{P}, z::PrimeField{P}) where {P} = _raw(Val{P}(), _muladd_raw(rep(x), rep(y), rep(z), P))
+@inline function muladd(x::PrimeField{P}, y::PrimeField{P}, z::PrimeField{P}) where {P}
+    field = Val{P}()
+    if P <= isqrt(typemax(UInt))
+        residue = (UInt(rep(x)) * UInt(rep(y)) + UInt(rep(z))) % UInt(P)
+        return _raw(field, Int(residue))
+    end
+    _raw(field, _addmod_raw(_mulmod_field(rep(x), rep(y), field), rep(z), P))
+end
 
 inv(x::PrimeField{P}) where {P} = _raw(Val{P}(), _invmod_reduced(rep(x), P))
 /(x::PrimeField{P}, y::PrimeField{P}) where {P} = x * inv(y)
@@ -361,6 +390,50 @@ inv(x::PrimeField{P}) where {P} = _raw(Val{P}(), _invmod_reduced(rep(x), P))
 /(x::Integer, y::PrimeField{P}) where {P} = _from_integer(Val{P}(), x) / y
 
 function power(x::PrimeField{P}, e::Integer) where {P}
+    e >= 0 && return Base.power_by_squaring(x, e)
+    e == typemin(Int) && return _raw(Val{P}(), PowerMod(rep(x), e, P))
+    Base.power_by_squaring(inv(x), -e)
+end
+
+@generated function _montgomery_constants(::Val{P}) where {P}
+    radix = BigInt(1) << 64
+    inverse = UInt64(mod(-invmod(BigInt(P), radix), radix))
+    squared_radix = UInt64(mod(radix^2, P))
+    :(($inverse, $squared_radix))
+end
+
+@inline function _montgomery_product(a::UInt64, b::UInt64, p::UInt64, inverse::UInt64)
+    product = widemul(a, b)
+    low = (product % UInt64) * inverse
+    # p < 2^63 keeps the sum below 2^128, and the candidate is below 2p.
+    r = UInt64((product + widemul(low, p)) >> 64)
+    ifelse(r >= p, r - p, r)
+end
+
+function _wide_field_power(x::PrimeField{P}, k::UInt) where {P}
+    inverse, squared_radix = _montgomery_constants(Val{P}())
+    p = UInt64(P)
+    one_m = _montgomery_product(UInt64(1), squared_radix, p, inverse)
+    result = one_m
+    base = _montgomery_product(UInt64(rep(x)), squared_radix, p, inverse)
+    while !iszero(k)
+        if isodd(k)
+            result = _montgomery_product(result, base, p, inverse)
+        end
+        k >>= 1
+        if !iszero(k)
+            base = _montgomery_product(base, base, p, inverse)
+        end
+    end
+    _raw(Val{P}(), Int(_montgomery_product(result, UInt64(1), p, inverse)))
+end
+
+function power(x::PrimeField{P}, e::Union{Int,UInt}) where {P}
+    if Sys.WORD_SIZE == 64 && P - 1 > isqrt(typemax(UInt))
+        base = e < 0 ? inv(x) : x
+        exponent = e < 0 ? UInt(-(e + 1)) + UInt(1) : UInt(e)
+        return _wide_field_power(base, exponent)
+    end
     e >= 0 && return Base.power_by_squaring(x, e)
     e == typemin(Int) && return _raw(Val{P}(), PowerMod(rep(x), e, P))
     Base.power_by_squaring(inv(x), -e)
@@ -382,7 +455,7 @@ add(x, y) = x + y
 sub(x, y) = x - y
 negate(x) = -x
 mul(x, y) = x * y
-sqr(x::PrimeField{P}) where {P} = _raw(Val{P}(), _mulmod_raw(rep(x), rep(x), P))
+sqr(x::PrimeField) = x * x
 divide(x, y) = x / y
 
 """Return a uniform random field element; equivalent to `rand(F)`."""

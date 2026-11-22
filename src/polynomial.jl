@@ -19,6 +19,11 @@ struct ModPoly{T,F}
 end
 
 field(f::ModPoly) = f._field
+@inline function field(f::ModPoly{PrimeField{P},DataType}) where {P}
+    F = PrimeField{P}
+    f._field === F || throw(ArgumentError("coefficient parent mismatch"))
+    F
+end
 coefficients(f::ModPoly) = copy(f._coeffs)
 
 function _trim!(c::Vector)
@@ -26,6 +31,11 @@ function _trim!(c::Vector)
         pop!(c)
     end
     c
+end
+
+function _make_poly(F::Type{PrimeField{P}}, c::AbstractVector) where {P}
+    cc = Vector{PrimeField{P}}(c)
+    ModPoly{PrimeField{P},DataType}(F, _trim!(cc))
 end
 
 function _make_poly(F, c::AbstractVector)
@@ -52,7 +62,7 @@ poly(F, f::ModPoly) = (field(f) == F || throw(ArgumentError("coefficient parent 
 """Return the indeterminate `x` over `F`."""
 xpoly(F) = poly(F, [zero(F), one(F)])
 
-zero(f::ModPoly) = _make_poly(field(f), Vector{eltype(coefficients(f))}())
+zero(f::ModPoly) = _make_poly(field(f), eltype(f._coeffs)[])
 one(f::ModPoly) = poly(field(f), one(field(f)))
 iszero(f::ModPoly) = isempty(f._coeffs)
 isone(f::ModPoly) = degree(f) == 0 && isone(LeadCoeff(f))
@@ -179,9 +189,10 @@ function _divrem_buffers(f::ModPoly, g::ModPoly, want_quotient::Bool)
         want_quotient && (q[k + 1] = t)
         # Update the remainder in its existing coefficient buffer. No shifted
         # polynomial, scalar multiple, or subtraction temporary is allocated.
-        for j in 0:dg
+        for j in 0:(dg - 1)
             r[k + j + 1] -= t * g._coeffs[j + 1]
         end
+        pop!(r)
         _trim!(r)
     end
     q, r
@@ -204,7 +215,13 @@ function rem(f::ModPoly, g::ModPoly)
 end
 
 /(f::ModPoly, g::ModPoly) = div(f, g)
-/(f::ModPoly, c::Number) = _make_poly(field(f), [a / field(f)(c) for a in f._coeffs])
+function /(f::ModPoly, c::Number)
+    F = field(f)
+    iszero(f) && return zero(f)
+    scalar = F(c)
+    scale = isone(scalar) ? scalar : inv(scalar)
+    _make_poly(F, [a * scale for a in f._coeffs])
+end
 
 """Divide by the leading coefficient; zero is returned unchanged."""
 monic(f::ModPoly) = iszero(f) ? f : f / LeadCoeff(f)
@@ -310,18 +327,73 @@ end
 """Binary polynomial powering modulo `m`; negative exponents invert `f`."""
 function PowerMod(f::ModPoly, e::Integer, m::ModPoly)
     base = rem(f, m)
-    k = BigInt(e)
-    if k < 0
+    if e < 0
         base = InvMod(base, m)
-        k = -k
     end
-    result = rem(one(f), m)
+    magnitude = e isa Int ? unsigned(abs(e)) : abs(BigInt(e))
+    _polynomial_power_nonnegative(base, magnitude, m)
+end
+
+_polynomial_power_nonnegative(base::ModPoly, k::Integer, m::ModPoly) =
+    _polynomial_power_binary(base, k, m)
+
+function _polynomial_power_binary(base::ModPoly, k::Integer, m::ModPoly)
+    result = rem(one(base), m)
     while k > 0
         isodd(k) && (result = MulMod(result, base, m))
         k >>= 1
         k > 0 && (base = MulMod(base, base, m))
     end
     result
+end
+
+# For small quotients, use a fixed-size product buffer and recycle the
+# reduced vectors across exponentiation steps.
+function _small_polynomial_product!(out, work, a, b, normalized_modulus)
+    fill!(work, zero(eltype(work)))
+    d = length(out)
+    @inbounds for i in 1:d
+        for j in 1:d
+            index = i + j - 1
+            work[index] = muladd(a[j], b[i], work[index])
+        end
+    end
+    @inbounds for shift in (d - 1):-1:1
+        scale = -work[d + shift]
+        for j in 1:d
+            work[j + shift - 1] = muladd(scale, normalized_modulus[j], work[j + shift - 1])
+        end
+    end
+    copyto!(out, 1, work, 1, d)
+end
+
+function _polynomial_power_nonnegative(base::ModPoly{T,DataType}, k::Integer,
+                                       m::ModPoly{T,DataType}) where {T<:PrimeField}
+    d = degree(m)
+    if !(1 <= d <= 16 && k >= 4) || iszero(base)
+        return _polynomial_power_binary(base, k, m)
+    end
+    lead = LeadCoeff(m)
+    scale = isone(lead) ? lead : inv(lead)
+    normalized_modulus = [m._coeffs[i] * scale for i in 1:d]
+    value = fill(zero(T), d)
+    copyto!(value, 1, base._coeffs, 1, length(base._coeffs))
+    result = fill(zero(T), d)
+    result[1] = one(T)
+    temp = similar(result)
+    work = Vector{T}(undef, 2d - 1)
+    while !iszero(k)
+        if isodd(k)
+            _small_polynomial_product!(temp, work, result, value, normalized_modulus)
+            result, temp = temp, result
+        end
+        k >>= 1
+        if !iszero(k)
+            _small_polynomial_product!(temp, work, value, value, normalized_modulus)
+            value, temp = temp, value
+        end
+    end
+    _make_poly(T, result)
 end
 
 """Return a polynomial with `n` random coefficients, hence degree at most `n-1`."""
@@ -417,7 +489,7 @@ SquareFreeDecomp(f::ModPoly) = _squarefree(f)
 function DistinctDegreeDecomp(f::ModPoly; rng::AbstractRNG = Random.default_rng())
     F = field(f)
     _validate_factor_parent(F)
-    q = _field_order(F)
+    q = F isa Type && F <: PrimeField ? modulus(F) : _field_order(F)
     f = monic(f)
     degree(f) <= 1 && return degree(f) == 1 ? [(f, 1)] : Tuple{typeof(f),Int}[]
     x = xpoly(F)

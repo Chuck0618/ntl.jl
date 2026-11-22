@@ -90,6 +90,39 @@ function _poly_mul_auto(f::ModPoly, g::ModPoly)
     end
 end
 
+# Pack each coefficient as a base-2^bits digit. When the worst-case
+# coefficient fits in one digit, an integer product computes the exact
+# convolution without carries crossing coefficient boundaries.
+function _packed_polynomial_input(values::Vector{PrimeField{P}}, nails::Int) where {P}
+    # On a 64-bit build PrimeField stores exactly one nonnegative native Int.
+    # GMP can read the already contiguous words in native byte order.
+    words = Sys.WORD_SIZE == 64 ? values : [UInt64(rep(value)) for value in values]
+    packed = BigInt(0)
+    Base.GMP.MPZ.import!(packed, length(words), -1, sizeof(UInt64), 0, nails, words)
+    packed
+end
+
+function _poly_mul_auto(f::ModPoly{T,DataType}, g::ModPoly{T,DataType}) where {P,T<:PrimeField{P}}
+    n, m = length(f._coeffs), length(g._coeffs)
+    if P <= typemax(UInt32) && max(n, m) >= 128 && min(n, m) >= 32
+        bound = UInt128(P - 1)^2 * min(n, m)
+        if bound <= typemax(UInt64)
+            nails = leading_zeros(UInt64(bound))
+            field = _check_poly_parents(f, g)
+            a = _packed_polynomial_input(f._coeffs, nails)
+            b = _packed_polynomial_input(g._coeffs, nails)
+            digits = zeros(UInt64, n + m - 1)
+            # Julia 1.9 has GMP import! but does not expose MPZ.export!.
+            ccall((:__gmpz_export, Base.GMP.libgmp), Ptr{UInt64},
+                  (Ptr{UInt64}, Ptr{Csize_t}, Cint, Csize_t, Cint, Csize_t, Ref{BigInt}),
+                  digits, C_NULL, -1, sizeof(UInt64), 0, nails, a * b)
+            values = [_raw(Val{P}(), Int(x % UInt64(P))) for x in digits]
+            return ModPoly{T,DataType}(field, _trim!(values))
+        end
+    end
+    invoke(_poly_mul_auto, Tuple{ModPoly,ModPoly}, f, g)
+end
+
 """
     poly_mul(f, g; method=:default)
 

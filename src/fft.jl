@@ -16,7 +16,7 @@ const FFT_PRIMES = (
 # Auxiliary NTT primes are runtime values. Use a function barrier so the
 # selected modulus becomes a compile-time parameter inside the actual kernel.
 function _fft_ntt_primefield(a, b, q::Int)
-    _fft_ntt_primefield_typed(a, b, PrimeField(q))
+    _fft_ntt_primefield_typed(a, b, PrimeField{q})
 end
 
 function _fft_ntt_primefield_typed(a, b, ::Type{PrimeField{Q}}) where {Q}
@@ -105,6 +105,9 @@ function fft_convolve(a::AbstractVector, b::AbstractVector)
 end
 
 function _crt_coefficients(residues::Vector{<:AbstractVector{<:Integer}}, moduli::Vector{Int}, total::Int)
+    # Every auxiliary prime is below 2^31, so up to four CRT digits fit
+    # in UInt128. Keep the arbitrary-precision path for five or more.
+    length(moduli) <= 4 && return _crt_word_coefficients(residues, moduli, total)
     out = zeros(BigInt, total)
     M = BigInt(1)
     for (k, q) in enumerate(moduli)
@@ -112,9 +115,26 @@ function _crt_coefficients(residues::Vector{<:AbstractVector{<:Integer}}, moduli
         factor = invmod(M, q)
         for i in 1:total
             t = mod((residues[k][i] - out[i]) * factor, q)
-            out[i] = mod(out[i] + M * t, M * q)
+            out[i] += M * t
         end
         M *= q
+    end
+    out
+end
+
+function _crt_word_coefficients(residues, moduli, total)
+    out = zeros(UInt128, total)
+    product = UInt128(1)
+    for (k, q) in enumerate(moduli)
+        q64 = UInt64(q)
+        factor = UInt64(invmod(Int(product % q64), q))
+        digit = residues[k]
+        @inbounds for i in eachindex(out)
+            current = UInt64(out[i] % q64)
+            diff = UInt64(_submod_raw(Int(digit[i]), Int(current), q))
+            out[i] += product * ((diff * factor) % q64)
+        end
+        product *= q64
     end
     out
 end

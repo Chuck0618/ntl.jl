@@ -45,15 +45,14 @@ function _det_generic(A::AbstractMatrix, n::Int)
     sign == 1 ? result : -result
 end
 
-# With unreduced Int entries, the absolute value after n elimination steps is
-# bounded by n*(P-1)^2 + (P-1). Use the delayed path only when this is safe.
-_delayed_det_supported(n::Int, P::Int) =
-    BigInt(n) * BigInt(P - 1)^2 + BigInt(P - 1) <= BigInt(typemax(Int))
+# After a refresh, w elimination steps require w*(P-1)^2+(P-1)
+# to fit in Int. Divide twice to compute the bound without overflow.
+_det_refresh_interval(P::Int) = (typemax(Int) - (P - 1)) ÷ (P - 1) ÷ (P - 1)
 
-function _det_primefield_delayed(A::AbstractMatrix{PrimeField{P}}, n::Int) where {P}
+function _det_primefield_delayed(A::AbstractMatrix{PrimeField{P}}, n::Int, interval::Int) where {P}
     M = Matrix{Int}(undef, n, n)
-    @inbounds for i in eachindex(A)
-        M[i] = rep(A[i])
+    @inbounds for (i, a) in enumerate(A)
+        M[i] = rep(a)
     end
     sign = 1
     factors = Vector{Int}(undef, n)
@@ -72,9 +71,16 @@ function _det_primefield_delayed(A::AbstractMatrix{PrimeField{P}}, n::Int) where
             end
             sign = -sign
         end
-        pivot_inv = InvMod(mod(M[k, k], P), P)
+        pivot_inv = _invmod_reduced(mod(M[k, k], P), P)
         @inbounds for i in (k + 1):n
-            factors[i] = _mulmod_raw(mod(M[i, k], P), pivot_inv, P)
+            factors[i] = _mulmod_field(mod(M[i, k], P), pivot_inv, Val{P}())
+        end
+        if k < n && k % interval == 0
+            @inbounds for j in (k + 1):n
+                for i in (k + 1):n
+                    M[i, j] = mod(M[i, j], P)
+                end
+            end
         end
         @inbounds for j in (k + 1):n
             pivot_row = mod(M[k, j], P)
@@ -87,14 +93,15 @@ function _det_primefield_delayed(A::AbstractMatrix{PrimeField{P}}, n::Int) where
     end
     result = 1
     @inbounds for k in 1:n
-        result = _mulmod_raw(result, mod(M[k, k], P), P)
+        result = _mulmod_field(result, mod(M[k, k], P), Val{P}())
     end
     _raw(Val{P}(), sign == 1 ? result : (iszero(result) ? 0 : P - result))
 end
 
 function det(A::AbstractMatrix{PrimeField{P}}) where {P}
     n = _square_check(A)
-    _delayed_det_supported(n, P) && return _det_primefield_delayed(A, n)
+    interval = _det_refresh_interval(P)
+    interval >= 2 && return _det_primefield_delayed(A, n, min(n, interval))
     _det_generic(A, n)
 end
 
@@ -186,24 +193,34 @@ end
 """Exact integer determinant by fraction-free Bareiss elimination."""
 function det_exact(A::AbstractMatrix{<:Integer})
     n = _square_check(A)
-    M = BigInt.(A)
+    # Give each cell unique storage before using in-place GMP operations.
+    M = [Base.GMP.MPZ.set!(BigInt(0), BigInt(A[i, j])) for i in axes(A, 1), j in axes(A, 2)]
     n == 1 && return M[1, 1]
     sign = 1
     previous = BigInt(1)
+    left, right = BigInt(0), BigInt(0)
     for k in 1:(n - 1)
         if iszero(M[k, k])
             pivot = findfirst(i -> !iszero(M[i, k]), (k + 1):n)
             pivot === nothing && return BigInt(0)
             pivot += k
-            M[[k, pivot], :] = M[[pivot, k], :]
+            for j in k:n
+                M[k, j], M[pivot, j] = M[pivot, j], M[k, j]
+            end
             sign = -sign
         end
         pivot_value = M[k, k]
-        for i in (k + 1):n, j in (k + 1):n
-            numerator = M[i, j] * pivot_value - M[i, k] * M[k, j]
-            M[i, j] = div(numerator, previous)
+        for j in (k + 1):n, i in (k + 1):n
+            _bareiss_update!(M[i, j], pivot_value, M[i, k], M[k, j], previous, left, right)
         end
         previous = pivot_value
     end
     sign * M[n, n]
+end
+
+@inline function _bareiss_update!(cell, pivot, column, row, previous, left, right)
+    Base.GMP.MPZ.mul!(left, pivot, cell)
+    Base.GMP.MPZ.mul!(right, column, row)
+    Base.GMP.MPZ.sub!(left, left, right)
+    Base.GMP.MPZ.tdiv_q!(cell, left, previous)
 end
