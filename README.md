@@ -996,25 +996,25 @@ The determinant allocation count is nearly unchanged because the specialized pat
 
 ## Comparison with GaloisFields.jl
 
-GaloisFields.jl is particularly strong for small finite fields and extension arithmetic. This table was rerun on **2026-11-22** with NTL.jl 0.12.0, GaloisFields.jl 1.4, and Julia 1.11.7. Each value is the median of 31 runs after warm-up, with input construction excluded.
+GaloisFields.jl is particularly strong for small finite fields and extension arithmetic. This table was rerun on **2026-11-22** with NTL.jl 0.12.0, GaloisFields.jl 1.4, and Julia 1.11.7. The fixed p=101 choice has been replaced by **the same eight random 7-bit primes for every workload**: `[67, 73, 83, 89, 97, 101, 107, 113]`. Each per-prime value is the median of 31 runs after warm-up; the table then reports the median across primes. Input construction is excluded.
 
 | Operation | NTL.jl (ms) | GaloisFields (ms) |
 |---|---:|---:|
-| Prime-field mul/add x1e6, p=101 | 65.9643 | 70.8851 |
-| Prime-field fused muladd x1e6 | 9.9902 | 14.8994 |
-| Prime-field power x10000, p=101 | 0.4292 | 0.4265 |
-| Prime-field inverse x10000, p=101 | 0.2386 | 0.2314 |
-| Zech extension ops x10000 | 0.4849 | 0.6042 |
-| Zech muladd x10000 | 0.5573 | 0.6049 |
-| Zech inverse x10000 | 0.3790 | 0.4832 |
-| Zech power x10000 | 0.4209 | 0.3842 |
-| Polynomial multiplication, deg 999 | 0.3136 | 6.4466 |
+| Prime-field mul/add x1e6 | 69.2760 | 71.2422 |
+| Prime-field fused muladd x1e6 | 10.7357 | 15.0006 |
+| Prime-field power x10000 | 0.3870 | 0.4293 |
+| Prime-field inverse x10000 | 0.2384 | 0.2315 |
+| Zech extension ops x10000 | 0.4958 | 0.8573 |
+| Zech muladd x10000 | 0.6014 | 0.8584 |
+| Zech inverse x10000 | 0.3816 | 0.4565 |
+| Zech power x10000 | 0.4852 | 0.3799 |
+| Polynomial multiplication, deg 999 | 0.2839 | 6.5600 |
 
 ### Interpretation
 
-- NTL.jl was faster in the tested separate and fused prime-field mul/add loops and slightly faster in the repeated inverse loop; the power timings were nearly tied.
+- Across the random primes, NTL.jl was faster for separate and fused prime-field mul/add and for the median power workload; GaloisFields was slightly faster for the median inverse workload.
 - In the Zech comparison, NTL.jl was faster for extension ops, fused muladd, and inversion, while GaloisFields was faster for the tested power loop.
-- NTL.jl was faster for the tested degree-999 polynomial multiplication by a wide margin. This is one deterministic workload, not a claim about every polynomial size.
+- NTL.jl was faster for the degree-999 polynomial multiplication across these primes. The full report also includes min–max ranges because per-prime timing is not constant.
 - The random-prime report separately covers larger moduli and the GaloisFields signed-`Int128` boundary. GaloisFields remains a strong choice for compact small-field code; NTL.jl additionally covers matrices, LLL, generalized FFT, and number theory.
 
 ## Design principles
