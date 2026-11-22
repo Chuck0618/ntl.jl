@@ -1856,14 +1856,14 @@ performance guarantees.</p>
 <td style="text-align: right;">0.50x</td>
 </tr>
 <tr class="odd">
-<td>LLL (with exact verification)</td>
+<td>LLL (Julia default + exact verification)</td>
 <td style="text-align: right;">0.0699</td>
 <td style="text-align: right;">0.1843</td>
 <td style="text-align: right;">0.0989</td>
 <td style="text-align: right;">1.41x</td>
 </tr>
 <tr class="even">
-<td>LLL (reduction only)</td>
+<td>LLL (Julia reduction only)</td>
 <td style="text-align: right;">0.0694</td>
 <td style="text-align: right;">0.0320</td>
 <td style="text-align: right;">0.0415</td>
@@ -1878,6 +1878,7 @@ performance guarantees.</p>
 </tr>
 </tbody>
 </table></div>
+<p class="note"><strong>Comparison layers.</strong> The LLL rows are not at the same verification layer. Native C++ `LLL(det2,B,U)` does not perform Julia's independent exact post-verification. The default Julia row therefore measures end-to-end API cost, not a like-for-like algorithm-only benchmark. For the reduction layer, compare `verify = false` with native C++ LLL. The optional `cpp_checked.cpp` verifier is a separate custom checker, not part of upstream C++ NTL's timing.</p>
 <h3 id="what-these-results-mean">What these results mean</h3>
 <ul>
 <li>The small-field factorization path is competitive with C++ NTL for

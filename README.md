@@ -964,11 +964,14 @@ The following table was rerun on **2026-11-22** using the 0.13.0 baseline, the s
 | NTT convolution | 0.6572 | 0.5898 | 0.5793 | 0.88x |
 | Polynomial factorization (degree 8) | 0.0250 | 0.0753 | 0.0261 | 1.05x |
 | Finite-field determinant | 0.0302 | 0.0148 | 0.0150 | 0.50x |
-| LLL (with exact verification) | 0.0699 | 0.1843 | 0.0989 | 1.41x |
-| LLL (reduction only) | 0.0694 | 0.0320 | 0.0415 | 0.60x |
+| LLL (Julia default + exact verification) | 0.0699 | 0.1843 | 0.0989 | 1.41x |
+| LLL (Julia reduction only) | 0.0694 | 0.0320 | 0.0415 | 0.60x |
 | Primality test (per call) | 0.0678 | 0.0262 | 0.0264 | 0.39x |
 
 ### What these results mean
+
+The LLL rows are not at the same verification layer. Native C++ `LLL(det2,B,U)` does not perform Julia's independent exact post-verification. The default Julia row therefore measures end-to-end API cost, not a like-for-like algorithm-only benchmark. For the reduction layer, compare `verify = false` with native C++ LLL. The optional `cpp_checked.cpp` verifier is a separate custom checker, not part of upstream C++ NTL's timing.
+
 
 - The small-field factorization path is competitive with C++ NTL for the repository's degree-8 input: 26.12 μs versus 24.99 μs. An early-splitting probe now avoids exhaustive root scans when multiple roots are found among the first eight candidates.
 - `small_modmul` uses a typed hot loop to make Julia dispatch boundaries explicit. It does not demonstrate a library-only speedup: the original loop remains about 68–71 ms in these runs. The small-residue multiplication patch itself was **not merged**, because it did not show a stable benefit on this server.
