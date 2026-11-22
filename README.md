@@ -4,7 +4,7 @@
 
 NTL.jl is inspired by C++ NTL, but it is not a wrapper or an API clone. It is designed to be approachable for new Julia users while providing efficient, tested implementations for research and teaching.
 
-Version: **0.13.0**<br>
+Version: **0.13.1**<br>
 Tested with: **Julia 1.11.7**<br>
 Compatibility target: **Julia 1.9+**
 
@@ -66,7 +66,7 @@ Replace `/path/to/NTLJulia` with the directory that contains `Project.toml`.
 julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.test()'
 ```
 
-The current suite contains **4,338,862 passing assertions**. Runtime code depends only on Julia's `Random` standard library; `Test` is used only by the test target.
+The current suite contains **4,645,450 passing assertions**. Runtime code depends only on Julia's `Random` standard library; `Test` is used only by the test target.
 
 ### HTML documentation
 
@@ -953,28 +953,34 @@ julia --project=. examples/api_tour.jl
 
 ## Comparison with C++ NTL
 
-The following table was rerun on **2026-11-22** using NTL.jl 0.12.0 as the baseline, the 0.13.0 optimized kernels, official C++ NTL 11.4.2, and Julia 1.11.7 on the 2-core project server. Each value is the median of 31 runs after warm-up, with input construction excluded and the NTL-only process used for these measurements. These are workload-specific examples, not universal performance guarantees.
+The following table was rerun on **2026-11-22** using the 0.13.0 baseline, the selectively optimized 0.13.1 kernels, official C++ NTL 11.4.2, and Julia 1.11.7 on the 2-core project server. Each value is the median of 31 runs after warm-up, with input construction excluded. These are workload-specific examples, not universal performance guarantees.
 
-| Operation | C++ NTL (ms) | 0.12.0 baseline (ms) | 0.13.0 optimized (ms) | Optimized / C++ |
+| Operation | C++ NTL (ms) | Baseline (ms) | Selective 0.13.1 (ms) | Optimized / C++ |
 |---|---:|---:|---:|---:|
-| Small modular mul/add | 8.4191 | 65.2180 | 70.4097 | 8.36x |
-| BigInt modular exponentiation | 0.0129 | 0.0224 | 0.0046 | 0.36x |
-| Polynomial multiplication | 0.0654 | 0.2609 | 0.0671 | 1.03x |
-| NTT convolution | 0.6519 | 1.0235 | 0.5717 | 0.88x |
-| Polynomial factorization | 0.0257 | 0.6673 | 0.0751 | 2.92x |
-| Finite-field determinant | 0.0299 | 0.0373 | 0.0146 | 0.49x |
-| LLL (with exact verification) | 0.0704 | 1.7875 | 0.1794 | 2.55x |
-| LLL (reduction only) | 0.0693 | 0.2674 | 0.0278 | 0.40x |
-| Primality test (per call) | 0.0690 | 0.0258 | 0.0258 | 0.37x |
+| Small modular mul/add (typed hot loop) | 8.4581 | 67.8763 | 5.0682 | 0.60x |
+| BigInt modular exponentiation | 0.0130 | 0.0049 | 0.0047 | 0.37x |
+| Polynomial multiplication | 0.0660 | 0.0693 | 0.0666 | 1.01x |
+| NTT convolution | 0.6572 | 0.5898 | 0.5781 | 0.88x |
+| Polynomial factorization (degree 8) | 0.0250 | 0.0753 | 0.0253 | 1.01x |
+| Finite-field determinant | 0.0302 | 0.0148 | 0.0276 | 0.91x |
+| LLL (with exact verification) | 0.0702 | 0.1843 | 0.3235 | 4.61x |
+| LLL (reduction only) | 0.0694 | 0.0320 | 0.0560 | 0.81x |
+| Primality test (per call) | 0.0678 | 0.0262 | 0.0260 | 0.38x |
 
 ### What these results mean
 
-- The packed polynomial path is close to C++ NTL in this degree-999 example, and the DIF/DIT convolution is faster than C++ NTL in the measured 4096-coefficient case.
-- The optimized determinant and LLL reduction-only paths are also faster than C++ NTL here. Default LLL still includes exact post-verification and remains slower than the C++ call.
-- `small_modmul` did not improve in this run. Typed hot-loop examples show that Julia dispatch boundaries materially affect this workload, so the table should not be read as proof of a universal scalar speedup.
-- Factorization improved substantially but remains slower than C++ NTL. Primality uses different witness strategies and is shown only as a reference.
+- The small-field factorization path is now competitive with C++ NTL for the repository's degree-8 input: 25.34 μs versus 24.99 μs. It uses exhaustive roots only when `P <= 127` and `1 <= degree(f) <= 16`, with a dedicated quartic case and generic Cantor–Zassenhaus fallback outside that range.
+- `small_modmul` uses a typed hot loop to make Julia dispatch boundaries explicit. It does not demonstrate a library-only speedup: the original loop remains about 68 ms in this run. The small-residue multiplication patch itself was **not merged**, because it did not show a stable benefit on this server.
+- The 0.13.0 optimized polynomial, NTT, determinant, and LLL paths remain in place. Default LLL still includes exact post-verification, whereas the reduction-only row measures the faster path without that cost.
+- Primality uses different witness strategies and is shown only as a reference.
 
 ## Performance optimizations
+
+Version 0.13.1 adds a selective small-field factorization path. It removes roots by exhaustive evaluation only when `P <= 127` and `1 <= degree(f) <= 16`, uses synthetic division for multiplicities, handles root-free quartics by monic quadratic pairing, and delegates all other inputs to the general factorization implementation. The small-residue multiplication patch from the same proposal was evaluated but deliberately not merged because it did not improve performance on this server.
+
+The new `test/factor_smallfield.jl` suite adds **306,588 assertions**, including exhaustive monic quartics over \(\mathbb F_2\) and \(\mathbb F_3\), factor reconstruction, irreducibility, distinct-factor checks, and small-residue boundary cases. The benchmark repository also records the typed hot loop separately from the original loop so that dispatch-boundary improvements are not misattributed to the arithmetic implementation.
+
+### Version 0.13.0
 
 Version 0.13.0 adds a larger set of specialized kernels while preserving generic fallbacks and exact verification:
 
@@ -1009,7 +1015,7 @@ The determinant allocation count is nearly unchanged because the specialized pat
 
 ## Comparison with GaloisFields.jl
 
-GaloisFields.jl is particularly strong for small finite fields and extension arithmetic. This table was rerun on **2026-11-22** with NTL.jl 0.13.0, GaloisFields.jl 1.4, and Julia 1.11.7. Every workload uses **the same eight random 7-bit primes for both packages**: `[67, 73, 83, 89, 97, 101, 107, 113]`. Each per-prime value is the median of 31 runs after warm-up; the table reports the median across primes. Input construction is excluded.
+GaloisFields.jl is particularly strong for small finite fields and extension arithmetic. This table was rerun on **2026-11-22** with NTL.jl 0.13.1, GaloisFields.jl 1.4, and Julia 1.11.7. Every workload uses **the same eight random 7-bit primes for both packages**: `[67, 73, 83, 89, 97, 101, 107, 113]`. Each per-prime value is the median of 31 runs after warm-up; the table reports the median across primes. Input construction is excluded.
 
 | Operation | NTL.jl (ms) | GaloisFields (ms) |
 |---|---:|---:|

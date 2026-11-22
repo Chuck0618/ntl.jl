@@ -280,6 +280,7 @@ include("zech.jl")
 include("elliptic.jl")
 include("naming.jl")
 include("performance_regressions.jl")
+include("factor_smallfield.jl")
 
 
 @testset "PrimeField finite-field iteration" begin

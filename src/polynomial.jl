@@ -574,6 +574,10 @@ end
 
 """Factor a nonzero polynomial over a finite field."""
 function factor(f::ModPoly; rng::AbstractRNG = Random.default_rng())
+    _factor_generic(f, rng)
+end
+
+function _factor_generic(f::ModPoly, rng::AbstractRNG)
     iszero(f) && throw(DomainError(f, "zero has no irreducible factorization"))
     F = field(f)
     _validate_factor_parent(F)
@@ -588,6 +592,82 @@ function factor(f::ModPoly; rng::AbstractRNG = Random.default_rng())
         end
     end
     sort!(factors, by = pair -> (degree(pair[1]), pair[1]._coeffs == f._coeffs ? 1 : 0, pair[2]))
+    PolyFactorization(unit, factors)
+end
+
+# Factor a monic root-free quartic into monic quadratics if possible.
+# For (x²+a*x+b)(x²+c*x+d), c=A-a, b+d=B-a*c, and C=a*(b+d)+(c-a)*b.
+function _quartic_pair(f::ModPoly{PrimeField{P},DataType}) where {P}
+    F = field(f)
+    D, C, B, A = f._coeffs
+    for i in 0:P-1
+        a = F(i)
+        c = A - a
+        total = B - a*c
+        if a == c
+            C == a*total || continue
+            for j in 0:P-1
+                b = F(j)
+                d = total - b
+                if b*d == D
+                    return (poly(F, [b,a,one(F)]), poly(F, [d,c,one(F)]))
+                end
+            end
+        else
+            b = (C - a*total)/(c - a)
+            d = total - b
+            b*d == D && return (poly(F, [b,a,one(F)]), poly(F, [d,c,one(F)]))
+        end
+    end
+    nothing
+end
+
+# On a tiny prime field, testing every field element avoids modular powers
+# for the linear part. Synthetic division uses a private coefficient buffer.
+function factor(f::ModPoly{PrimeField{P},DataType}; rng::AbstractRNG = Random.default_rng()) where {P}
+    (P <= 127 && 1 <= degree(f) <= 16) || return _factor_generic(f, rng)
+    F = field(f)
+    unit = LeadCoeff(f)
+    c = coefficients(monic(f))
+    factors = Tuple{typeof(f),Int}[]
+    for r in 0:P-1
+        length(c) == 1 && break
+        root = F(r)
+        count = 0
+        while length(c) > 1
+            value = c[end]
+            for i in length(c)-1:-1:1
+                value = muladd(value, root, c[i])
+            end
+            iszero(value) || break
+            carry = pop!(c)
+            for i in length(c):-1:1
+                old = c[i]
+                c[i] = carry
+                carry = muladd(carry, root, old)
+            end
+            count += 1
+        end
+        count > 0 && push!(factors, (poly(F, [-root, one(F)]), count))
+    end
+    if length(c) > 1
+        rest = _make_poly(F, c)
+        if degree(rest) <= 3
+            push!(factors, (rest, 1)) # No root over F, hence irreducible.
+        elseif degree(rest) == 4
+            pair = _quartic_pair(rest)
+            if isnothing(pair)
+                push!(factors, (rest, 1))
+            elseif pair[1] == pair[2]
+                push!(factors, (pair[1], 2))
+            else
+                push!(factors, (pair[1], 1), (pair[2], 1))
+            end
+        else
+            append!(factors, _factor_generic(rest, rng).factors)
+        end
+    end
+    sort!(factors, by = pair -> (degree(pair[1]), pair[2]))
     PolyFactorization(unit, factors)
 end
 
