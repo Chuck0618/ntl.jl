@@ -627,6 +627,17 @@ end
 function factor(f::ModPoly{PrimeField{P},DataType}; rng::AbstractRNG = Random.default_rng()) where {P}
     (P <= 127 && 1 <= degree(f) <= 16) || return _factor_generic(f, rng)
     F = field(f)
+    if P > 8 && degree(f) >= 4
+        # Highly splitting inputs usually favor Cantor–Zassenhaus. Probe a few
+        # roots first so they do not pay for an exhaustive small-field scan.
+        found = 0
+        for i in 0:7
+            if iszero(evaluate(f, F(i)))
+                found += 1
+                found >= 2 && return _factor_generic(f, rng)
+            end
+        end
+    end
     unit = LeadCoeff(f)
     c = coefficients(monic(f))
     factors = Tuple{typeof(f),Int}[]

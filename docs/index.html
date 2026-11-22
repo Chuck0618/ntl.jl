@@ -1,5 +1,5 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Complete NTL.jl 0.13.1 manual with selective small-field factorization and random-prime performance comparisons."><link rel="icon" href="data:,"><title>NTL.jl
-0.13.1 — Complete Manual and API Tour</title><style>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Complete NTL.jl 0.13.2 manual with early-splitting factorization and random-prime performance comparisons."><link rel="icon" href="data:,"><title>NTL.jl
+0.13.2 — Complete Manual and API Tour</title><style>
     :root {
       --paper: oklch(97.8% 0.002 90);
       --ink: oklch(18% 0.004 90);
@@ -229,7 +229,7 @@
       .sidebar #TOC { max-height: 320px; overflow-y: auto; margin-bottom: 24px; }
       main pre code { min-width: 0; }
     }
-</style></head><body><div class="page"><header class="masthead"><a class="brand" href="#top">NTL.jl / complete manual</a><div class="masthead-meta">Version 0.13.1 · Julia 1.9+ · Pure Julia · Offline reference</div></header><div id="top" class="hero"><div class="hero-copy"><p class="kicker">Exact arithmetic, documented from first construction to verification</p><h1>The complete NTL.jl manual.</h1><p class="lede">The full project README, optimized field / polynomial / lattice kernels, selective small-field factorization, random-prime comparisons, and an executable call for every exported interface.</p><ul class="hero-facts"><li><strong>Verified</strong><span>4,645,450 passing assertions on Julia 1.11.7</span></li><li><strong>Coverage</strong><span>131 exported names demonstrated in one API tour</span></li><li><strong>Included</strong><span>README + clean API index + full tour source</span></li></ul></div><div class="hero-demo code-panel"><div class="code-caption">Prime fields and big modular rings</div><pre><code>using NTL
+</style></head><body><div class="page"><header class="masthead"><a class="brand" href="#top">NTL.jl / complete manual</a><div class="masthead-meta">Version 0.13.2 · Julia 1.9+ · Pure Julia · Offline reference</div></header><div id="top" class="hero"><div class="hero-copy"><p class="kicker">Exact arithmetic, documented from first construction to verification</p><h1>The complete NTL.jl manual.</h1><p class="lede">The full project README, optimized field / polynomial / lattice kernels, selective small-field factorization with an early-splitting guard, random-prime comparisons, and an executable call for every exported interface.</p><ul class="hero-facts"><li><strong>Verified</strong><span>4,645,454 passing assertions on Julia 1.11.7</span></li><li><strong>Coverage</strong><span>131 exported names demonstrated in one API tour</span></li><li><strong>Included</strong><span>README + clean API index + full tour source</span></li></ul></div><div class="hero-demo code-panel"><div class="code-caption">Prime fields and big modular rings</div><pre><code>using NTL
 
 F = PrimeField(101)
 a = F(120)       # Machine-word prime field
@@ -298,7 +298,7 @@ algebra, generalized FFT, and lattice reduction.</strong></p>
 clone. It is designed to be approachable for new Julia users while
 providing efficient, tested implementations for research and
 teaching.</p>
-<p>Version: <strong>0.13.1</strong><br> Tested with: <strong>Julia
+<p>Version: <strong>0.13.2</strong><br> Tested with: <strong>Julia
 1.11.7</strong><br> Compatibility target: <strong>Julia
 1.9+</strong></p>
 <h2 id="contents">Contents</h2>
@@ -371,7 +371,7 @@ using NTL</code></pre>
 contains <code>Project.toml</code>.</p>
 <h3 id="run-the-complete-test-suite">Run the complete test suite</h3>
 <pre class="bash"><code>julia --project=. -e &#39;using Pkg; Pkg.instantiate(); Pkg.test()&#39;</code></pre>
-<p>The current suite contains <strong>4,645,450 passing
+<p>The current suite contains <strong>4,645,454 passing
 assertions</strong>. Runtime code depends only on Julia’s
 <code>Random</code> standard library; <code>Test</code> is used only by
 the test target.</p>
@@ -1789,7 +1789,7 @@ workflow</td>
 </table></div>
 <h2 id="comparison-with-c-ntl">Comparison with C++ NTL</h2>
 <p>The following table was rerun on <strong>2026-11-22</strong> using
-the 0.13.0 baseline, the selectively optimized 0.13.1 kernels, official
+the 0.13.0 baseline, the selectively optimized 0.13.2 kernels, official
 C++ NTL 11.4.2, and Julia 1.11.7 on the 2-core project server. Each
 value is the median of 31 runs after warm-up, with input construction
 excluded. These are workload-specific examples, not universal
@@ -1807,7 +1807,7 @@ performance guarantees.</p>
 <th>Operation</th>
 <th style="text-align: right;">C++ NTL (ms)</th>
 <th style="text-align: right;">Baseline (ms)</th>
-<th style="text-align: right;">Selective 0.13.1 (ms)</th>
+<th style="text-align: right;">Selective 0.13.2 (ms)</th>
 <th style="text-align: right;">Optimized / C++</th>
 </tr>
 </thead>
@@ -1816,7 +1816,7 @@ performance guarantees.</p>
 <td>Small modular mul/add (typed hot loop)</td>
 <td style="text-align: right;">8.4581</td>
 <td style="text-align: right;">67.8763</td>
-<td style="text-align: right;">5.0682</td>
+<td style="text-align: right;">5.0605</td>
 <td style="text-align: right;">0.60x</td>
 </tr>
 <tr class="even">
@@ -1824,69 +1824,68 @@ performance guarantees.</p>
 <td style="text-align: right;">0.0130</td>
 <td style="text-align: right;">0.0049</td>
 <td style="text-align: right;">0.0047</td>
-<td style="text-align: right;">0.37x</td>
+<td style="text-align: right;">0.36x</td>
 </tr>
 <tr class="odd">
 <td>Polynomial multiplication</td>
 <td style="text-align: right;">0.0660</td>
 <td style="text-align: right;">0.0693</td>
-<td style="text-align: right;">0.0666</td>
-<td style="text-align: right;">1.01x</td>
+<td style="text-align: right;">0.0677</td>
+<td style="text-align: right;">1.03x</td>
 </tr>
 <tr class="even">
 <td>NTT convolution</td>
 <td style="text-align: right;">0.6572</td>
 <td style="text-align: right;">0.5898</td>
-<td style="text-align: right;">0.5781</td>
+<td style="text-align: right;">0.5793</td>
 <td style="text-align: right;">0.88x</td>
 </tr>
 <tr class="odd">
 <td>Polynomial factorization (degree 8)</td>
 <td style="text-align: right;">0.0250</td>
 <td style="text-align: right;">0.0753</td>
-<td style="text-align: right;">0.0253</td>
-<td style="text-align: right;">1.01x</td>
+<td style="text-align: right;">0.0261</td>
+<td style="text-align: right;">1.05x</td>
 </tr>
 <tr class="even">
 <td>Finite-field determinant</td>
 <td style="text-align: right;">0.0302</td>
 <td style="text-align: right;">0.0148</td>
-<td style="text-align: right;">0.0276</td>
-<td style="text-align: right;">0.91x</td>
+<td style="text-align: right;">0.0150</td>
+<td style="text-align: right;">0.50x</td>
 </tr>
 <tr class="odd">
 <td>LLL (with exact verification)</td>
 <td style="text-align: right;">0.0702</td>
 <td style="text-align: right;">0.1843</td>
-<td style="text-align: right;">0.3235</td>
-<td style="text-align: right;">4.61x</td>
+<td style="text-align: right;">0.1786</td>
+<td style="text-align: right;">2.55x</td>
 </tr>
 <tr class="even">
 <td>LLL (reduction only)</td>
 <td style="text-align: right;">0.0694</td>
 <td style="text-align: right;">0.0320</td>
-<td style="text-align: right;">0.0560</td>
-<td style="text-align: right;">0.81x</td>
+<td style="text-align: right;">0.0283</td>
+<td style="text-align: right;">0.41x</td>
 </tr>
 <tr class="odd">
 <td>Primality test (per call)</td>
 <td style="text-align: right;">0.0678</td>
 <td style="text-align: right;">0.0262</td>
-<td style="text-align: right;">0.0260</td>
-<td style="text-align: right;">0.38x</td>
+<td style="text-align: right;">0.0264</td>
+<td style="text-align: right;">0.39x</td>
 </tr>
 </tbody>
 </table></div>
 <h3 id="what-these-results-mean">What these results mean</h3>
 <ul>
-<li>The small-field factorization path is now competitive with C++ NTL
-for the repository’s degree-8 input: 25.34 μs versus 24.99 μs. It uses
-exhaustive roots only when <code>P &lt;= 127</code> and
-<code>1 &lt;= degree(f) &lt;= 16</code>, with a dedicated quartic case
-and generic Cantor–Zassenhaus fallback outside that range.</li>
+<li>The small-field factorization path is competitive with C++ NTL for
+the repository’s degree-8 input: 26.12 μs versus 24.99 μs. An
+early-splitting probe now avoids exhaustive root scans when multiple
+roots are found among the first eight candidates.</li>
 <li><code>small_modmul</code> uses a typed hot loop to make Julia
 dispatch boundaries explicit. It does not demonstrate a library-only
-speedup: the original loop remains about 68 ms in this run. The
+speedup: the original loop remains about 68–71 ms in these runs. The
 small-residue multiplication patch itself was <strong>not
 merged</strong>, because it did not show a stable benefit on this
 server.</li>
@@ -1898,6 +1897,20 @@ cost.</li>
 reference.</li>
 </ul>
 <h2 id="performance-optimizations">Performance optimizations</h2>
+<p>Version 0.13.2 adds an early-splitting fallback. Before trying the
+small-field exhaustive path, it evaluates at most eight candidate roots
+and immediately returns to generic Cantor–Zassenhaus when at least two
+are found. This prevents highly splitting polynomials from paying for a
+full root scan while preserving the fast path for root-free and
+sparse-root inputs.</p>
+<p>Threshold scans show the improvement most clearly. For distinct
+linear factors, the specialized-versus-generic ratios changed from 2.667
+to 0.994 for <code>p=31, d=4</code>, from 4.771 to 0.989 for
+<code>p=61, d=8</code>, from 4.687 to 0.951 for
+<code>p=101, d=12</code>, and from 7.115 to 0.995 for
+<code>p=127, d=16</code>. The repository’s degree-8 workload remains
+close to C++ NTL at 26.12 μs versus 24.99 μs.</p>
+<h3 id="version-0.13.1">Version 0.13.1</h3>
 <p>Version 0.13.1 adds a selective small-field factorization path. It
 removes roots by exhaustive evaluation only when
 <code>P &lt;= 127</code> and <code>1 &lt;= degree(f) &lt;= 16</code>,
@@ -2036,7 +2049,7 @@ universal guarantees.</p>
 GaloisFields.jl</h2>
 <p>GaloisFields.jl is particularly strong for small finite fields and
 extension arithmetic. This table was rerun on
-<strong>2026-11-22</strong> with NTL.jl 0.13.1, GaloisFields.jl 1.4, and
+<strong>2026-11-22</strong> with NTL.jl 0.13.2, GaloisFields.jl 1.4, and
 Julia 1.11.7. Every workload uses <strong>the same eight random 7-bit
 primes for both packages</strong>:
 <code>[67, 73, 83, 89, 97, 101, 107, 113]</code>. Each per-prime value
@@ -2549,8 +2562,8 @@ set_polynomial_acceleration!(false)
 set_polynomial_acceleration!(true)
 println(&quot;API tour completed successfully.&quot;)</code></pre>
 <h2 id="c.-exported-interface-index">C. Exported-interface index</h2>
-<p>This index contains the canonical public interface. The 0.13.1
-selective factorization work changes kernels rather than adding public
+<p>This index contains the canonical public interface. The 0.13.2
+early-splitting guard changes only algorithm selection, not public
 names.</p>
 <div class="table-wrap"><table>
 <colgroup>
@@ -2632,10 +2645,10 @@ ntt_convolve</td>
 <h2 id="d.-documentation-and-verification-checklist">D. Documentation
 and verification checklist</h2>
 <ul>
-<li>Release documented here: <strong>NTL.jl 0.13.1</strong>, targeting
+<li>Release documented here: <strong>NTL.jl 0.13.2</strong>, targeting
 Julia 1.9 or later and tested with Julia 1.11.7.</li>
-<li>Full regression suite: <strong>4,645,450 passing
-assertions</strong>, including 1,987 optimized-kernel checks and 306,588
+<li>Full regression suite: <strong>4,645,454 passing
+assertions</strong>, including 1,987 optimized-kernel checks and 306,592
 small-modulus arithmetic and factorization checks.</li>
 <li>Every exported name occurs in at least one executable example in
 <code>api_tour.jl</code>; all 14 package examples also passed on the
@@ -2650,10 +2663,12 @@ type; ordinary extension construction continues to use
 <code>E(...)</code>.</li>
 <li>The small-field factorization path is used only when
 <code>P &lt;= 127</code> and <code>1 &lt;= degree(f) &lt;= 16</code>;
-other inputs retain generic Cantor–Zassenhaus factorization.</li>
+other inputs retain generic Cantor–Zassenhaus factorization. An early
+probe avoids exhaustive scans when multiple roots are found among the
+first eight candidates.</li>
 <li>Performance tables explicitly distinguish library-kernel
 improvements from typed hot-loop dispatch improvements and note that the
 small-residue multiplication patch was not merged.</li>
 <li>This page is self-contained: equations use MathML, styling is
 embedded, and no web framework or network connection is required.</li>
-</ul></main></div><footer class="footer"><div>NTL.jl · Exact mathematical core · Version 0.13.1</div><div><a href="#top">Return to top</a> · <a href="../examples/api_tour.jl">API tour source</a></div></footer></div></body></html>
+</ul></main></div><footer class="footer"><div>NTL.jl · Exact mathematical core · Version 0.13.2</div><div><a href="#top">Return to top</a> · <a href="../examples/api_tour.jl">API tour source</a></div></footer></div></body></html>

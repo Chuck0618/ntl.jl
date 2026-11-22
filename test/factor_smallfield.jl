@@ -52,4 +52,15 @@
                   Set((coefficients(g), m) for (g, m) in reference.factors)
         end
     end
+
+    for p in (31, 101)
+        F = PrimeField(p)
+        x = xpoly(F)
+        f = (x + 1) * (x + 2) * (x^2 + 2)
+        result = NTL.factor(f; rng=MersenneTwister(2026))
+        reference = NTL._factor_generic(f, MersenneTwister(2026))
+        @test reconstruct(result) == f
+        @test Set((coefficients(g), m) for (g, m) in result.factors) ==
+              Set((coefficients(g), m) for (g, m) in reference.factors)
+    end
 end
