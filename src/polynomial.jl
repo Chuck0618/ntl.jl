@@ -162,22 +162,47 @@ end
 >>(f::ModPoly, n::Integer) = RightShift(f, n)
 
 """Polynomial long division. Return `(quotient, remainder)`."""
-function DivRem(f::ModPoly, g::ModPoly)
+function _divrem_buffers(f::ModPoly, g::ModPoly, want_quotient::Bool)
     F = _check_poly_parents(f, g)
     iszero(g) && throw(DivideError())
-    degree(f) < degree(g) && return (zero(f), f)
-    q = [zero(F) for _ in 1:(degree(f) - degree(g) + 1)]
-    r = f
-    while !iszero(r) && degree(r) >= degree(g)
-        k = degree(r) - degree(g)
-        t = LeadCoeff(r) / LeadCoeff(g)
-        q[k + 1] = t
-        r = r - LeftShift(g * t, k)
+    df, dg = degree(f), degree(g)
+    T = typeof(zero(F))
+    df < dg && return (T[], copy(f._coeffs))
+
+    q = want_quotient ? fill(zero(F), df - dg + 1) : T[]
+    r = copy(f._coeffs)
+    lead = LeadCoeff(g)
+    lead_inv = isone(lead) ? lead : inv(lead)
+    @inbounds while length(r) > dg
+        k = length(r) - dg - 1
+        t = r[end] * lead_inv
+        want_quotient && (q[k + 1] = t)
+        # Update the remainder in its existing coefficient buffer. No shifted
+        # polynomial, scalar multiple, or subtraction temporary is allocated.
+        for j in 0:dg
+            r[k + j + 1] -= t * g._coeffs[j + 1]
+        end
+        _trim!(r)
     end
-    (_make_poly(F, q), r)
+    q, r
 end
-div(f::ModPoly, g::ModPoly) = DivRem(f, g)[1]
-rem(f::ModPoly, g::ModPoly) = DivRem(f, g)[2]
+
+function DivRem(f::ModPoly, g::ModPoly)
+    F = _check_poly_parents(f, g)
+    q, r = _divrem_buffers(f, g, true)
+    (_make_poly(F, q), _make_poly(F, r))
+end
+
+function div(f::ModPoly, g::ModPoly)
+    q, _ = _divrem_buffers(f, g, true)
+    _make_poly(field(f), q)
+end
+
+function rem(f::ModPoly, g::ModPoly)
+    _, r = _divrem_buffers(f, g, false)
+    _make_poly(field(f), r)
+end
+
 /(f::ModPoly, g::ModPoly) = div(f, g)
 /(f::ModPoly, c::Number) = _make_poly(field(f), [a / field(f)(c) for a in f._coeffs])
 

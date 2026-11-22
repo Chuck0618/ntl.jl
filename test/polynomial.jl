@@ -73,6 +73,22 @@
     @test evaluate(f, BigInt(2)) == 17
 end
 
+@testset "Buffered polynomial long division" begin
+    parents = Any[PrimeField(2), PrimeField(101), BigModRing(101), GF2]
+    F5 = PrimeField(5)
+    push!(parents, extension_field(F5, xpoly(F5)^2 + 2))
+    for F in parents, df in 0:12, dg in 0:5
+        f = random_poly(F, df + 1; rng = MersenneTwister(df * 20 + dg))
+        g = random_poly(F, dg + 1; rng = MersenneTwister(df * 20 + dg + 1))
+        iszero(g) && (g = one(f))
+        q, r = DivRem(f, g)
+        @test q * g + r == f
+        @test iszero(r) || degree(r) < degree(g)
+        @test div(f, g) == q
+        @test rem(f, g) == r
+    end
+end
+
 @testset "Polynomial factorization and irreducibility" begin
     rng = MersenneTwister(2026)
     for p in (2, 3, 5, 7, 11)
@@ -117,4 +133,12 @@ end
     facb = factor(fb; rng = rng)
     @test reconstruct(facb) == fb
     @test_throws ArgumentError factor(poly(BigModRing(12), [1, 1]))
+
+    # Regression workload for buffered division during distinct-degree factorization.
+    FL = PrimeField(101)
+    linear60 = BuildFromRoots(FL, collect(0:59))
+    fac60 = factor(linear60; rng = MersenneTwister(4))
+    @test reconstruct(fac60) == linear60
+    @test length(fac60.factors) == 60
+    @test all(degree(g) == 1 && m == 1 for (g, m) in fac60.factors)
 end

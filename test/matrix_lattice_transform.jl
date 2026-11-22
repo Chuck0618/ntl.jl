@@ -32,6 +32,22 @@
     @test det_exact(reshape([7], 1, 1)) == 7
 end
 
+@testset "Delayed prime-field determinant and overflow fallback" begin
+    for P in (2, 3, 5, 101, 257, 998244353, zzp_Max), n in (1, 2, 3, 5, 8), trial in 1:3
+        F = PrimeField(P)
+        A = rand(MersenneTwister(P % 1000 + n * 10 + trial), F, n, n)
+        @test det(A) == NTL._det_generic(A, n)
+    end
+    for P in (2, 3, 5, 101), n in 2:8
+        F = PrimeField(P)
+        A = rand(MersenneTwister(n), F, n, n)
+        A[end, :] = A[1, :]
+        @test iszero(det(A))
+    end
+    @test NTL._delayed_det_supported(256, 101)
+    @test !NTL._delayed_det_supported(8, zzp_Max)
+end
+
 @testset "Exact LLL lattice reduction" begin
     A = BigInt[1 1 1; -1 0 2; 3 5 6]
     result = lll(A)

@@ -53,6 +53,15 @@ end
         @test poly_mul(f, g; method = :auto) == reference
     end
 
+    F = PrimeField(101)
+    a = rand(MersenneTwister(1011), F, 80)
+    b = rand(MersenneTwister(1012), F, 80)
+    single = NTL._fft_prime_plan(NTL._fft_bound(a, b), length(a) + length(b) - 1)
+    @test length(single) == 1
+    @test fft_convolve(a, b) == convolve(a, b)
+    @test NTL._fft_ntt_primefield(a, b, single[1]) ==
+          [rep(x) for x in fft_convolve(PrimeField(single[1]).(rep.(a)), PrimeField(single[1]).(rep.(b)))]
+
     F = PrimeField(1000003)
     a = fill(F(1000002), 1000)
     b = fill(F(1000002), 1000)

@@ -4,7 +4,7 @@
 
 NTL.jl is inspired by C++ NTL, but it is not a wrapper or an API clone. It is designed to be approachable for new Julia users while providing efficient, tested implementations for research and teaching.
 
-Version: **0.10.0**<br>
+Version: **0.11.0**<br>
 Tested with: **Julia 1.11.7**<br>
 Compatibility target: **Julia 1.9+**
 
@@ -28,6 +28,7 @@ Compatibility target: **Julia 1.9+**
 - [Project architecture](#project-architecture)
 - [Examples and tests](#examples-and-tests)
 - [Comparison with C++ NTL](#comparison-with-c-ntl)
+- [Performance optimizations](#performance-optimizations)
 - [Comparison with GaloisFields.jl](#comparison-with-galoisfieldsjl)
 - [Design principles](#design-principles)
 - [Limitations](#limitations)
@@ -65,7 +66,7 @@ Replace `/path/to/NTLJulia` with the directory that contains `Project.toml`.
 julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.test()'
 ```
 
-The current suite contains **4,335,178 passing assertions**. Runtime code depends only on Julia's `Random` standard library; `Test` is used only by the test target.
+The current suite contains **4,336,879 passing assertions**. Runtime code depends only on Julia's `Random` standard library; `Test` is used only by the test target.
 
 ### HTML documentation
 
@@ -972,6 +973,26 @@ The following measurements are **workload-specific examples**, not universal per
 - Julia's generalized FFT substantially reduced the polynomial multiplication gap compared with the original schoolbook implementation.
 - Fast LLL reduced the LLL-specific slowdown from over 1,500x to about 29x while retaining exact verification.
 - The primality result is not evidence that Julia is generally faster: the compared witness sets and rounds differ.
+
+## Performance optimizations
+
+Version 0.11.0 implements three measured optimizations while preserving the original algorithms as fallbacks:
+
+1. **Generalized FFT:** single-prime reconstruction stays in machine integers, auxiliary primes enter a typed NTT kernel through a function barrier, and one primitive root is shared by the three transforms of a convolution. Multi-prime CRT remains unchanged for inputs that need it.
+2. **Prime-field determinants:** elimination follows Julia's column-major layout, reuses each pivot inverse, and uses delayed modular reduction on `Int` representatives. The delayed path is selected only when \(n(p-1)^2+(p-1)\le\mathrm{typemax}(\mathrm{Int})\); larger or unsafe cases use the general field implementation.
+3. **Polynomial long division:** the remainder coefficient buffer is reused, the divisor's leading inverse is computed once, and standalone `rem` does not allocate a quotient. This also accelerates polynomial GCD and factorization.
+
+The following before/after measurements were rerun on the same project server with Julia 1.11.7. Each entry is the median of 31 runs after warm-up, with input construction excluded. They are not copied from prototype results obtained on different hardware.
+
+| Workload | 0.10.0 baseline | 0.11.0 optimized | Speedup | Allocation before → after |
+|---|---:|---:|---:|---:|
+| Polynomial multiplication, 1024 + 1024 coefficients, p=101 | 1194.30 μs | 319.76 μs | 3.73× | 535,240 → 126,544 bytes |
+| Determinant, 256×256, p=101 | 24.177 ms | 2.502 ms | 9.66× | 528,736 → 526,872 bytes |
+| Factorization, 60 distinct linear factors, p=101 | 55.514 ms | 18.324 ms | 3.03× | 20,769,488 → 8,936,736 bytes |
+| `DivRem`, coefficient counts 800 / 400, p=101 | 61.030 ms | 13.417 ms | 4.55× | 30,286,984 → 10,858,288 bytes |
+| `rem`, coefficient counts 800 / 400, p=101 | 60.261 ms | 13.450 ms | 4.48× | 30,287,016 → 10,851,696 bytes |
+
+The determinant allocation count is nearly unchanged because the specialized path deliberately allocates one `Int` work matrix; its gain comes from contiguous updates and fewer modular inverses. Performance varies with modulus, transform length, sparsity, and factor structure, so these figures are workload-specific rather than universal guarantees.
 
 ## Comparison with GaloisFields.jl
 

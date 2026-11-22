@@ -13,6 +13,26 @@ const FFT_PRIMES = (
     2013265921,  # 15 * 2^27 + 1
 )
 
+# Auxiliary NTT primes are runtime values. Use a function barrier so the
+# selected modulus becomes a compile-time parameter inside the actual kernel.
+function _fft_ntt_primefield(a, b, q::Int)
+    _fft_ntt_primefield_typed(a, b, PrimeField(q))
+end
+
+function _fft_ntt_primefield_typed(a, b, ::Type{PrimeField{Q}}) where {Q}
+    A = Vector{PrimeField{Q}}(undef, length(a))
+    B = Vector{PrimeField{Q}}(undef, length(b))
+    @inbounds for i in eachindex(a)
+        A[i] = _raw(Val{Q}(), Int(mod(rep(a[i]), Q)))
+    end
+    @inbounds for i in eachindex(b)
+        B[i] = _raw(Val{Q}(), Int(mod(rep(b[i]), Q)))
+    end
+    # Q is one of the validated FFT primes. Raw construction is therefore safe,
+    # and avoids repeating primality checks for every coefficient.
+    [rep(x) for x in ntt_convolve(A, B)]
+end
+
 function _fft_bound(a, b)
     isempty(a) && return BigInt(0)
     isempty(b) && return BigInt(0)
@@ -73,16 +93,13 @@ function fft_convolve(a::AbstractVector, b::AbstractVector)
     _fft_direct_supported(F, total) && return ntt_convolve(a, b)
     bound = _fft_bound(a, b)
     moduli = _fft_prime_plan(bound, total)
-    residues = Vector{Vector{BigInt}}()
+    residues = Vector{Vector{Int}}()
     for q in moduli
-        F = PrimeField(q)
-        aq = [F(rep(x)) for x in a]
-        bq = [F(rep(x)) for x in b]
-        push!(residues, [BigInt(rep(x)) for x in ntt_convolve(aq, bq)])
+        push!(residues, _fft_ntt_primefield(a, b, q))
     end
     F = parent(a[1])
     if length(moduli) == 1
-        return F.(residues[1])
+        return _fft_reconstruct(F, residues[1])
     end
     F.(_crt_coefficients(residues, moduli, total))
 end
@@ -102,15 +119,17 @@ function _crt_coefficients(residues::Vector{<:AbstractVector{<:Integer}}, moduli
     out
 end
 
-function _fft_reconstruct(::Type{PrimeField{P}}, residues::Vector{BigInt}) where {P}
-    PrimeField{P}.(residues)
+function _fft_reconstruct(::Type{PrimeField{P}}, residues::AbstractVector{<:Integer}) where {P}
+    # A single auxiliary prime proves that the nonnegative integer coefficients
+    # are already exact. Keep reconstruction in machine integers on this path.
+    [_raw(Val{P}(), Int(mod(x, P))) for x in residues]
 end
 
-function _fft_reconstruct(F::BigModRing, residues::Vector{BigInt})
+function _fft_reconstruct(F::BigModRing, residues::AbstractVector{<:Integer})
     F.(residues)
 end
 
-function _fft_reconstruct(::Type{GF2}, residues::Vector{BigInt})
+function _fft_reconstruct(::Type{GF2}, residues::AbstractVector{<:Integer})
     GF2.(residues)
 end
 
@@ -121,12 +140,9 @@ function fft_convolve(a::Vector{PrimeField{P}}, b::Vector{PrimeField{P}}) where 
     _fft_direct_supported(PrimeField{P}, total) && return ntt_convolve(a, b)
     bound = _fft_bound(a, b)
     moduli = _fft_prime_plan(bound, total)
-    residues = Vector{Vector{BigInt}}()
+    residues = Vector{Vector{Int}}()
     for q in moduli
-        F = PrimeField(q)
-        aq = [F(rep(x)) for x in a]
-        bq = [F(rep(x)) for x in b]
-        push!(residues, [BigInt(rep(x)) for x in ntt_convolve(aq, bq)])
+        push!(residues, _fft_ntt_primefield(a, b, q))
     end
     if length(moduli) == 1
         return _fft_reconstruct(PrimeField{P}, residues[1])
@@ -143,12 +159,9 @@ function fft_convolve(a::Vector{ModInt}, b::Vector{ModInt})
     _fft_direct_supported(F, total) && return ntt_convolve(a, b)
     bound = _fft_bound(a, b)
     moduli = _fft_prime_plan(bound, total)
-    residues = Vector{Vector{BigInt}}()
+    residues = Vector{Vector{Int}}()
     for q in moduli
-        G = PrimeField(q)
-        aq = [G(rep(x)) for x in a]
-        bq = [G(rep(x)) for x in b]
-        push!(residues, [BigInt(rep(x)) for x in ntt_convolve(aq, bq)])
+        push!(residues, _fft_ntt_primefield(a, b, q))
     end
     if length(moduli) == 1
         return _fft_reconstruct(F, residues[1])
@@ -163,12 +176,9 @@ function fft_convolve(a::Vector{GF2}, b::Vector{GF2})
     _fft_direct_supported(GF2, total) && return ntt_convolve(a, b)
     bound = _fft_bound(a, b)
     moduli = _fft_prime_plan(bound, total)
-    residues = Vector{Vector{BigInt}}()
+    residues = Vector{Vector{Int}}()
     for q in moduli
-        F = PrimeField(q)
-        aq = [F(rep(x)) for x in a]
-        bq = [F(rep(x)) for x in b]
-        push!(residues, [BigInt(rep(x)) for x in ntt_convolve(aq, bq)])
+        push!(residues, _fft_ntt_primefield(a, b, q))
     end
     if length(moduli) == 1
         return _fft_reconstruct(GF2, residues[1])

@@ -1,12 +1,10 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Complete NTL.jl 0.10.0 manual: PrimeField, BigModRing, extension fields, API reference, benchmarks, and executable examples.">
-  <link rel="icon" href="data:,">
-  <title>NTL.jl 0.10.0 — Complete Manual and API Tour</title>
-  <style>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Complete NTL.jl 0.11.0 manual: PrimeField, BigModRing, optimized FFT, matrices, factorization, and executable examples.">
+  <link rel="icon" href="data:,"><title>NTL.jl 0.11.0 — Complete Manual
+and API Tour</title><style>
     :root {
       --paper: oklch(97.8% 0.002 90);
       --ink: oklch(18% 0.004 90);
@@ -238,21 +236,13 @@
     }
 </style>
 </head>
-<body>
-<div class="page">
-  <header class="masthead"><a class="brand" href="#top">NTL.jl / complete manual</a><div class="masthead-meta">Version 0.10.0 · Julia 1.9+ · Pure Julia · Offline reference</div></header>
-  <div id="top" class="hero">
-    <div class="hero-copy">
-      <p class="kicker">Exact arithmetic, documented from first construction to verification</p>
-      <h1>The complete NTL.jl manual.</h1>
-      <p class="lede">The full project README, clear <code>PrimeField</code> and <code>BigModRing</code> arithmetic, a beginner-first extension-field guide using <code>E(...)</code> and <code>ExtensionElem</code>, and an executable call for every exported interface.</p>
-      <ul class="hero-facts">
-        <li><strong>Verified</strong><span>4,335,178 passing assertions on Julia 1.11.7</span></li>
-        <li><strong>Coverage</strong><span>140 exported names demonstrated in one API tour</span></li>
-        <li><strong>Included</strong><span>README + naming guide + full tour source + API index</span></li>
-      </ul>
-    </div>
-    <div class="hero-demo code-panel"><div class="code-caption">Prime fields and big modular rings</div><pre><code>using NTL
+<body><div class="page">
+  <header class="masthead"><a class="brand" href="#top">NTL.jl / complete manual</a><div class="masthead-meta">Version 0.11.0 · Julia 1.9+ · Pure Julia · Offline reference</div></header>
+  <div id="top" class="hero"><div class="hero-copy">
+    <p class="kicker">Exact arithmetic, documented from first construction to verification</p><h1>The complete NTL.jl manual.</h1>
+    <p class="lede">The full project README, clear <code>PrimeField</code> and <code>BigModRing</code> arithmetic, measured FFT / matrix / factorization optimizations, and an executable call for every exported interface.</p>
+    <ul class="hero-facts"><li><strong>Verified</strong><span>4,336,879 passing assertions on Julia 1.11.7</span></li><li><strong>Coverage</strong><span>140 exported names demonstrated in one API tour</span></li><li><strong>Included</strong><span>README + optimization data + full tour source + API index</span></li></ul>
+  </div><div class="hero-demo code-panel"><div class="code-caption">Prime fields and big modular rings</div><pre><code>using NTL
 
 F = PrimeField(101)
 a = F(120)       # Machine-word prime field
@@ -265,10 +255,8 @@ b = R(big(2)^130 + 123)  # BigInt arithmetic
 @assert b isa ModInt
 @assert rep(a) == 19
 @assert a * inv(a) == one(F)
-@assert b * inv(b) == one(R)</code></pre></div>
-  </div>
-  <div class="workspace">
-    <nav class="sidebar" aria-label="Manual navigation"><div class="sidebar-inner"><h2>Contents</h2><div id="TOC" role="doc-toc"><ul>
+@assert b * inv(b) == one(R)</code></pre></div></div>
+  <div class="workspace"><nav class="sidebar" aria-label="Manual navigation"><div class="sidebar-inner"><h2>Contents</h2><div id="TOC" role="doc-toc"><ul>
 <li><a href="#ntl.jl">NTL.jl</a>
 <ul>
 <li><a href="#contents">Contents</a></li>
@@ -296,6 +284,8 @@ linear algebra</a></li>
 <li><a href="#project-architecture">Project architecture</a></li>
 <li><a href="#examples-and-tests">Examples and tests</a></li>
 <li><a href="#comparison-with-c-ntl">Comparison with C++ NTL</a></li>
+<li><a href="#performance-optimizations">Performance
+optimizations</a></li>
 <li><a href="#comparison-with-galoisfieldsjl">Comparison with
 GaloisFields.jl</a></li>
 <li><a href="#design-principles">Design principles</a></li>
@@ -314,8 +304,7 @@ index</a></li>
 <li><a href="#d.-documentation-and-verification-checklist">D.
 Documentation and verification checklist</a></li>
 </ul></li>
-</ul></div></div></nav>
-    <main id="main"><h1 id="ntl.jl">NTL.jl</h1>
+</ul></div></div></nav><main id="main"><h1 id="ntl.jl">NTL.jl</h1>
 <p><strong>A pure-Julia toolkit for exact finite-field arithmetic,
 number theory, polynomial computation, extension fields, exact linear
 algebra, generalized FFT, and lattice reduction.</strong></p>
@@ -323,7 +312,7 @@ algebra, generalized FFT, and lattice reduction.</strong></p>
 clone. It is designed to be approachable for new Julia users while
 providing efficient, tested implementations for research and
 teaching.</p>
-<p>Version: <strong>0.10.0</strong><br> Tested with: <strong>Julia
+<p>Version: <strong>0.11.0</strong><br> Tested with: <strong>Julia
 1.11.7</strong><br> Compatibility target: <strong>Julia
 1.9+</strong></p>
 <h2 id="contents">Contents</h2>
@@ -350,6 +339,8 @@ linear algebra</a></li>
 <li><a href="#project-architecture">Project architecture</a></li>
 <li><a href="#examples-and-tests">Examples and tests</a></li>
 <li><a href="#comparison-with-c-ntl">Comparison with C++ NTL</a></li>
+<li><a href="#performance-optimizations">Performance
+optimizations</a></li>
 <li><a href="#comparison-with-galoisfieldsjl">Comparison with
 GaloisFields.jl</a></li>
 <li><a href="#design-principles">Design principles</a></li>
@@ -394,7 +385,7 @@ using NTL</code></pre>
 contains <code>Project.toml</code>.</p>
 <h3 id="run-the-complete-test-suite">Run the complete test suite</h3>
 <pre class="bash"><code>julia --project=. -e &#39;using Pkg; Pkg.instantiate(); Pkg.test()&#39;</code></pre>
-<p>The current suite contains <strong>4,335,178 passing
+<p>The current suite contains <strong>4,336,879 passing
 assertions</strong>. Runtime code depends only on Julia’s
 <code>Random</code> standard library; <code>Test</code> is used only by
 the test target.</p>
@@ -1897,6 +1888,91 @@ implementation.</li>
 <li>The primality result is not evidence that Julia is generally faster:
 the compared witness sets and rounds differ.</li>
 </ul>
+<h2 id="performance-optimizations">Performance optimizations</h2>
+<p>Version 0.11.0 implements three measured optimizations while
+preserving the original algorithms as fallbacks:</p>
+<ol type="1">
+<li><strong>Generalized FFT:</strong> single-prime reconstruction stays
+in machine integers, auxiliary primes enter a typed NTT kernel through a
+function barrier, and one primitive root is shared by the three
+transforms of a convolution. Multi-prime CRT remains unchanged for
+inputs that need it.</li>
+<li><strong>Prime-field determinants:</strong> elimination follows
+Julia’s column-major layout, reuses each pivot inverse, and uses delayed
+modular reduction on <code>Int</code> representatives. The delayed path
+is selected only when
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><msup><mrow><mo stretchy="true" form="prefix">(</mo><mi>p</mi><mo>−</mo><mn>1</mn><mo stretchy="true" form="postfix">)</mo></mrow><mn>2</mn></msup><mo>+</mo><mrow><mo stretchy="true" form="prefix">(</mo><mi>p</mi><mo>−</mo><mn>1</mn><mo stretchy="true" form="postfix">)</mo></mrow><mo>≤</mo><mstyle mathvariant="normal"><mi>t</mi><mi>y</mi><mi>p</mi><mi>e</mi><mi>m</mi><mi>a</mi><mi>x</mi></mstyle><mrow><mo stretchy="true" form="prefix">(</mo><mstyle mathvariant="normal"><mi>I</mi><mi>n</mi><mi>t</mi></mstyle><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">n(p-1)^2+(p-1)\le\mathrm{typemax}(\mathrm{Int})</annotation></semantics></math>;
+larger or unsafe cases use the general field implementation.</li>
+<li><strong>Polynomial long division:</strong> the remainder coefficient
+buffer is reused, the divisor’s leading inverse is computed once, and
+standalone <code>rem</code> does not allocate a quotient. This also
+accelerates polynomial GCD and factorization.</li>
+</ol>
+<p>The following before/after measurements were rerun on the same
+project server with Julia 1.11.7. Each entry is the median of 31 runs
+after warm-up, with input construction excluded. They are not copied
+from prototype results obtained on different hardware.</p>
+<div class="table-wrap"><table>
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 21%" />
+<col style="width: 21%" />
+<col style="width: 21%" />
+<col style="width: 21%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Workload</th>
+<th style="text-align: right;">0.10.0 baseline</th>
+<th style="text-align: right;">0.11.0 optimized</th>
+<th style="text-align: right;">Speedup</th>
+<th style="text-align: right;">Allocation before → after</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Polynomial multiplication, 1024 + 1024 coefficients, p=101</td>
+<td style="text-align: right;">1194.30 μs</td>
+<td style="text-align: right;">319.76 μs</td>
+<td style="text-align: right;">3.73×</td>
+<td style="text-align: right;">535,240 → 126,544 bytes</td>
+</tr>
+<tr class="even">
+<td>Determinant, 256×256, p=101</td>
+<td style="text-align: right;">24.177 ms</td>
+<td style="text-align: right;">2.502 ms</td>
+<td style="text-align: right;">9.66×</td>
+<td style="text-align: right;">528,736 → 526,872 bytes</td>
+</tr>
+<tr class="odd">
+<td>Factorization, 60 distinct linear factors, p=101</td>
+<td style="text-align: right;">55.514 ms</td>
+<td style="text-align: right;">18.324 ms</td>
+<td style="text-align: right;">3.03×</td>
+<td style="text-align: right;">20,769,488 → 8,936,736 bytes</td>
+</tr>
+<tr class="even">
+<td><code>DivRem</code>, coefficient counts 800 / 400, p=101</td>
+<td style="text-align: right;">61.030 ms</td>
+<td style="text-align: right;">13.417 ms</td>
+<td style="text-align: right;">4.55×</td>
+<td style="text-align: right;">30,286,984 → 10,858,288 bytes</td>
+</tr>
+<tr class="odd">
+<td><code>rem</code>, coefficient counts 800 / 400, p=101</td>
+<td style="text-align: right;">60.261 ms</td>
+<td style="text-align: right;">13.450 ms</td>
+<td style="text-align: right;">4.48×</td>
+<td style="text-align: right;">30,287,016 → 10,851,696 bytes</td>
+</tr>
+</tbody>
+</table></div>
+<p>The determinant allocation count is nearly unchanged because the
+specialized path deliberately allocates one <code>Int</code> work
+matrix; its gain comes from contiguous updates and fewer modular
+inverses. Performance varies with modulus, transform length, sparsity,
+and factor structure, so these figures are workload-specific rather than
+universal guarantees.</p>
 <h2 id="comparison-with-galoisfieldsjl">Comparison with
 GaloisFields.jl</h2>
 <p>GaloisFields.jl is particularly strong for small finite fields and
@@ -2506,10 +2582,11 @@ ntt_convolve</td>
 <h2 id="d.-documentation-and-verification-checklist">D. Documentation
 and verification checklist</h2>
 <ul>
-<li>Release documented here: <strong>NTL.jl 0.10.0</strong>, targeting
+<li>Release documented here: <strong>NTL.jl 0.11.0</strong>, targeting
 Julia 1.9 or later and tested with Julia 1.11.7.</li>
-<li>Full regression suite: <strong>4,335,178 passing
-assertions</strong>.</li>
+<li>Full regression suite: <strong>4,336,879 passing
+assertions</strong>, including delayed-determinant overflow fallback,
+buffered long division, and single-/multi-prime FFT boundaries.</li>
 <li>Every exported name occurs in at least one executable example in
 <code>api_tour.jl</code>.</li>
 <li><code>PrimeField(p)</code> is the machine-word prime-field
@@ -2521,21 +2598,18 @@ construction uses <code>R = BigModRing(n)</code> followed by
 <code>R(a)</code>.</li>
 <li>Legacy names are confined to the compatibility paragraph, executable
 compatibility checks, and this complete export index.</li>
+<li>The performance section reports independent same-server before/after
+medians and allocations, rather than copying prototype figures from
+different hardware.</li>
 <li>The extension-field guide uses <code>E(...)</code> for ordinary
 construction and <code>ExtensionElem</code> for explicit descriptive
-type checks. Its nine code blocks cover parent construction,
-scalar/vector/polynomial input, canonical representatives, metadata,
-arithmetic, inversion, powers, trace, norm, random arrays, polynomials
-over an extension, and binary fields.</li>
+type checks.</li>
 <li><code>E(p)</code> and <code>ExtensionElem(E, p)</code> both reduce
 polynomial input before storing it; the regression suite checks this
 invariant over <code>PrimeField</code>, <code>BigModRing</code>, and
 <code>GF2</code> base fields.</li>
 <li>This page is self-contained: equations use MathML, styling is
 embedded, and no web framework or network connection is required.</li>
-</ul></main>
-  </div>
-  <footer class="footer"><div>NTL.jl · Exact mathematical core · Version 0.10.0</div><div><a href="#top">Return to top</a> · <a href="../examples/api_tour.jl">API tour source</a></div></footer>
-</div>
-</body>
-</html>
+</ul></main></div>
+  <footer class="footer"><div>NTL.jl · Exact mathematical core · Version 0.11.0</div><div><a href="#top">Return to top</a> · <a href="../examples/api_tour.jl">API tour source</a></div></footer>
+</div></body></html>
