@@ -4,7 +4,7 @@
 
 NTL.jl is inspired by C++ NTL, but it is not a wrapper or an API clone. It is designed to be approachable for new Julia users while providing efficient, tested implementations for research and teaching.
 
-Version: **0.13.2**<br>
+Version: **0.13.3**<br>
 Tested with: **Julia 1.11.7**<br>
 Compatibility target: **Julia 1.9+**
 
@@ -66,7 +66,7 @@ Replace `/path/to/NTLJulia` with the directory that contains `Project.toml`.
 julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.test()'
 ```
 
-The current suite contains **4,645,454 passing assertions**. Runtime code depends only on Julia's `Random` standard library; `Test` is used only by the test target.
+The current suite contains **4,645,990 passing assertions**. Runtime code depends only on Julia's `Random` standard library; `Test` is used only by the test target.
 
 ### HTML documentation
 
@@ -913,6 +913,7 @@ NTLJulia/
     ├── matrix_lattice_transform.jl
     ├── acceleration.jl
     ├── lll_fast.jl
+    ├── lll_exact_certificates.jl
     ├── zech.jl
     ├── elliptic.jl
     └── naming.jl            # Canonical names and compatibility aliases
@@ -963,8 +964,8 @@ The following table was rerun on **2026-11-22** using the 0.13.0 baseline, the s
 | NTT convolution | 0.6572 | 0.5898 | 0.5793 | 0.88x |
 | Polynomial factorization (degree 8) | 0.0250 | 0.0753 | 0.0261 | 1.05x |
 | Finite-field determinant | 0.0302 | 0.0148 | 0.0150 | 0.50x |
-| LLL (with exact verification) | 0.0702 | 0.1843 | 0.1786 | 2.55x |
-| LLL (reduction only) | 0.0694 | 0.0320 | 0.0283 | 0.41x |
+| LLL (with exact verification) | 0.0699 | 0.1843 | 0.0989 | 1.41x |
+| LLL (reduction only) | 0.0694 | 0.0320 | 0.0415 | 0.60x |
 | Primality test (per call) | 0.0678 | 0.0262 | 0.0264 | 0.39x |
 
 ### What these results mean
@@ -975,6 +976,12 @@ The following table was rerun on **2026-11-22** using the 0.13.0 baseline, the s
 - Primality uses different witness strategies and is shown only as a reference.
 
 ## Performance optimizations
+
+Version 0.13.3 accelerates exact LLL verification with bounded fixed-width checks and a generic BigInt fallback. The reduction now retains native `Int` candidates through verification before converting the public result to `BigInt` once. Before converting the original matrix `A`, it verifies that all entries fit the fixed-width bound; an oversized original matrix therefore goes directly to the generic verifier rather than throwing `InexactError`.
+
+The new `test/lll_exact_certificates.jl` suite adds **536 assertions** for exact transformation, unimodularity, size reduction, Lovász conditions, row exchanges, forged inputs, overflow fallbacks, and oversized original matrices. The benchmark separates reduction, exact verification, and their combination rather than attributing all LLL cost to the reducer.
+
+### Version 0.13.2
 
 Version 0.13.2 adds an early-splitting fallback. Before trying the small-field exhaustive path, it evaluates at most eight candidate roots and immediately returns to generic Cantor–Zassenhaus when at least two are found. This prevents highly splitting polynomials from paying for a full root scan while preserving the fast path for root-free and sparse-root inputs.
 
@@ -1021,7 +1028,7 @@ The determinant allocation count is nearly unchanged because the specialized pat
 
 ## Comparison with GaloisFields.jl
 
-GaloisFields.jl is particularly strong for small finite fields and extension arithmetic. This table was rerun on **2026-11-22** with NTL.jl 0.13.2, GaloisFields.jl 1.4, and Julia 1.11.7. Every workload uses **the same eight random 7-bit primes for both packages**: `[67, 73, 83, 89, 97, 101, 107, 113]`. Each per-prime value is the median of 31 runs after warm-up; the table reports the median across primes. Input construction is excluded.
+GaloisFields.jl is particularly strong for small finite fields and extension arithmetic. This table was rerun on **2026-11-22** with NTL.jl 0.13.3, GaloisFields.jl 1.4, and Julia 1.11.7. Every workload uses **the same eight random 7-bit primes for both packages**: `[67, 73, 83, 89, 97, 101, 107, 113]`. Each per-prime value is the median of 31 runs after warm-up; the table reports the median across primes. Input construction is excluded.
 
 | Operation | NTL.jl (ms) | GaloisFields (ms) |
 |---|---:|---:|

@@ -1,5 +1,5 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Complete NTL.jl 0.13.2 manual with early-splitting factorization and random-prime performance comparisons."><link rel="icon" href="data:,"><title>NTL.jl
-0.13.2 — Complete Manual and API Tour</title><style>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Complete NTL.jl 0.13.3 manual with optimized exact LLL verification and random-prime performance comparisons."><link rel="icon" href="data:,"><title>NTL.jl
+0.13.3 — Complete Manual and API Tour</title><style>
     :root {
       --paper: oklch(97.8% 0.002 90);
       --ink: oklch(18% 0.004 90);
@@ -229,7 +229,7 @@
       .sidebar #TOC { max-height: 320px; overflow-y: auto; margin-bottom: 24px; }
       main pre code { min-width: 0; }
     }
-</style></head><body><div class="page"><header class="masthead"><a class="brand" href="#top">NTL.jl / complete manual</a><div class="masthead-meta">Version 0.13.2 · Julia 1.9+ · Pure Julia · Offline reference</div></header><div id="top" class="hero"><div class="hero-copy"><p class="kicker">Exact arithmetic, documented from first construction to verification</p><h1>The complete NTL.jl manual.</h1><p class="lede">The full project README, optimized field / polynomial / lattice kernels, selective small-field factorization with an early-splitting guard, random-prime comparisons, and an executable call for every exported interface.</p><ul class="hero-facts"><li><strong>Verified</strong><span>4,645,454 passing assertions on Julia 1.11.7</span></li><li><strong>Coverage</strong><span>131 exported names demonstrated in one API tour</span></li><li><strong>Included</strong><span>README + clean API index + full tour source</span></li></ul></div><div class="hero-demo code-panel"><div class="code-caption">Prime fields and big modular rings</div><pre><code>using NTL
+</style></head><body><div class="page"><header class="masthead"><a class="brand" href="#top">NTL.jl / complete manual</a><div class="masthead-meta">Version 0.13.3 · Julia 1.9+ · Pure Julia · Offline reference</div></header><div id="top" class="hero"><div class="hero-copy"><p class="kicker">Exact arithmetic, documented from first construction to verification</p><h1>The complete NTL.jl manual.</h1><p class="lede">The full project README, optimized field / polynomial / lattice kernels, exact LLL verification with safe fixed-width fallbacks, random-prime comparisons, and an executable call for every exported interface.</p><ul class="hero-facts"><li><strong>Verified</strong><span>4,645,990 passing assertions on Julia 1.11.7</span></li><li><strong>Coverage</strong><span>131 exported names demonstrated in one API tour</span></li><li><strong>Included</strong><span>README + clean API index + full tour source</span></li></ul></div><div class="hero-demo code-panel"><div class="code-caption">Prime fields and big modular rings</div><pre><code>using NTL
 
 F = PrimeField(101)
 a = F(120)       # Machine-word prime field
@@ -298,7 +298,7 @@ algebra, generalized FFT, and lattice reduction.</strong></p>
 clone. It is designed to be approachable for new Julia users while
 providing efficient, tested implementations for research and
 teaching.</p>
-<p>Version: <strong>0.13.2</strong><br> Tested with: <strong>Julia
+<p>Version: <strong>0.13.3</strong><br> Tested with: <strong>Julia
 1.11.7</strong><br> Compatibility target: <strong>Julia
 1.9+</strong></p>
 <h2 id="contents">Contents</h2>
@@ -371,7 +371,7 @@ using NTL</code></pre>
 contains <code>Project.toml</code>.</p>
 <h3 id="run-the-complete-test-suite">Run the complete test suite</h3>
 <pre class="bash"><code>julia --project=. -e &#39;using Pkg; Pkg.instantiate(); Pkg.test()&#39;</code></pre>
-<p>The current suite contains <strong>4,645,454 passing
+<p>The current suite contains <strong>4,645,990 passing
 assertions</strong>. Runtime code depends only on Julia’s
 <code>Random</code> standard library; <code>Test</code> is used only by
 the test target.</p>
@@ -1695,6 +1695,7 @@ polynomial</td>
     ├── matrix_lattice_transform.jl
     ├── acceleration.jl
     ├── lll_fast.jl
+    ├── lll_exact_certificates.jl
     ├── zech.jl
     ├── elliptic.jl
     └── naming.jl            # Canonical names and compatibility aliases</code></pre>
@@ -1856,17 +1857,17 @@ performance guarantees.</p>
 </tr>
 <tr class="odd">
 <td>LLL (with exact verification)</td>
-<td style="text-align: right;">0.0702</td>
+<td style="text-align: right;">0.0699</td>
 <td style="text-align: right;">0.1843</td>
-<td style="text-align: right;">0.1786</td>
-<td style="text-align: right;">2.55x</td>
+<td style="text-align: right;">0.0989</td>
+<td style="text-align: right;">1.41x</td>
 </tr>
 <tr class="even">
 <td>LLL (reduction only)</td>
 <td style="text-align: right;">0.0694</td>
 <td style="text-align: right;">0.0320</td>
-<td style="text-align: right;">0.0283</td>
-<td style="text-align: right;">0.41x</td>
+<td style="text-align: right;">0.0415</td>
+<td style="text-align: right;">0.60x</td>
 </tr>
 <tr class="odd">
 <td>Primality test (per call)</td>
@@ -1897,6 +1898,21 @@ cost.</li>
 reference.</li>
 </ul>
 <h2 id="performance-optimizations">Performance optimizations</h2>
+<p>Version 0.13.3 accelerates exact LLL verification with bounded
+fixed-width checks and a generic BigInt fallback. The reduction now
+retains native <code>Int</code> candidates through verification before
+converting the public result to <code>BigInt</code> once. Before
+converting the original matrix <code>A</code>, it verifies that all
+entries fit the fixed-width bound; an oversized original matrix
+therefore goes directly to the generic verifier rather than throwing
+<code>InexactError</code>.</p>
+<p>The new <code>test/lll_exact_certificates.jl</code> suite adds
+<strong>536 assertions</strong> for exact transformation, unimodularity,
+size reduction, Lovász conditions, row exchanges, forged inputs,
+overflow fallbacks, and oversized original matrices. The benchmark
+separates reduction, exact verification, and their combination rather
+than attributing all LLL cost to the reducer.</p>
+<h3 id="version-0.13.2">Version 0.13.2</h3>
 <p>Version 0.13.2 adds an early-splitting fallback. Before trying the
 small-field exhaustive path, it evaluates at most eight candidate roots
 and immediately returns to generic Cantor–Zassenhaus when at least two
@@ -2049,7 +2065,7 @@ universal guarantees.</p>
 GaloisFields.jl</h2>
 <p>GaloisFields.jl is particularly strong for small finite fields and
 extension arithmetic. This table was rerun on
-<strong>2026-11-22</strong> with NTL.jl 0.13.2, GaloisFields.jl 1.4, and
+<strong>2026-11-22</strong> with NTL.jl 0.13.3, GaloisFields.jl 1.4, and
 Julia 1.11.7. Every workload uses <strong>the same eight random 7-bit
 primes for both packages</strong>:
 <code>[67, 73, 83, 89, 97, 101, 107, 113]</code>. Each per-prime value
@@ -2562,8 +2578,8 @@ set_polynomial_acceleration!(false)
 set_polynomial_acceleration!(true)
 println(&quot;API tour completed successfully.&quot;)</code></pre>
 <h2 id="c.-exported-interface-index">C. Exported-interface index</h2>
-<p>This index contains the canonical public interface. The 0.13.2
-early-splitting guard changes only algorithm selection, not public
+<p>This index contains the canonical public interface. The 0.13.3 LLL
+verification work changes implementation rather than adding public
 names.</p>
 <div class="table-wrap"><table>
 <colgroup>
@@ -2645,11 +2661,11 @@ ntt_convolve</td>
 <h2 id="d.-documentation-and-verification-checklist">D. Documentation
 and verification checklist</h2>
 <ul>
-<li>Release documented here: <strong>NTL.jl 0.13.2</strong>, targeting
+<li>Release documented here: <strong>NTL.jl 0.13.3</strong>, targeting
 Julia 1.9 or later and tested with Julia 1.11.7.</li>
-<li>Full regression suite: <strong>4,645,454 passing
-assertions</strong>, including 1,987 optimized-kernel checks and 306,592
-small-modulus arithmetic and factorization checks.</li>
+<li>Full regression suite: <strong>4,645,990 passing
+assertions</strong>, including 1,987 optimized-kernel checks, 306,592
+small-modulus checks, and 536 exact LLL certificate checks.</li>
 <li>Every exported name occurs in at least one executable example in
 <code>api_tour.jl</code>; all 14 package examples also passed on the
 optimized server build.</li>
@@ -2661,14 +2677,9 @@ parent and <code>ModInt</code> is its element type.</li>
 <li><code>ExtensionElem</code> is the actual concrete extension-element
 type; ordinary extension construction continues to use
 <code>E(...)</code>.</li>
-<li>The small-field factorization path is used only when
-<code>P &lt;= 127</code> and <code>1 &lt;= degree(f) &lt;= 16</code>;
-other inputs retain generic Cantor–Zassenhaus factorization. An early
-probe avoids exhaustive scans when multiple roots are found among the
-first eight candidates.</li>
-<li>Performance tables explicitly distinguish library-kernel
-improvements from typed hot-loop dispatch improvements and note that the
-small-residue multiplication patch was not merged.</li>
+<li>The LLL verification path checks the original matrix before any
+fixed-width conversion. Oversized original matrices use the generic
+BigInt verifier rather than raising <code>InexactError</code>.</li>
 <li>This page is self-contained: equations use MathML, styling is
 embedded, and no web framework or network connection is required.</li>
-</ul></main></div><footer class="footer"><div>NTL.jl · Exact mathematical core · Version 0.13.2</div><div><a href="#top">Return to top</a> · <a href="../examples/api_tour.jl">API tour source</a></div></footer></div></body></html>
+</ul></main></div><footer class="footer"><div>NTL.jl · Exact mathematical core · Version 0.13.3</div><div><a href="#top">Return to top</a> · <a href="../examples/api_tour.jl">API tour source</a></div></footer></div></body></html>

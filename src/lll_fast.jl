@@ -110,8 +110,7 @@ end
 function _lll_fast_core(A::AbstractMatrix{<:Integer}, d::Float64, maxiter::Int)
     if all(x -> typemin(Int) <= x <= typemax(Int), A)
         try
-            B, U = _lll_fast_reduce(A, d, maxiter, Int)
-            return BigInt.(B), BigInt.(U)
+            return _lll_fast_reduce(A, d, maxiter, Int)
         catch err
             err isa OverflowError || rethrow()
         end
@@ -155,6 +154,99 @@ function _lll_verify(A, B, U, d)
     end
 end
 
+# Exact determinant up to sign. Row exchanges do not affect the predicate.
+function _lll_word_unimodular(U::Matrix{Int})
+    M = copy(U)
+    n = size(M, 1)
+    previous = 1
+    @inbounds for k in 1:n-1
+        if iszero(M[k,k])
+            row = k + 1
+            while row <= n && iszero(M[row,k])
+                row += 1
+            end
+            row > n && return false
+            for j in k:n
+                M[k,j], M[row,j] = M[row,j], M[k,j]
+            end
+        end
+        pivot = M[k,k]
+        for j in k+1:n, i in k+1:n
+            left = Base.Checked.checked_mul(M[i,j], pivot)
+            right = Base.Checked.checked_mul(M[i,k], M[k,j])
+            M[i,j] = div(Base.Checked.checked_sub(left, right), previous)
+        end
+        previous = pivot
+    end
+    M[n,n] == 1 || M[n,n] == -1
+end
+
+# The caller bounds each input by 2^20 and both dimensions by 128:
+# dot products fit signed Int64 (at most 2^47 in magnitude).
+function _lll_word_verify(A, B, U, d)
+    n, m = size(B)
+    @inbounds for j in 1:m, i in 1:n
+        total = 0
+        for k in 1:n
+            total += U[i,k] * A[k,j]
+        end
+        total == B[i,j] || return false
+    end
+    _lll_word_unimodular(U) || return false
+    gram = Matrix{Int128}(undef, n, n)
+    @inbounds for j in 1:n, i in j:n
+        total = 0
+        for k in 1:m
+            total += B[i,k] * B[j,k]
+        end
+        gram[i,j] = total
+    end
+    mul = Base.Checked.checked_mul
+    sub = Base.Checked.checked_sub
+    add = Base.Checked.checked_add
+    num, den = Int128(numerator(d)), Int128(denominator(d))
+    previous = Int128(1)
+    @inbounds for j in 1:n
+        pivot = gram[j,j]
+        pivot > 0 || return false
+        for i in j+1:n
+            # Equivalent to 2*abs(mu_numerator) <= pivot, without overflow.
+            half = pivot >> 1
+            -half <= gram[i,j] <= half || return false
+        end
+        for k in j+1:n, i in k:n
+            gram[i,k] = div(sub(mul(gram[i,k], pivot), mul(gram[i,j], gram[k,j])), previous)
+        end
+        if j < n
+            off = gram[j+1,j]
+            left = mul(den, add(mul(gram[j+1,j+1], previous), mul(off,off)))
+            left >= mul(num, mul(pivot,pivot)) || return false
+        end
+        previous = pivot
+    end
+    true
+end
+
+function _lll_verify_reduction(A, B::Matrix{Int}, U::Matrix{Int}, d, bigB, bigU)
+    small(x) = -(1<<20) <= x <= (1<<20)
+    if Sys.WORD_SIZE == 64 && 1 <= size(B,1) <= 12 && 1 <= size(B,2) <= 128 &&
+       all(small, B) && all(small, U) &&
+       numerator(d) <= typemax(Int128) && denominator(d) <= typemax(Int128)
+        if all(small, A)
+            # Check before converting A: an oversized original matrix must use
+            # the generic BigInt verifier rather than fail during conversion.
+            Z = Matrix{Int}(A)
+            try
+                return _lll_word_verify(Z, B, U, d)
+            catch err
+                err isa OverflowError || err isa DivideError || rethrow()
+            end
+        end
+    end
+    _lll_verify(A, bigB, bigU, d)
+end
+_lll_verify_reduction(A, B, U, d, bigB, bigU) = _lll_verify(A, bigB, bigU, d)
+
 """
     lll(A; delta=3//4, mode=:fast, verify=true, maxiter=100000)
 
@@ -174,8 +266,9 @@ function lll(A::AbstractMatrix{<:Integer}; delta = BigInt(3) // BigInt(4),
     size(A, 1) == 1 && return (basis = BigInt.(A), transform = ones(BigInt, 1, 1), mode = :fast, verified = true)
     try
         B, U = _lll_fast_core(A, Float64(d), Int(maxiter))
-        if !verify || _lll_verify(A, B, U, d)
-            return (basis = B, transform = U, mode = :fast, verified = verify)
+        bigB, bigU = convert(Matrix{BigInt}, B), convert(Matrix{BigInt}, U)
+        if !verify || _lll_verify_reduction(A, B, U, d, bigB, bigU)
+            return (basis = bigB, transform = bigU, mode = :fast, verified = verify)
         end
     catch err
         err isa InterruptException && rethrow()
