@@ -953,26 +953,26 @@ julia --project=. examples/api_tour.jl
 
 ## Comparison with C++ NTL
 
-The following measurements are **workload-specific examples**, not universal performance guarantees. They were collected on a 2-core server using official C++ NTL 11.4.2 with native SIMD and Julia 1.11.7.
+The following table was rerun on **2026-11-22** using NTL.jl 0.12.0, official C++ NTL 11.4.2, and Julia 1.11.7 on the 2-core project server. Each value is the median of 31 runs after warm-up. Input construction is excluded; the NTL.jl measurements use a process that loads only NTL.jl. These are workload-specific examples, not universal performance guarantees.
 
-| Operation | C++ NTL (ms) | NTL.jl (ms) | Julia / C++ |
+| Operation | C++ NTL (ms) | NTL.jl (ms) | NTL.jl / C++ |
 |---|---:|---:|---:|
-| Small modular multiplication | 8.5685 | 20.0726 | 2.34x |
-| BigInt modular exponentiation | 0.0101 | 0.0189 | 1.87x |
-| Polynomial multiplication | 0.1025 | 2.5212 | 24.60x |
-| NTT convolution | 0.8374 | 5.8378 | 6.97x |
-| Polynomial factorization | 0.0297 | 2.0918 | 70.43x |
-| Finite-field determinant | 0.0395 | 0.4852 | 12.28x |
-| LLL | 0.0720 | 2.0970 | 29.13x |
-| Primality test | 0.0680 | 0.0295 | 0.43x |
+| Small modular mul/add | 8.4664 | 68.6621 | 8.11x |
+| BigInt modular exponentiation | 0.0130 | 0.0243 | 1.87x |
+| Polynomial multiplication | 0.0655 | 0.2717 | 4.15x |
+| NTT convolution | 0.6629 | 1.0280 | 1.55x |
+| Polynomial factorization | 0.0277 | 0.6428 | 23.18x |
+| Finite-field determinant | 0.0303 | 0.0373 | 1.23x |
+| LLL (with exact verification) | 0.0697 | 1.8148 | 26.03x |
+| LLL (reduction only) | 0.0691 | 0.3160 | 4.58x |
+| Primality test (per call) | 0.0697 | 0.0308 | 0.44x |
 
 ### What these results mean
 
-- Scalar modular arithmetic is already practical for many workloads.
-- C++ NTL remains faster for large FFT-based multiplication, factorization, and LLL because it has specialized tables, precomputation, pointer-level loops, and long-standing native optimizations.
-- Julia's generalized FFT substantially reduced the polynomial multiplication gap compared with the original schoolbook implementation.
-- Fast LLL reduced the LLL-specific slowdown from over 1,500x to about 29x while retaining exact verification.
-- The primality result is not evidence that Julia is generally faster: the compared witness sets and rounds differ.
+- The current generalized FFT and matrix paths substantially reduced the polynomial multiplication, NTT, and determinant gaps compared with the older table.
+- The small scalar mul/add loop still has a significant gap in this measurement.
+- LLL now distinguishes the default exact post-verification from reduction-only timing. Exact verification is the dominant cost in this 12×12 example; `verify = false` is faster but does not provide the same exact guarantee.
+- The primality row is normalized per call. C++ uses 16 Miller–Rabin rounds, whereas NTL.jl uses the deterministic signed-`Int` witness set, so this is not a general primality-performance claim.
 
 ## Performance optimizations
 
@@ -996,26 +996,26 @@ The determinant allocation count is nearly unchanged because the specialized pat
 
 ## Comparison with GaloisFields.jl
 
-GaloisFields.jl is particularly strong for small finite fields and extension arithmetic. It uses Zech logarithms for fast multiplication and has a convenient macro interface.
+GaloisFields.jl is particularly strong for small finite fields and extension arithmetic. This table was rerun on **2026-11-22** with NTL.jl 0.12.0, GaloisFields.jl 1.4, and Julia 1.11.7. Each value is the median of 31 runs after warm-up, with input construction excluded.
 
 | Operation | NTL.jl (ms) | GaloisFields (ms) |
 |---|---:|---:|
-| Prime-field mul/add x1e6, p=101 | 48.15 | 53.54 |
-| Prime-field fused muladd x1e6 | 26.24 | 53.54 |
-| Prime-field power x10000, p=101 | 0.718 | 0.687 |
-| Prime-field inverse x10000, p=101 | 0.570 | 0.577 |
-| Zech extension ops x10000 | 1.283 | 1.191 |
-| Zech muladd x10000 | 1.064 | 1.191 |
-| Zech inverse x10000 | 0.660 | 0.746 |
-| Zech power x10000 | 0.783 | 0.680 |
-| Polynomial multiplication, deg 999 | 1.206 | 6.347 |
+| Prime-field mul/add x1e6, p=101 | 65.9643 | 70.8851 |
+| Prime-field fused muladd x1e6 | 9.9902 | 14.8994 |
+| Prime-field power x10000, p=101 | 0.4292 | 0.4265 |
+| Prime-field inverse x10000, p=101 | 0.2386 | 0.2314 |
+| Zech extension ops x10000 | 0.4849 | 0.6042 |
+| Zech muladd x10000 | 0.5573 | 0.6049 |
+| Zech inverse x10000 | 0.3790 | 0.4832 |
+| Zech power x10000 | 0.4209 | 0.3842 |
+| Polynomial multiplication, deg 999 | 0.3136 | 6.4466 |
 
 ### Interpretation
 
-- Prime-field arithmetic is comparable, and fused `muladd` is faster in the tested loop.
-- Zech arithmetic is also comparable. The small differences are implementation overheads rather than fundamental algorithmic differences.
-- NTL.jl is faster for the tested large polynomial multiplication because of generalized FFT and exact coefficient reconstruction.
-- GaloisFields remains a good choice for compact small-field code and extension-tower syntax; NTL.jl covers a broader set of algorithms including matrices, LLL, generalized FFT, and number theory.
+- NTL.jl was faster in the tested separate and fused prime-field mul/add loops and slightly faster in the repeated inverse loop; the power timings were nearly tied.
+- In the Zech comparison, NTL.jl was faster for extension ops, fused muladd, and inversion, while GaloisFields was faster for the tested power loop.
+- NTL.jl was faster for the tested degree-999 polynomial multiplication by a wide margin. This is one deterministic workload, not a claim about every polynomial size.
+- The random-prime report separately covers larger moduli and the GaloisFields signed-`Int128` boundary. GaloisFields remains a strong choice for compact small-field code; NTL.jl additionally covers matrices, LLL, generalized FFT, and number theory.
 
 ## Design principles
 
