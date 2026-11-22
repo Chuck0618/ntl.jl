@@ -14,7 +14,7 @@ println("GF(2^8) element = ", a)
 println("trace = ", trace(a), ", norm = ", norm(a))
 
 # A prime-field extension F_5^2 = F_5[t]/(t^2+2).
-F = zzp(5)
+F = PrimeField(5)
 t_poly = xpoly(F)
 E5 = extension_field(F, t_poly^2 + 2)
 t = gen(E5)

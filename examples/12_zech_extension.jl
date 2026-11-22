@@ -2,7 +2,7 @@ using NTL
 using Statistics
 using Printf
 
-F = zzp(3)
+F = PrimeField(3)
 E = extension_field(F, poly(F, [2, 1, 1]))
 Z = zech_field(E)
 x = ZechElem(Z, Z._generator)

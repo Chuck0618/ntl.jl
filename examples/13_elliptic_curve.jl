@@ -9,12 +9,12 @@ using Printf
 elliptic(x, y) = y^2 - x^3 - 2x - 3
 
 function make_field(k)
-    F0 = zzp(5)
+    F0 = PrimeField(5)
     k == 1 && return F0
     extension_field(F0, BuildIrred(F0, k; rng = MersenneTwister(2026 + k)))
 end
 
-all_elements(F::Type{zzp{P}}) where {P} = F
+all_elements(F::Type{PrimeField{P}}) where {P} = F
 function all_elements(E::ExtensionField)
     F = base_field(E)
     d = extension_degree(E)
@@ -58,7 +58,7 @@ function main(max_degree = 6)
         @printf("k=%d  q=%d  affine=%d  projective=%d  time=%.3f ms\n",
                 k, cardinality(F), result.affine, result.projective, elapsed)
     end
-    @assert count_points_fast(zzp(5)).projective == 7
+    @assert count_points_fast(PrimeField(5)).projective == 7
     println("Elliptic-curve point counting passed.")
 end
 

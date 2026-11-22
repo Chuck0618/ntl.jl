@@ -1,7 +1,7 @@
 using NTL
 using Random
 
-F = zzp(97)
+F = PrimeField(97)
 x = xpoly(F)
 f = (x + 1)^3 * (x^2 + x + 1) * (x^4 + 3x + 5)
 

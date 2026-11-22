@@ -1,6 +1,6 @@
 @testset "Exact matrices over supported fields" begin
-    parents = Any[zzp(7), ModRing(11), GF2]
-    F5 = zzp(5)
+    parents = Any[PrimeField(7), BigModRing(11), GF2]
+    F5 = PrimeField(5)
     E = extension_field(F5, xpoly(F5)^2 + 2)
     push!(parents, E)
     for F in parents
@@ -55,7 +55,7 @@ end
 end
 
 @testset "NTT and convolution" begin
-    for F in (zzp(17), ModRing(17))
+    for F in (PrimeField(17), BigModRing(17))
         g = primitive_root(F)
         @test g^(16) == one(F)
         @test g^8 != one(F)
@@ -69,11 +69,11 @@ end
         @test ntt([F(3)]) == [F(3)]
         @test intt([F(3)]) == [F(3)]
     end
-    F = zzp(97)
+    F = PrimeField(97)
     a = rand(MersenneTwister(24), F, 13)
     b = rand(MersenneTwister(25), F, 9)
     @test ntt_convolve(a, b) == convolve(a, b)
     @test isempty(convolve(F[], F[]))
     @test_throws ArgumentError ntt(F.(1:3))
-    @test_throws ArgumentError root_of_unity(5, zzp(17))
+    @test_throws ArgumentError root_of_unity(5, PrimeField(17))
 end

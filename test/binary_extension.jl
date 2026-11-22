@@ -60,9 +60,9 @@
 end
 
 @testset "Prime and binary extension fields" begin
-    for F in (zzp(5), ModRing(7), GF2)
+    for F in (PrimeField(5), BigModRing(7), GF2)
         x = xpoly(F)
-        m = F == zzp(5) ? x^2 + 2 : (F == ModRing(7) ? x^2 + 1 : x^2 + x + 1)
+        m = F == PrimeField(5) ? x^2 + 2 : (F == BigModRing(7) ? x^2 + 1 : x^2 + x + 1)
         E = extension_field(F, m)
         a = gen(E)
         @test cardinality(E) == cardinality(F)^2

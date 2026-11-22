@@ -1,7 +1,7 @@
 @testset "Elliptic-curve point counting" begin
     elliptic(x, y) = y^2 - x^3 - 2x - 3
 
-    function elements(F::Type{zzp{P}}) where {P}
+    function elements(F::Type{PrimeField{P}}) where {P}
         F
     end
     function elements(E::ExtensionField)
@@ -33,7 +33,7 @@
     end
 
     for k in 1:4
-        F = k == 1 ? zzp(5) : extension_field(zzp(5), BuildIrred(zzp(5), k; rng = MersenneTwister(k)))
+        F = k == 1 ? PrimeField(5) : extension_field(PrimeField(5), BuildIrred(PrimeField(5), k; rng = MersenneTwister(k)))
         fast = count_fast(F)
         brute = count_brute(F)
         @test fast == brute

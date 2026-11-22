@@ -1,7 +1,7 @@
 using NTL
 using Random
 
-F = zzp(101)
+F = PrimeField(101)
 rng = MersenneTwister(2026)
 
 # Standard Julia random arrays work directly with the field element type.

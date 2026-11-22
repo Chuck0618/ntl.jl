@@ -1,6 +1,6 @@
 @testset "Zech extension arithmetic" begin
     for p in (2, 3, 5, 7)
-        F = zzp(p)
+        F = PrimeField(p)
         m = p == 2 ? xpoly(F)^2 + xpoly(F) + 1 : (p == 3 ? xpoly(F)^2 + xpoly(F) + 2 : (p == 5 ? xpoly(F)^2 + 2 : xpoly(F)^2 + 1))
         E = extension_field(F, m)
         Z = zech_field(E)
@@ -34,10 +34,10 @@
         @test_throws DomainError inv(zero(Z))
     end
 
-    F = zzp(3)
+    F = PrimeField(3)
     E = extension_field(F, xpoly(F)^2 + xpoly(F) + 2)
     @test_throws ArgumentError zech_field(E; primitive = zero(E))
-    Fbig = zzp(17)
+    Fbig = PrimeField(17)
     Ebig = extension_field(Fbig, BuildIrred(Fbig, 4; rng = MersenneTwister(2)))
     @test_throws ArgumentError zech_field(Ebig)
 end

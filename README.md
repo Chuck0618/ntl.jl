@@ -4,7 +4,7 @@
 
 NTL.jl is inspired by C++ NTL, but it is not a wrapper or an API clone. It is designed to be approachable for new Julia users while providing efficient, tested implementations for research and teaching.
 
-Version: **0.9.0**<br>
+Version: **0.10.0**<br>
 Tested with: **Julia 1.11.7**<br>
 Compatibility target: **Julia 1.9+**
 
@@ -40,7 +40,7 @@ NTL.jl offers a coherent set of exact-mathematics tools rather than a loose coll
 
 - **Pure Julia:** no C++ compiler, NTL installation, binary artifact, or external Julia package is required for core functionality.
 - **Exact arithmetic:** canonical residues, BigInt coefficients, exact polynomial operations, and verifiable lattice transformations.
-- **Beginner-friendly parents:** `zzp{p}` stores a prime modulus in the type, while `ModRing` and extension fields use explicit runtime parents.
+- **Beginner-friendly parents:** `PrimeField{p}` stores a prime modulus in the type, while `BigModRing` and extension fields use explicit runtime parents.
 - **Fast when appropriate:** machine-word multiplication, Karatsuba, generalized FFT, Zech discrete-log tables, and fast LLL with exact verification.
 - **Safe fallbacks:** original schoolbook multiplication and exact LLL remain available. Fast paths never change mathematical results.
 - **Tested invariants:** arithmetic is checked against independent BigInt calculations, polynomial identities, factor reconstruction, matrix identities, LLL conditions, and direct convolution.
@@ -65,7 +65,7 @@ Replace `/path/to/NTLJulia` with the directory that contains `Project.toml`.
 julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.test()'
 ```
 
-The current suite contains **4,335,171 passing assertions**. Runtime code depends only on Julia's `Random` standard library; `Test` is used only by the test target.
+The current suite contains **4,335,178 passing assertions**. Runtime code depends only on Julia's `Random` standard library; `Test` is used only by the test target.
 
 ### HTML documentation
 
@@ -78,12 +78,12 @@ Open `docs/index.html` in a browser. The documentation is self-contained and can
 ```julia
 using NTL
 
-F = zzp(101)        # F is zzp{101}
+F = PrimeField(101)        # F is PrimeField{101}
 a = F(120)          # 120 mod 101 = 19
 b = F(-1)           # -1 mod 101 = 100
 
-println(a + b)      # zzp{101}(18)
-println(a * b)      # zzp{101}(24)
+println(a + b)      # PrimeField{101}(18)
+println(a * b)      # PrimeField{101}(82)
 println(a / b)      # division in F_101
 println(a^-1)       # inverse using gcdx and sign correction
 println(a^1000)     # fast binary power
@@ -102,12 +102,12 @@ Every field element stores a canonical representative in `0:p-1`.
 ### 2. Iterate over a small field
 
 ```julia
-for x in zzp{5}
+for x in PrimeField{5}
     println(x)
 end
 
-@assert length(zzp{5}) == 5
-@assert collect(zzp{5}) == zzp{5}.([0, 1, 2, 3, 4])
+@assert length(PrimeField{5}) == 5
+@assert collect(PrimeField{5}) == PrimeField{5}.([0, 1, 2, 3, 4])
 ```
 
 Elements are produced in canonical order, from `0` through `p-1`. Iteration is lazy; `collect(F)` allocates all `p` elements and should not be used for a very large field.
@@ -115,7 +115,7 @@ Elements are produced in canonical order, from `0` through `p-1`. Iteration is l
 ### 3. Multiply two polynomials
 
 ```julia
-F = zzp(101)
+F = PrimeField(101)
 x = xpoly(F)
 
 f = x^3 + 2x + 1
@@ -132,7 +132,7 @@ Coefficients are stored **from low degree to high degree**. The zero polynomial 
 ### 4. Solve a finite-field linear system
 
 ```julia
-F = zzp(101)
+F = PrimeField(101)
 A = F.([2 3 1; 4 1 5; 3 7 2])
 b = F.([1, 2, 3])
 
@@ -158,59 +158,59 @@ result = lll(A)  # fast by default, with exact verification
 
 | Need | Recommended parent | Why |
 |---|---|---|
-| Fast prime-field arithmetic with an `Int` modulus | `zzp(p)` | Type-level modulus, canonical `Int` representation, field iteration |
-| Arbitrary-precision modulus, including a composite one | `ModRing(n)` | BigInt representation and explicit runtime parent |
+| Fast prime-field arithmetic with an `Int` modulus | `PrimeField(p)` | Type-level modulus, canonical `Int` representation, field iteration |
+| Arbitrary-precision modulus, including a composite one | `BigModRing(n)` | BigInt representation and explicit runtime parent |
 | Binary field arithmetic | `GF2` | XOR/AND arithmetic and bit-packed polynomials |
 | General polynomial extension | `extension_field(F, m)` | Polynomial quotient `F[x]/(m)` |
 | Frequent arithmetic in a small extension | `zech_field(E)` | Discrete-log multiplication, inversion, and powers |
 
-### `zzp` versus `ModRing`
+### `PrimeField` versus `BigModRing`
 
 ```julia
 using Test
 
-F = zzp(101)             # Machine-word prime field
-R = ModRing(12)          # Arbitrary-precision modular ring
+F = PrimeField(101)             # Machine-word prime field
+R = BigModRing(12)          # Arbitrary-precision modular ring
 
 @assert R(5) * R(5) == R(1)
 @test_throws DomainError inv(R(6))
 ```
 
-`zzp` deliberately requires a prime modulus. `ModRing` also permits composite moduli, but only units are invertible.
+`PrimeField` deliberately requires a prime modulus. `BigModRing` also permits composite moduli, but only units are invertible.
 
 The modular-ring interface has two primary names with distinct roles:
 
-- `ModRing(n)` constructs a reusable parent of type `ModRing`;
+- `BigModRing(n)` constructs a reusable parent of type `BigModRing`;
 - `ModInt` is the element type. Prefer `R(a)` for ordinary construction and use `ModInt(R, a)` when an explicit type spelling is helpful.
 
 ```julia
-R = ModRing(12)
+R = BigModRing(12)
 a = R(17)
 
-@assert R isa ModRing
+@assert R isa BigModRing
 @assert a isa ModInt
 @assert a == R(5)
 @assert rep(a) == 5
 @assert ModInt(R, 17) == a
 ```
 
-The older NTL-facing names remain available for compatibility: `ZZP` and `ZZPField` are aliases of `ModRing`; `ZZp` and `ZZ_p` are aliases of `ModInt`. They are intentionally kept out of everyday examples so that readers do not need to distinguish names that differ only by capitalization.
+Compatibility names are retained but kept out of everyday examples: `zzp` is an alias of `PrimeField`; `ModRing` is an alias of `BigModRing`; `ZZP` and `ZZPField` are also aliases of `BigModRing`; and `ZZp` and `ZZ_p` are aliases of `ModInt`. New readers therefore do not need to distinguish names that differ only by capitalization.
 
 ## Everyday operations
 
 ### Construction and metadata
 
 ```julia
-F = zzp(97)
+F = PrimeField(97)
 a = F(-3)
 
 rep(a)              # 94
 Int(a)              # 94
 modulus(a)          # 97
 characteristic(a)   # 97
-parent(a)           # zzp{97}
-zero(a)             # zzp{97}(0)
-one(a)              # zzp{97}(1)
+parent(a)           # PrimeField{97}
+zero(a)             # PrimeField{97}(0)
+one(a)              # PrimeField{97}(1)
 iszero(a)           # false
 isone(a)            # false
 ```
@@ -267,7 +267,7 @@ c = VectorConv(F, [-1, 0, 98, big(10)^40])
 ### Construction
 
 ```julia
-F = zzp(101)
+F = PrimeField(101)
 f = poly(F, [1, 2, 3])   # 1 + 2x + 3x^2
 x = xpoly(F)              # x
 
@@ -302,7 +302,7 @@ x = xpoly(F)              # x
 ### Factorization and irreducibility
 
 ```julia
-F = zzp(97)
+F = PrimeField(97)
 x = xpoly(F)
 f = (x + 1)^3 * (x^2 + x + 1)
 
@@ -399,7 +399,7 @@ using NTL
 using Random
 using Test
 
-F = zzp(5)
+F = PrimeField(5)
 X = xpoly(F)
 m = X^2 + 2
 @assert is_irreducible(m)
@@ -612,7 +612,7 @@ A Zech field is a discrete-log representation of the same extension field. It is
 For a field of order `q`, a primitive element `g` is chosen so that every nonzero element is `g^k`. Multiplication becomes addition of exponents modulo `q-1`; inversion and powering become sign change and scalar multiplication of exponents.
 
 ```julia
-F = zzp(3)
+F = PrimeField(3)
 E = extension_field(F, poly(F, [2, 1, 1]))
 Z = zech_field(E)
 x = ZechElem(Z, Z._generator)
@@ -637,7 +637,7 @@ Use `extension_element(a)` to return to the ordinary polynomial extension repres
 
 ### Limits and requirements
 
-- The base must currently be a machine-word prime field `zzp`.
+- The base must currently be a machine-word prime field `PrimeField`.
 - The extension order must satisfy `q <= 65535`.
 - A primitive multiplicative generator is required. `zech_field` searches for one automatically; an explicitly supplied non-generator is rejected.
 
@@ -689,7 +689,7 @@ The helper `all_elements(F)` is defined in the example and enumerates every fiel
 The generic matrix routines work over supported fields.
 
 ```julia
-F = zzp(101)
+F = PrimeField(101)
 A = F.([2 3 1; 4 1 5; 3 7 2])
 b = F.([1, 2, 3])
 
@@ -750,7 +750,7 @@ If verification fails, the implementation automatically falls back to exact mode
 `ntt_convolve(a,b)` computes convolution over a supported prime field. A radix-two transform of length `n` requires `n` to be a power of two and to divide `p-1`.
 
 ```julia
-F = zzp(97)  # 97-1 = 96, which is divisible by 32
+F = PrimeField(97)  # 97-1 = 96, which is divisible by 32
 a = rand(MersenneTwister(1), F, 32)
 @assert intt(ntt(a)) == a
 
@@ -763,7 +763,7 @@ b = rand(MersenneTwister(2), F, 32)
 `fft_convolve(a,b)` uses a same-prime fast path when possible. Otherwise it selects compatible NTT primes and reconstructs exact coefficients with a coefficient bound and, when needed, multi-prime CRT.
 
 ```julia
-F = zzp(101)
+F = PrimeField(101)
 f = random_poly(F, 1000)
 g = random_poly(F, 1000)
 
@@ -817,15 +817,15 @@ y = powermod(g, 42, 97)
 
 | Function | Purpose |
 |---|---|
-| `zzp(p)` | Validate a prime and return `zzp{p}` |
+| `PrimeField(p)` | Validate a prime and return `PrimeField{p}` |
 | `zzp_Min`, `zzp_Max` | Bounds of supported machine-word prime moduli |
 | `AddMod`, `SubMod`, `NegateMod` | Overflow-safe modular add/subtract/negate on reduced `Int` values |
 | `MulMod`, `SqrMod` | Modular multiplication and squaring |
 | `InvMod`, `InvModStatus` | Inverse or a nonthrowing status result |
 | `PowerMod` | Binary modular powering with negative-exponent support |
 | `muladd(x,y,z)` | Fused `x*y+z` |
-| `ModRing(n)` | Construct an arbitrary-precision modular parent |
-| `ModRing`, `ModInt` | Parent and element types; `ModInt(R,a)` is direct element construction |
+| `BigModRing(n)` | Construct an arbitrary-precision modular parent |
+| `BigModRing`, `ModInt` | Parent and element types; `ModInt(R,a)` is direct element construction |
 | `rep`, `parent`, `modulus`, `characteristic` | Canonical representative and parent metadata |
 | `rand`, `VectorRandom`, `VectorConv` | Random elements and vector conversion |
 
@@ -877,7 +877,7 @@ NTLJulia/
 │   └── index.html
 ├── src/
 │   ├── NTL.jl              # Module entry, prime fields, low-level arithmetic
-│   ├── zzp_big.jl          # ModRing parents and ModInt elements
+│   ├── zzp_big.jl          # BigModRing parents and ModInt elements
 │   ├── numbertheory.jl     # Primality, factorization, CRT, roots, discrete logs
 │   ├── polynomial.jl       # Dense polynomials and factorization
 │   ├── polynomial_mul.jl   # Schoolbook, Karatsuba, and acceleration strategies
@@ -1004,7 +1004,7 @@ Fast paths are checked against the original algorithms. A user can always reques
 
 ### Explicit mathematical parents
 
-`zzp{p}` keeps the modulus in the type, so different moduli cannot be mixed accidentally. `ModRing`, `ExtensionField`, and `ZechField` make runtime parent relationships explicit.
+`PrimeField{p}` keeps the modulus in the type, so different moduli cannot be mixed accidentally. `BigModRing`, `ExtensionField`, and `ZechField` make runtime parent relationships explicit.
 
 ### Canonical and exact representations
 
@@ -1029,15 +1029,15 @@ The LLL fast path checks the returned basis and transformation with exact ration
 
 ## FAQ for beginners
 
-### Why does `zzp(15)` fail?
+### Why does `PrimeField(15)` fail?
 
-`zzp` represents a prime field. Fifteen is composite. Use `ModRing(15)` if you intentionally need a modular ring, and remember that only units have inverses.
+`PrimeField` represents a prime field. Fifteen is composite. Use `BigModRing(15)` if you intentionally need a modular ring, and remember that only units have inverses.
 
-### Why is `F(2)` zero when `F = zzp(2)`?
+### Why is `F(2)` zero when `F = PrimeField(2)`?
 
 Construction always reduces modulo the field modulus: `2 mod 2 = 0`.
 
-### Why can I not add `zzp{7}(1)` to `zzp{11}(1)`?
+### Why can I not add `PrimeField{7}(1)` to `PrimeField{11}(1)`?
 
 They belong to different fields. Choose one parent explicitly instead of relying on an implicit and potentially incorrect conversion.
 

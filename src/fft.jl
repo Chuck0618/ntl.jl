@@ -26,7 +26,7 @@ function _fft_direct_supported(F, total)
     P = modulus(F)
     n = nextpow(2, total)
     (P - 1) % n == 0 || return false
-    F isa ModRing ? ProbPrime(P) : true
+    F isa BigModRing ? ProbPrime(P) : true
 end
 
 function _fft_prime_plan(bound::BigInt, total::Int)
@@ -75,7 +75,7 @@ function fft_convolve(a::AbstractVector, b::AbstractVector)
     moduli = _fft_prime_plan(bound, total)
     residues = Vector{Vector{BigInt}}()
     for q in moduli
-        F = zzp(q)
+        F = PrimeField(q)
         aq = [F(rep(x)) for x in a]
         bq = [F(rep(x)) for x in b]
         push!(residues, [BigInt(rep(x)) for x in ntt_convolve(aq, bq)])
@@ -102,11 +102,11 @@ function _crt_coefficients(residues::Vector{<:AbstractVector{<:Integer}}, moduli
     out
 end
 
-function _fft_reconstruct(::Type{zzp{P}}, residues::Vector{BigInt}) where {P}
-    zzp{P}.(residues)
+function _fft_reconstruct(::Type{PrimeField{P}}, residues::Vector{BigInt}) where {P}
+    PrimeField{P}.(residues)
 end
 
-function _fft_reconstruct(F::ModRing, residues::Vector{BigInt})
+function _fft_reconstruct(F::BigModRing, residues::Vector{BigInt})
     F.(residues)
 end
 
@@ -114,24 +114,24 @@ function _fft_reconstruct(::Type{GF2}, residues::Vector{BigInt})
     GF2.(residues)
 end
 
-function fft_convolve(a::Vector{zzp{P}}, b::Vector{zzp{P}}) where {P}
+function fft_convolve(a::Vector{PrimeField{P}}, b::Vector{PrimeField{P}}) where {P}
     isempty(a) && return copy(a)
     isempty(b) && return copy(b)
     total = length(a) + length(b) - 1
-    _fft_direct_supported(zzp{P}, total) && return ntt_convolve(a, b)
+    _fft_direct_supported(PrimeField{P}, total) && return ntt_convolve(a, b)
     bound = _fft_bound(a, b)
     moduli = _fft_prime_plan(bound, total)
     residues = Vector{Vector{BigInt}}()
     for q in moduli
-        F = zzp(q)
+        F = PrimeField(q)
         aq = [F(rep(x)) for x in a]
         bq = [F(rep(x)) for x in b]
         push!(residues, [BigInt(rep(x)) for x in ntt_convolve(aq, bq)])
     end
     if length(moduli) == 1
-        return _fft_reconstruct(zzp{P}, residues[1])
+        return _fft_reconstruct(PrimeField{P}, residues[1])
     end
-    _fft_reconstruct(zzp{P}, _crt_coefficients(residues, moduli, total))
+    _fft_reconstruct(PrimeField{P}, _crt_coefficients(residues, moduli, total))
 end
 
 function fft_convolve(a::Vector{ModInt}, b::Vector{ModInt})
@@ -145,7 +145,7 @@ function fft_convolve(a::Vector{ModInt}, b::Vector{ModInt})
     moduli = _fft_prime_plan(bound, total)
     residues = Vector{Vector{BigInt}}()
     for q in moduli
-        G = zzp(q)
+        G = PrimeField(q)
         aq = [G(rep(x)) for x in a]
         bq = [G(rep(x)) for x in b]
         push!(residues, [BigInt(rep(x)) for x in ntt_convolve(aq, bq)])
@@ -165,7 +165,7 @@ function fft_convolve(a::Vector{GF2}, b::Vector{GF2})
     moduli = _fft_prime_plan(bound, total)
     residues = Vector{Vector{BigInt}}()
     for q in moduli
-        F = zzp(q)
+        F = PrimeField(q)
         aq = [F(rep(x)) for x in a]
         bq = [F(rep(x)) for x in b]
         push!(residues, [BigInt(rep(x)) for x in ntt_convolve(aq, bq)])

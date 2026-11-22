@@ -8,11 +8,14 @@ using Statistics
 # Prime-field metadata and arithmetic -----------------------------------------
 @assert zzp_Min == 2
 @assert zzp_Max > zzp_Min
-F = zzp(101)
+F = PrimeField(101)
+@assert PrimeField === zzp
+@assert zzp(101) === F
+@assert zzp{101}(3) == F(3)
 @assert modulus(F) == 101
 @assert characteristic(F) == 101
 @assert parent(F(1)) == F
-@assert info(zzp).minimum_modulus == 2
+@assert info(PrimeField).minimum_modulus == 2
 @assert info(F).modulus == 101
 @assert info(F(3)).representative == 3
 
@@ -67,16 +70,18 @@ out = zeros(Int, 3)
 @assert out == [3, 6, 9]
 
 # Arbitrary-precision modular rings -------------------------------------------
-R = ModRing(12)
-@assert R isa ModRing
+R = BigModRing(12)
+@assert R isa BigModRing
 @assert R(5) isa ModInt
 @assert ModInt(R, 5) == R(5)
 
-# NTL-compatible names remain callable, but are not used in everyday examples.
-@assert ModRing === ZZPField
-@assert ModRing === ZZP
+# Legacy names remain callable, but are not used in everyday examples.
+@assert BigModRing === ModRing
+@assert BigModRing === ZZPField
+@assert BigModRing === ZZP
 @assert ModInt === ZZp
 @assert ModInt === ZZ_p
+@assert ModRing(12) == R
 @assert ZZP(12) == R
 @assert ZZPField(12) == R
 @assert ZZp(R, 5) == R(5)
@@ -93,7 +98,7 @@ R = ModRing(12)
 @assert R(5) * inv(R(5)) == one(R)
 @assert R(5)^(-1) == inv(R(5))
 @test_throws DomainError inv(R(6))
-@test_throws ErrorException R(1) + zzp(7)(1)
+@test_throws ErrorException R(1) + PrimeField(7)(1)
 @assert length(VectorRandom(R, 2; rng = MersenneTwister(3))) == 2
 @assert VectorConv(R, [-1, 2, 13]) == R.([-1, 2, 13])
 @assert random_zzp(R; rng = MersenneTwister(4)) isa ModInt
@@ -304,7 +309,7 @@ result = lll(B)
 @assert gram_schmidt_exact(result.basis) isa Tuple
 
 # NTT, generalized FFT, and acceleration -----------------------------------------
-NTT_F = zzp(193) # 64 divides 193 - 1, so both 32- and 64-point transforms are valid.
+NTT_F = PrimeField(193) # 64 divides 193 - 1, so both 32- and 64-point transforms are valid.
 omega = root_of_unity(32, NTT_F)
 @assert omega^32 == one(omega)
 va = rand(MersenneTwister(11), NTT_F, 32)

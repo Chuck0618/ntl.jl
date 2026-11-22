@@ -31,24 +31,24 @@ end
         @test NTL._is_prime(zzp_Max)
         @test zzp_Max <= typemax(Int)
         @test all(!NTL._is_prime(n) for n in (zzp_Max + 1):typemax(Int))
-        @test zzp(7) === zzp{7}
-        @test zzp(big(97)) === zzp{97}
-        @test zzp(zzp_Max) === zzp{zzp_Max}
+        @test PrimeField(7) === PrimeField{7}
+        @test PrimeField(big(97)) === PrimeField{97}
+        @test PrimeField(zzp_Max) === PrimeField{zzp_Max}
         for p in (2, 3, 5, 7, 11, 37, 41, 97, 65537)
-            @test zzp(p) === zzp{p}
+            @test PrimeField(p) === PrimeField{p}
         end
         for n in (-7, -1, 0, 1)
-            @test_throws DomainError zzp(n)
+            @test_throws DomainError PrimeField(n)
         end
         for n in (4, 6, 9, 21, 25, 341, 645, 1105)
-            @test_throws ArgumentError zzp(n)
+            @test_throws ArgumentError PrimeField(n)
         end
-        @test_throws DomainError zzp(BigInt(typemax(Int)) + 1)
-        @test_throws ArgumentError zzp{4}(1)
+        @test_throws DomainError PrimeField(BigInt(typemax(Int)) + 1)
+        @test_throws ArgumentError PrimeField{4}(1)
     end
 
     @testset "construction, conversion, and metadata" begin
-        F = zzp(7)
+        F = PrimeField(7)
         @test modulus(F) == 7
         @test modulus(F(3)) == 7
         @test characteristic(F) == 7
@@ -58,14 +58,14 @@ end
         @test rep(F(-1)) == 6
         @test rep(F(-15)) == 6
         @test rep(F(big(10)^100 + 3)) == ref_mod(big(10)^100 + 3, 7)
-        @test rep(zzp{7}()) == 0
+        @test rep(PrimeField{7}()) == 0
         @test F(F(4)) === F(4)
         @test Int(F(6)) == 6
         @test convert(BigInt, F(6)) == 6
         @test convert(F, -9) == F(5)
         @test convert(F, F(5)) === F(5)
-        @test_throws ArgumentError convert(F, zzp{11}(5))
-        @test_throws ArgumentError F(zzp{11}(5))
+        @test_throws ArgumentError convert(F, PrimeField{11}(5))
+        @test_throws ArgumentError F(PrimeField{11}(5))
         @test zero(F) == F(0)
         @test zero(F(3)) == F(0)
         @test one(F) == F(1)
@@ -76,14 +76,14 @@ end
         @test !iszero(F(3))
         @test isone(F(8))
         @test !isone(F(0))
-        @test info(zzp).minimum_modulus == 2
-        @test info(zzp).maximum_modulus == zzp_Max
+        @test info(PrimeField).minimum_modulus == 2
+        @test info(PrimeField).maximum_modulus == zzp_Max
         @test info(F).modulus == 7
         @test info(F).storage == Int
         @test info(F(6)).representative == 6
         @test info(F(6)).field === F
-        @test sprint(show, F(3)) == "zzp{7}(3)"
-        @test sprint(show, F) == "zzp{7}"
+        @test sprint(show, F(3)) == "PrimeField{7}(3)"
+        @test sprint(show, F) == "PrimeField{7}"
         x, y = promote(F(2), 3)
         @test x isa F
         @test y isa F
@@ -92,7 +92,7 @@ end
 
     @testset "addition, subtraction, and negation against BigInt" begin
         for p in (2, 3, 5, 7, 17, 101)
-            F = zzp(p)
+            F = PrimeField(p)
             for a in 0:(p - 1), b in 0:(p - 1)
                 x, y = F(a), F(b)
                 @test rep(x + y) == ref_mod(a + b, p)
@@ -110,16 +110,16 @@ end
                 @test F(a) + (-F(a)) == zero(F)
             end
         end
-        F = zzp(7)
+        F = PrimeField(7)
         @test F(3) + big(9) == F(5)
         @test big(-8) - F(2) == F(4)
-        @test_throws ArgumentError F(1) + zzp{11}(2)
-        @test_throws ArgumentError F(1) - zzp{11}(2)
+        @test_throws ArgumentError F(1) + PrimeField{11}(2)
+        @test_throws ArgumentError F(1) - PrimeField{11}(2)
     end
 
     @testset "multiplication, squaring, and division against BigInt" begin
         for p in (2, 3, 5, 7, 17, 101)
-            F = zzp(p)
+            F = PrimeField(p)
             for a in 0:(p - 1), b in 0:(p - 1)
                 x, y = F(a), F(b)
                 @test rep(x * y) == ref_mod(BigInt(a) * b, p)
@@ -136,15 +136,15 @@ end
                 @test rep(sqr(F(a))) == ref_mod(BigInt(a)^2, p)
             end
         end
-        F = zzp(7)
+        F = PrimeField(7)
         @test F(3) / 2 == F(5)
         @test 3 / F(2) == F(5)
         @test F(3) * big(8) == F(3)
         @test_throws DomainError inv(F(0))
         @test_throws DomainError F(1) / F(0)
         @test_throws DomainError F(1) / 7
-        @test_throws ArgumentError F(1) * zzp{11}(1)
-        @test_throws ArgumentError F(1) / zzp{11}(1)
+        @test_throws ArgumentError F(1) * PrimeField{11}(1)
+        @test_throws ArgumentError F(1) / PrimeField{11}(1)
     end
 
     @testset "low-level modular functions" begin
@@ -185,14 +185,14 @@ end
             for a in 1:(p - 1), e in -8:-1
                 @test PowerMod(a, e, p) == ref_powermod(a, e, p)
             end
-            F = zzp(p)
+            F = PrimeField(p)
             for a in 0:(p - 1), e in 0:8
                 @test F(a)^e == F(ref_powermod(a, e, p))
                 @test power(F(a), e) == F(ref_powermod(a, e, p))
             end
             @test PowerMod(2, big(10)^30 + 7, p) == ref_powermod(2, big(10)^30 + 7, p)
         end
-        F = zzp(7)
+        F = PrimeField(7)
         @test F(0)^0 == one(F)
         @test F(3)^-1 == inv(F(3))
         @test F(3)^big(-17) == F(ref_powermod(3, -17, 7))
@@ -206,7 +206,7 @@ end
 
     @testset "largest supported modulus and overflow boundaries" begin
         p = zzp_Max
-        F = zzp(p)
+        F = PrimeField(p)
         samples = unique((0, 1, 2, p ÷ 2, p - 3, p - 2, p - 1))
         for a in samples, b in samples
             @test AddMod(a, b, p) == ref_mod(BigInt(a) + b, p)
@@ -223,7 +223,7 @@ end
     end
 
     @testset "equality and field separation" begin
-        F, G = zzp(7), zzp(11)
+        F, G = PrimeField(7), PrimeField(11)
         @test F(3) == F(10)
         @test F(3) != F(4)
         @test F(3) == 3
@@ -241,7 +241,7 @@ end
     end
 
     @testset "random elements and vector utilities" begin
-        F = zzp(97)
+        F = PrimeField(97)
         r1, r2 = MersenneTwister(2026), MersenneTwister(2026)
         a = rand(r1, F, 100)
         b = rand(r2, F, 100)
@@ -281,8 +281,8 @@ include("elliptic.jl")
 include("naming.jl")
 
 
-@testset "zzp finite-field iteration" begin
-    F = zzp(5)
+@testset "PrimeField finite-field iteration" begin
+    F = PrimeField(5)
     @test length(F) == 5
     @test eltype(F) === F
     @test Base.IteratorSize(F) == Base.HasLength()
@@ -300,8 +300,8 @@ include("naming.jl")
     @test count == 5
     @test total == F(10)
     @test sum(F) == F(10)
-    @test collect(zzp(2)) == zzp{2}.([0, 1])
+    @test collect(PrimeField(2)) == PrimeField{2}.([0, 1])
     @test all(i - 1 == rep(a) for (i, a) in enumerate(F))
-    @test_throws ArgumentError collect(zzp{4})
-    @test_throws DomainError length(zzp{1})
+    @test_throws ArgumentError collect(PrimeField{4})
+    @test_throws DomainError length(PrimeField{1})
 end

@@ -1,6 +1,6 @@
 using NTL
 
-F = zzp(101)
+F = PrimeField(101)
 A = F.([2 3 1; 4 1 5; 3 7 2])
 b = F.([1, 2, 3])
 x = solve(A, b)

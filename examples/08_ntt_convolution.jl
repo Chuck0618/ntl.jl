@@ -2,7 +2,7 @@ using NTL
 using Random
 
 # 257-1=256 supports both the 32-point round trip and 256-point convolution.
-F = zzp(257)
+F = PrimeField(257)
 omega = root_of_unity(32, F)
 @assert omega^32 == one(F) && omega^16 != one(F)
 

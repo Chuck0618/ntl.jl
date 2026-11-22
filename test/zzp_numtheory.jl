@@ -1,6 +1,6 @@
 @testset "Arbitrary-precision modular integers" begin
     for n in (2, 7, 12, 97)
-        F = ModRing(n)
+        F = BigModRing(n)
         @test modulus(F) == n
         @test characteristic(F) == n
         for a in 0:(n - 1), b in 0:(n - 1)
@@ -21,16 +21,16 @@
         @test parent(F(2)) == F
         @test BigInt(F(2)) == mod(2, n)
     end
-    F = ModRing(big(10)^60 + 37)
+    F = BigModRing(big(10)^60 + 37)
     a = F(-1)
     @test a * a == one(F)
     @test a^2 == one(F)
     @test a^(-1) == a
     @test rep(a) == modulus(F) - 1
-    @test_throws ArgumentError F(1) + ModRing(7)(1)
-    @test_throws DomainError inv(ModRing(12)(6))
-    @test ModRing(12)(5)^-1 == ModRing(12)(5)
-    @test VectorConv(ModRing(7), [-1, 8]) == ModRing(7).([-1, 8])
+    @test_throws ArgumentError F(1) + BigModRing(7)(1)
+    @test_throws DomainError inv(BigModRing(12)(6))
+    @test BigModRing(12)(5)^-1 == BigModRing(12)(5)
+    @test VectorConv(BigModRing(7), [-1, 8]) == BigModRing(7).([-1, 8])
     r1, r2 = MersenneTwister(3), MersenneTwister(3)
     @test rand(r1, F, 10) == rand(r2, F, 10)
     @test all(x -> 0 <= rep(x) < modulus(F), rand(MersenneTwister(4), F, 20))

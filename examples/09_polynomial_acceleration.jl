@@ -9,7 +9,7 @@ function median_ms(f; reps = 8)
     1000 * Statistics.median(times)
 end
 
-F = zzp(998244353)
+F = PrimeField(998244353)
 n = 600
 f = random_poly(F, n; rng = MersenneTwister(2026))
 g = random_poly(F, n; rng = MersenneTwister(2027))

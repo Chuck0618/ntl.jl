@@ -1,7 +1,7 @@
 using NTL
 
 """Solve a square nonsingular system over F_p by Gaussian elimination."""
-function solve_field(A::Matrix{zzp{P}}, b::Vector{zzp{P}}) where {P}
+function solve_field(A::Matrix{PrimeField{P}}, b::Vector{PrimeField{P}}) where {P}
     n = length(b)
     size(A) == (n, n) || throw(DimensionMismatch("A must be square and match b"))
     aug = hcat(A, b)
@@ -27,7 +27,7 @@ function solve_field(A::Matrix{zzp{P}}, b::Vector{zzp{P}}) where {P}
     aug[:, n + 1]
 end
 
-F = zzp(101)
+F = PrimeField(101)
 A = F.([2 3 1; 4 1 5; 3 7 2])
 b = F.([1, 2, 3])
 x = solve_field(A, b)

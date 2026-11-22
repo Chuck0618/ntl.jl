@@ -338,11 +338,11 @@ end
 
 # Factorization ---------------------------------------------------------------
 
-_field_order(::Type{zzp{P}}) where {P} = BigInt(P)
-_field_order(F::ModRing) = modulus(F)
+_field_order(::Type{PrimeField{P}}) where {P} = BigInt(P)
+_field_order(F::BigModRing) = modulus(F)
 _field_characteristic(F) = BigInt(characteristic(F))
 _validate_factor_parent(F) = nothing
-function _validate_factor_parent(F::ModRing)
+function _validate_factor_parent(F::BigModRing)
     ProbPrime(modulus(F)) || throw(ArgumentError("polynomial factorization requires a prime-field parent"))
 end
 

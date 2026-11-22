@@ -5,7 +5,7 @@ using Random
 import Base: +, -, *, /, ^, inv, zero, one, oneunit, iszero, isone
 import Base: ==, isequal, hash, convert, promote_rule, show, parent, diff, truncate, muladd
 
-export zzp, zzp_Min, zzp_Max
+export PrimeField, zzp, zzp_Min, zzp_Max
 export rep, modulus, characteristic, info
 export AddMod, SubMod, NegateMod, MulMod, SqrMod
 export InvMod, InvModStatus, PowerMod
@@ -17,25 +17,28 @@ struct _UnsafeRep end
 const _unsafe_rep = _UnsafeRep()
 
 """
-    zzp{p} <: Number
+    PrimeField{p} <: Number
 
 An element of the prime field `F_p`. The modulus is a Julia type parameter,
 so values with different moduli cannot be mixed accidentally. Elements are
 immutable and always store a representative in `0:p-1`.
 
-Use `F = zzp(p)` to validate `p` and obtain the field element type, then use
-`F(a)` to construct an element. Direct `zzp{p}(a)` construction is also
-supported and performs the same primality check. Iterating `zzp{p}` yields
+Use `F = PrimeField(p)` to validate `p` and obtain the field element type, then use
+`F(a)` to construct an element. Direct `PrimeField{p}(a)` construction is also
+supported and performs the same primality check. Iterating `PrimeField{p}` yields
 all field elements in canonical order, from `0` through `p-1`.
 """
-struct zzp{P} <: Number
+struct PrimeField{P} <: Number
     _rep::Int
-    function zzp{P}(r::Int, ::_UnsafeRep) where {P}
+    function PrimeField{P}(r::Int, ::_UnsafeRep) where {P}
         new{P}(r)
     end
 end
 
-@inline _raw(::Val{P}, r::Int) where {P} = zzp{P}(r, _unsafe_rep)
+# Legacy NTL spelling; new code should use PrimeField.
+const zzp = PrimeField
+
+@inline _raw(::Val{P}, r::Int) where {P} = PrimeField{P}(r, _unsafe_rep)
 
 const _MULMOD_DIRECT_MAX = isqrt(typemax(Int))
 
@@ -160,87 +163,87 @@ end
 @inline _from_integer(::Val{P}, a::Integer) where {P} = _raw(Val{P}(), Int(mod(a, P)))
 
 """
-    zzp(p::Integer)
+    PrimeField(p::Integer)
 
-Validate the prime `p` and return the element type `zzp{p}`.
+Validate the prime `p` and return the element type `PrimeField{p}`.
 """
-function zzp(p::Integer)
+function PrimeField(p::Integer)
     2 <= p <= typemax(Int) || throw(DomainError(p, "the modulus must fit in Int and be at least 2"))
     P = Int(p)
     _require_prime(P)
-    zzp{P}
+    PrimeField{P}
 end
 
-zzp{P}() where {P} = (_checked_modulus(Val{P}()); _raw(Val{P}(), 0))
-zzp{P}(a::Integer) where {P} = (_checked_modulus(Val{P}()); _from_integer(Val{P}(), a))
-zzp{P}(a::zzp{P}) where {P} = a
-function zzp{P}(a::zzp) where {P}
+PrimeField{P}() where {P} = (_checked_modulus(Val{P}()); _raw(Val{P}(), 0))
+PrimeField{P}(a::Integer) where {P} = (_checked_modulus(Val{P}()); _from_integer(Val{P}(), a))
+PrimeField{P}(a::PrimeField{P}) where {P} = a
+function PrimeField{P}(a::PrimeField) where {P}
     throw(ArgumentError("cannot convert an element from modulus $(modulus(a)) to modulus $P"))
 end
 
 """Return the canonical integer representative in `0:p-1`."""
-rep(a::zzp) = a._rep
+rep(a::PrimeField) = a._rep
 
 """Return the prime modulus of a field type or element."""
-modulus(::Type{zzp{P}}) where {P} = P
-modulus(::zzp{P}) where {P} = P
+modulus(::Type{PrimeField{P}}) where {P} = P
+modulus(::PrimeField{P}) where {P} = P
 
 """Return the field characteristic; equivalent to `modulus`."""
-characteristic(F::Type{zzp{P}}) where {P} = modulus(F)
-characteristic(a::zzp) = modulus(a)
+characteristic(F::Type{PrimeField{P}}) where {P} = modulus(F)
+characteristic(a::PrimeField) = modulus(a)
 
 """
-    for a in zzp{p} ... end
+    for a in PrimeField{p} ... end
 
-Iterate over all `p` field elements in canonical order. `collect(zzp{p})`
+Iterate over all `p` field elements in canonical order. `collect(PrimeField{p})`
 returns the same sequence as a vector; avoid collecting very large fields.
 """
-function Base.iterate(F::Type{zzp{P}}, state::Int = 0) where {P}
+function Base.iterate(F::Type{PrimeField{P}}, state::Int = 0) where {P}
     state == 0 && _checked_modulus(Val{P}())
     state < P || return nothing
     (_raw(Val{P}(), state), state + 1)
 end
-Base.length(::Type{zzp{P}}) where {P} = (_checked_modulus(Val{P}()); P)
-Base.eltype(::Type{zzp{P}}) where {P} = zzp{P}
-Base.IteratorSize(::Type{zzp{P}}) where {P} = Base.HasLength()
-Base.IteratorEltype(::Type{zzp{P}}) where {P} = Base.HasEltype()
-Base.first(F::Type{zzp{P}}) where {P} = zero(F)
-Base.last(F::Type{zzp{P}}) where {P} = (_checked_modulus(Val{P}()); _raw(Val{P}(), P - 1))
+Base.length(::Type{PrimeField{P}}) where {P} = (_checked_modulus(Val{P}()); P)
+Base.eltype(::Type{PrimeField{P}}) where {P} = PrimeField{P}
+Base.IteratorSize(::Type{PrimeField{P}}) where {P} = Base.HasLength()
+Base.IteratorEltype(::Type{PrimeField{P}}) where {P} = Base.HasEltype()
+Base.first(F::Type{PrimeField{P}}) where {P} = zero(F)
+Base.last(F::Type{PrimeField{P}}) where {P} = (_checked_modulus(Val{P}()); _raw(Val{P}(), P - 1))
 
 """Return summary information about the implementation or a specific field."""
-info(::Type{zzp}) = (
+info(::Type{PrimeField}) = (
     description = "Single-word prime-field arithmetic inspired by NTL lzz_p/zz_p",
     minimum_modulus = zzp_Min,
     maximum_modulus = zzp_Max,
     representation = "canonical signed-Int residue",
 )
-function info(F::Type{zzp{P}}) where {P}
+function info(F::Type{PrimeField{P}}) where {P}
     (modulus = P, zero = zero(F), one = one(F), storage = Int)
 end
-info(a::zzp{P}) where {P} = (representative = rep(a), modulus = P, field = zzp{P})
+info(a::PrimeField{P}) where {P} = (representative = rep(a), modulus = P, field = PrimeField{P})
 
-zero(F::Type{zzp{P}}) where {P} = F(0)
-zero(a::zzp) = zero(typeof(a))
-one(F::Type{zzp{P}}) where {P} = F(1)
-one(a::zzp) = one(typeof(a))
-oneunit(F::Type{zzp{P}}) where {P} = one(F)
-oneunit(a::zzp) = one(a)
+zero(F::Type{PrimeField{P}}) where {P} = F(0)
+zero(a::PrimeField) = zero(typeof(a))
+one(F::Type{PrimeField{P}}) where {P} = F(1)
+one(a::PrimeField) = one(typeof(a))
+oneunit(F::Type{PrimeField{P}}) where {P} = one(F)
+oneunit(a::PrimeField) = one(a)
 
-iszero(a::zzp) = iszero(rep(a))
-isone(a::zzp) = isone(rep(a))
+iszero(a::PrimeField) = iszero(rep(a))
+isone(a::PrimeField) = isone(rep(a))
 
-convert(F::Type{zzp{P}}, a::Integer) where {P} = F(a)
-convert(::Type{zzp{P}}, a::zzp{P}) where {P} = a
-function convert(::Type{zzp{P}}, a::zzp) where {P}
+convert(F::Type{PrimeField{P}}, a::Integer) where {P} = F(a)
+convert(::Type{PrimeField{P}}, a::PrimeField{P}) where {P} = a
+function convert(::Type{PrimeField{P}}, a::PrimeField) where {P}
     throw(ArgumentError("cannot convert between different prime fields"))
 end
-convert(::Type{T}, a::zzp) where {T<:Integer} = convert(T, rep(a))
-Base.Int(a::zzp) = rep(a)
-Base.BigInt(a::zzp) = BigInt(rep(a))
-promote_rule(::Type{zzp{P}}, ::Type{T}) where {P,T<:Integer} = zzp{P}
+convert(::Type{T}, a::PrimeField) where {T<:Integer} = convert(T, rep(a))
+Base.Int(a::PrimeField) = rep(a)
+Base.BigInt(a::PrimeField) = BigInt(rep(a))
+promote_rule(::Type{PrimeField{P}}, ::Type{T}) where {P,T<:Integer} = PrimeField{P}
 
-show(io::IO, a::zzp{P}) where {P} = print(io, "zzp{", P, "}(", rep(a), ")")
-show(io::IO, ::Type{zzp{P}}) where {P} = print(io, "zzp{", P, "}")
+show(io::IO, a::PrimeField{P}) where {P} = print(io, "PrimeField{", P, "}(", rep(a), ")")
+show(io::IO, ::Type{PrimeField{P}}) where {P} = print(io, "PrimeField{", P, "}")
 
 # Low-level modular arithmetic -------------------------------------------------
 
@@ -336,71 +339,71 @@ end
 
 # Field arithmetic -------------------------------------------------------------
 
-+(x::zzp{P}, y::zzp{P}) where {P} = _raw(Val{P}(), _addmod_raw(rep(x), rep(y), P))
-+(x::zzp, y::zzp) = throw(ArgumentError("cannot add elements with different moduli"))
-+(x::zzp{P}, y::Integer) where {P} = x + _from_integer(Val{P}(), y)
-+(x::Integer, y::zzp{P}) where {P} = _from_integer(Val{P}(), x) + y
++(x::PrimeField{P}, y::PrimeField{P}) where {P} = _raw(Val{P}(), _addmod_raw(rep(x), rep(y), P))
++(x::PrimeField, y::PrimeField) = throw(ArgumentError("cannot add elements with different moduli"))
++(x::PrimeField{P}, y::Integer) where {P} = x + _from_integer(Val{P}(), y)
++(x::Integer, y::PrimeField{P}) where {P} = _from_integer(Val{P}(), x) + y
 
--(x::zzp{P}, y::zzp{P}) where {P} = _raw(Val{P}(), _submod_raw(rep(x), rep(y), P))
--(x::zzp, y::zzp) = throw(ArgumentError("cannot subtract elements with different moduli"))
--(x::zzp{P}, y::Integer) where {P} = x - _from_integer(Val{P}(), y)
--(x::Integer, y::zzp{P}) where {P} = _from_integer(Val{P}(), x) - y
--(x::zzp{P}) where {P} = _raw(Val{P}(), _negatemod_raw(rep(x), P))
+-(x::PrimeField{P}, y::PrimeField{P}) where {P} = _raw(Val{P}(), _submod_raw(rep(x), rep(y), P))
+-(x::PrimeField, y::PrimeField) = throw(ArgumentError("cannot subtract elements with different moduli"))
+-(x::PrimeField{P}, y::Integer) where {P} = x - _from_integer(Val{P}(), y)
+-(x::Integer, y::PrimeField{P}) where {P} = _from_integer(Val{P}(), x) - y
+-(x::PrimeField{P}) where {P} = _raw(Val{P}(), _negatemod_raw(rep(x), P))
 
-*(x::zzp{P}, y::zzp{P}) where {P} = _raw(Val{P}(), _mulmod_raw(rep(x), rep(y), P))
-*(x::zzp, y::zzp) = throw(ArgumentError("cannot multiply elements with different moduli"))
-*(x::zzp{P}, y::Integer) where {P} = x * _from_integer(Val{P}(), y)
-*(x::Integer, y::zzp{P}) where {P} = _from_integer(Val{P}(), x) * y
+*(x::PrimeField{P}, y::PrimeField{P}) where {P} = _raw(Val{P}(), _mulmod_raw(rep(x), rep(y), P))
+*(x::PrimeField, y::PrimeField) = throw(ArgumentError("cannot multiply elements with different moduli"))
+*(x::PrimeField{P}, y::Integer) where {P} = x * _from_integer(Val{P}(), y)
+*(x::Integer, y::PrimeField{P}) where {P} = _from_integer(Val{P}(), x) * y
 
-@inline muladd(x::zzp{P}, y::zzp{P}, z::zzp{P}) where {P} = _raw(Val{P}(), _muladd_raw(rep(x), rep(y), rep(z), P))
+@inline muladd(x::PrimeField{P}, y::PrimeField{P}, z::PrimeField{P}) where {P} = _raw(Val{P}(), _muladd_raw(rep(x), rep(y), rep(z), P))
 
-inv(x::zzp{P}) where {P} = _raw(Val{P}(), _invmod_reduced(rep(x), P))
-/(x::zzp{P}, y::zzp{P}) where {P} = x * inv(y)
-/(x::zzp, y::zzp) = throw(ArgumentError("cannot divide elements with different moduli"))
-/(x::zzp{P}, y::Integer) where {P} = x / _from_integer(Val{P}(), y)
-/(x::Integer, y::zzp{P}) where {P} = _from_integer(Val{P}(), x) / y
+inv(x::PrimeField{P}) where {P} = _raw(Val{P}(), _invmod_reduced(rep(x), P))
+/(x::PrimeField{P}, y::PrimeField{P}) where {P} = x * inv(y)
+/(x::PrimeField, y::PrimeField) = throw(ArgumentError("cannot divide elements with different moduli"))
+/(x::PrimeField{P}, y::Integer) where {P} = x / _from_integer(Val{P}(), y)
+/(x::Integer, y::PrimeField{P}) where {P} = _from_integer(Val{P}(), x) / y
 
-function power(x::zzp{P}, e::Integer) where {P}
+function power(x::PrimeField{P}, e::Integer) where {P}
     e >= 0 && return Base.power_by_squaring(x, e)
     e == typemin(Int) && return _raw(Val{P}(), PowerMod(rep(x), e, P))
     Base.power_by_squaring(inv(x), -e)
 end
-^(x::zzp, e::Integer) = power(x, e)
+^(x::PrimeField, e::Integer) = power(x, e)
 
-==(x::zzp{P}, y::zzp{P}) where {P} = rep(x) == rep(y)
-==(::zzp, ::zzp) = false
-==(x::zzp{P}, y::Integer) where {P} = rep(x) == mod(y, P)
-==(x::Integer, y::zzp) = y == x
-isequal(x::zzp{P}, y::zzp{P}) where {P} = rep(x) == rep(y)
-isequal(::zzp, ::zzp) = false
-isequal(x::zzp, y::Integer) = x == y
-isequal(x::Integer, y::zzp) = y == x
-hash(x::zzp, h::UInt) = hash(rep(x), h)
+==(x::PrimeField{P}, y::PrimeField{P}) where {P} = rep(x) == rep(y)
+==(::PrimeField, ::PrimeField) = false
+==(x::PrimeField{P}, y::Integer) where {P} = rep(x) == mod(y, P)
+==(x::Integer, y::PrimeField) = y == x
+isequal(x::PrimeField{P}, y::PrimeField{P}) where {P} = rep(x) == rep(y)
+isequal(::PrimeField, ::PrimeField) = false
+isequal(x::PrimeField, y::Integer) = x == y
+isequal(x::Integer, y::PrimeField) = y == x
+hash(x::PrimeField, h::UInt) = hash(rep(x), h)
 
 # Procedural forms mirror the algorithms while returning fresh immutable values.
 add(x, y) = x + y
 sub(x, y) = x - y
 negate(x) = -x
 mul(x, y) = x * y
-sqr(x::zzp{P}) where {P} = _raw(Val{P}(), _mulmod_raw(rep(x), rep(x), P))
+sqr(x::PrimeField{P}) where {P} = _raw(Val{P}(), _mulmod_raw(rep(x), rep(x), P))
 divide(x, y) = x / y
 
 """Return a uniform random field element; equivalent to `rand(F)`."""
-random_zzp(F::Type{zzp{P}}; rng::AbstractRNG = Random.default_rng()) where {P} = rand(rng, F)
+random_zzp(F::Type{PrimeField{P}}; rng::AbstractRNG = Random.default_rng()) where {P} = rand(rng, F)
 
-function Random.rand(rng::AbstractRNG, ::Random.SamplerType{zzp{P}}) where {P}
+function Random.rand(rng::AbstractRNG, ::Random.SamplerType{PrimeField{P}}) where {P}
     _checked_modulus(Val{P}())
     _raw(Val{P}(), rand(rng, 0:(P - 1)))
 end
 
 """Return a vector of `k` random elements of `F`."""
-function VectorRandom(F::Type{zzp{P}}, k::Integer; rng::AbstractRNG = Random.default_rng()) where {P}
+function VectorRandom(F::Type{PrimeField{P}}, k::Integer; rng::AbstractRNG = Random.default_rng()) where {P}
     k >= 0 || throw(DomainError(k, "the vector length must be nonnegative"))
     rand(rng, F, Int(k))
 end
 
 """Convert an integer vector to canonical elements of `F`."""
-VectorConv(F::Type{zzp{P}}, a::AbstractVector{<:Integer}) where {P} = [F(x) for x in a]
+VectorConv(F::Type{PrimeField{P}}, a::AbstractVector{<:Integer}) where {P} = [F(x) for x in a]
 
 """Return `a*b mod n` componentwise for reduced integer representatives."""
 function VectorMulMod(a::AbstractVector{Int}, b::Int, n::Int)
@@ -427,7 +430,7 @@ function VectorMulMod!(x::AbstractVector{Int}, a::AbstractVector{Int}, b::Int, n
 end
 
 """Return the pair `(y,x)`; Julia's immutable field elements are not swapped in place."""
-swap(x::zzp{P}, y::zzp{P}) where {P} = (y, x)
+swap(x::PrimeField{P}, y::PrimeField{P}) where {P} = (y, x)
 
 include("zzp_big.jl")
 include("numbertheory.jl")

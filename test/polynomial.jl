@@ -1,6 +1,6 @@
 @testset "Dense polynomial arithmetic" begin
     for p in (2, 3, 5, 7)
-        F = zzp(p)
+        F = PrimeField(p)
         x = xpoly(F)
         @test degree(poly(F, Int[])) == -1
         @test degree(x) == 1
@@ -76,7 +76,7 @@ end
 @testset "Polynomial factorization and irreducibility" begin
     rng = MersenneTwister(2026)
     for p in (2, 3, 5, 7, 11)
-        F = zzp(p)
+        F = PrimeField(p)
         x = xpoly(F)
         f = (x + 1)^2 * (x + 2) * (x^2 + x + 1)
         fac = factor(f; rng = rng)
@@ -101,7 +101,7 @@ end
     end
 
     # A nontrivial p-th-power branch of square-free factorization.
-    F = zzp(3)
+    F = PrimeField(3)
     x = xpoly(F)
     g = x^2 + 1
     f = g^3 * (x + 1)^2
@@ -111,10 +111,10 @@ end
     @test sort([m for (_, m) in fac.factors]) == [2, 3]
 
     # The same algorithms work with arbitrary-precision prime moduli.
-    FB = ModRing(big(2)^61 - 1)
+    FB = BigModRing(big(2)^61 - 1)
     xb = xpoly(FB)
     fb = (xb + 1)^2 * (xb^2 + xb + 1)
     facb = factor(fb; rng = rng)
     @test reconstruct(facb) == fb
-    @test_throws ArgumentError factor(poly(ModRing(12), [1, 1]))
+    @test_throws ArgumentError factor(poly(BigModRing(12), [1, 1]))
 end

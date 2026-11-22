@@ -16,12 +16,12 @@ end
 # Specialized in-place NTT for machine-word prime fields. The generic methods
 # below remain available for other parents, while this path avoids dynamic
 # field dispatch in every butterfly operation.
-function _ntt_zzp!(A::Vector{zzp{P}}, inverse::Bool = false) where {P}
+function _ntt_zzp!(A::Vector{PrimeField{P}}, inverse::Bool = false) where {P}
     n = length(A)
     n > 0 || throw(ArgumentError("NTT input must be nonempty"))
     n & (n - 1) == 0 || throw(ArgumentError("the NTT length must be a power of two"))
     n == 1 && return A
-    F = zzp{P}
+    F = PrimeField{P}
     omega = inverse ? inv(root_of_unity(n, F)) : root_of_unity(n, F)
 
     j = 0
@@ -65,10 +65,10 @@ function _ntt_zzp!(A::Vector{zzp{P}}, inverse::Bool = false) where {P}
     A
 end
 
-ntt(a::Vector{zzp{P}}) where {P} = _ntt_zzp!(collect(a), false)
-intt(a::Vector{zzp{P}}) where {P} = _ntt_zzp!(collect(a), true)
+ntt(a::Vector{PrimeField{P}}) where {P} = _ntt_zzp!(collect(a), false)
+intt(a::Vector{PrimeField{P}}) where {P} = _ntt_zzp!(collect(a), true)
 
-function ntt_convolve(a::Vector{zzp{P}}, b::Vector{zzp{P}}) where {P}
+function ntt_convolve(a::Vector{PrimeField{P}}, b::Vector{PrimeField{P}}) where {P}
     isempty(a) && return copy(a)
     isempty(b) && return copy(b)
     total = length(a) + length(b) - 1

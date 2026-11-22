@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Complete NTL.jl 0.9.0 manual: ModRing and ModInt, extension fields, API reference, benchmarks, and executable examples.">
+  <meta name="description" content="Complete NTL.jl 0.10.0 manual: PrimeField, BigModRing, extension fields, API reference, benchmarks, and executable examples.">
   <link rel="icon" href="data:,">
-  <title>NTL.jl 0.9.0 — Complete Manual and API Tour</title>
+  <title>NTL.jl 0.10.0 — Complete Manual and API Tour</title>
   <style>
     :root {
       --paper: oklch(97.8% 0.002 90);
@@ -240,29 +240,32 @@
 </head>
 <body>
 <div class="page">
-  <header class="masthead"><a class="brand" href="#top">NTL.jl / complete manual</a><div class="masthead-meta">Version 0.9.0 · Julia 1.9+ · Pure Julia · Offline reference</div></header>
+  <header class="masthead"><a class="brand" href="#top">NTL.jl / complete manual</a><div class="masthead-meta">Version 0.10.0 · Julia 1.9+ · Pure Julia · Offline reference</div></header>
   <div id="top" class="hero">
     <div class="hero-copy">
       <p class="kicker">Exact arithmetic, documented from first construction to verification</p>
       <h1>The complete NTL.jl manual.</h1>
-      <p class="lede">The full project README, clear <code>ModRing</code> / <code>ModInt</code> modular arithmetic, a beginner-first extension-field guide using <code>E(...)</code> and <code>ExtensionElem</code>, and an executable call for every exported interface.</p>
+      <p class="lede">The full project README, clear <code>PrimeField</code> and <code>BigModRing</code> arithmetic, a beginner-first extension-field guide using <code>E(...)</code> and <code>ExtensionElem</code>, and an executable call for every exported interface.</p>
       <ul class="hero-facts">
-        <li><strong>Verified</strong><span>4,335,171 passing assertions on Julia 1.11.7</span></li>
-        <li><strong>Coverage</strong><span>138 exported names demonstrated in one API tour</span></li>
+        <li><strong>Verified</strong><span>4,335,178 passing assertions on Julia 1.11.7</span></li>
+        <li><strong>Coverage</strong><span>140 exported names demonstrated in one API tour</span></li>
         <li><strong>Included</strong><span>README + naming guide + full tour source + API index</span></li>
       </ul>
     </div>
-    <div class="hero-demo code-panel"><div class="code-caption">Two clear names: ring and element</div><pre><code>using NTL, Test
+    <div class="hero-demo code-panel"><div class="code-caption">Prime fields and big modular rings</div><pre><code>using NTL
 
-R = ModRing(12)  # Arbitrary-precision modular ring
-a = R(17)        # An element; 17 mod 12 = 5
-b = ModInt(R, 5) # Optional explicit type spelling
+F = PrimeField(101)
+a = F(120)       # Machine-word prime field
 
-@assert R isa ModRing
-@assert a isa ModInt
-@assert a == b
-@assert a * a == one(R)
-@test_throws DomainError inv(R(6))</code></pre></div>
+p = big(2)^127 - 1
+R = BigModRing(p)
+b = R(big(2)^130 + 123)  # BigInt arithmetic
+
+@assert a isa PrimeField
+@assert b isa ModInt
+@assert rep(a) == 19
+@assert a * inv(a) == one(F)
+@assert b * inv(b) == one(R)</code></pre></div>
   </div>
   <div class="workspace">
     <nav class="sidebar" aria-label="Manual navigation"><div class="sidebar-inner"><h2>Contents</h2><div id="TOC" role="doc-toc"><ul>
@@ -320,7 +323,7 @@ algebra, generalized FFT, and lattice reduction.</strong></p>
 clone. It is designed to be approachable for new Julia users while
 providing efficient, tested implementations for research and
 teaching.</p>
-<p>Version: <strong>0.9.0</strong><br> Tested with: <strong>Julia
+<p>Version: <strong>0.10.0</strong><br> Tested with: <strong>Julia
 1.11.7</strong><br> Compatibility target: <strong>Julia
 1.9+</strong></p>
 <h2 id="contents">Contents</h2>
@@ -364,9 +367,10 @@ functionality.</li>
 <li><strong>Exact arithmetic:</strong> canonical residues, BigInt
 coefficients, exact polynomial operations, and verifiable lattice
 transformations.</li>
-<li><strong>Beginner-friendly parents:</strong> <code>zzp{p}</code>
-stores a prime modulus in the type, while <code>ModRing</code> and
-extension fields use explicit runtime parents.</li>
+<li><strong>Beginner-friendly parents:</strong>
+<code>PrimeField{p}</code> stores a prime modulus in the type, while
+<code>BigModRing</code> and extension fields use explicit runtime
+parents.</li>
 <li><strong>Fast when appropriate:</strong> machine-word multiplication,
 Karatsuba, generalized FFT, Zech discrete-log tables, and fast LLL with
 exact verification.</li>
@@ -390,7 +394,7 @@ using NTL</code></pre>
 contains <code>Project.toml</code>.</p>
 <h3 id="run-the-complete-test-suite">Run the complete test suite</h3>
 <pre class="bash"><code>julia --project=. -e &#39;using Pkg; Pkg.instantiate(); Pkg.test()&#39;</code></pre>
-<p>The current suite contains <strong>4,335,171 passing
+<p>The current suite contains <strong>4,335,178 passing
 assertions</strong>. Runtime code depends only on Julia’s
 <code>Random</code> standard library; <code>Test</code> is used only by
 the test target.</p>
@@ -402,12 +406,12 @@ self-contained and can be read offline.</p>
 field</h3>
 <pre class="julia"><code>using NTL
 
-F = zzp(101)        # F is zzp{101}
+F = PrimeField(101)        # F is PrimeField{101}
 a = F(120)          # 120 mod 101 = 19
 b = F(-1)           # -1 mod 101 = 100
 
-println(a + b)      # zzp{101}(18)
-println(a * b)      # zzp{101}(24)
+println(a + b)      # PrimeField{101}(18)
+println(a * b)      # PrimeField{101}(82)
 println(a / b)      # division in F_101
 println(a^-1)       # inverse using gcdx and sign correction
 println(a^1000)     # fast binary power
@@ -422,18 +426,18 @@ println(a^1000)     # fast binary power
 <p>Every field element stores a canonical representative in
 <code>0:p-1</code>.</p>
 <h3 id="iterate-over-a-small-field">2. Iterate over a small field</h3>
-<pre class="julia"><code>for x in zzp{5}
+<pre class="julia"><code>for x in PrimeField{5}
     println(x)
 end
 
-@assert length(zzp{5}) == 5
-@assert collect(zzp{5}) == zzp{5}.([0, 1, 2, 3, 4])</code></pre>
+@assert length(PrimeField{5}) == 5
+@assert collect(PrimeField{5}) == PrimeField{5}.([0, 1, 2, 3, 4])</code></pre>
 <p>Elements are produced in canonical order, from <code>0</code> through
 <code>p-1</code>. Iteration is lazy; <code>collect(F)</code> allocates
 all <code>p</code> elements and should not be used for a very large
 field.</p>
 <h3 id="multiply-two-polynomials">3. Multiply two polynomials</h3>
-<pre class="julia"><code>F = zzp(101)
+<pre class="julia"><code>F = PrimeField(101)
 x = xpoly(F)
 
 f = x^3 + 2x + 1
@@ -447,7 +451,7 @@ g = x^2 + 3x + 2
 degree</strong>. The zero polynomial has degree <code>-1</code>.</p>
 <h3 id="solve-a-finite-field-linear-system">4. Solve a finite-field
 linear system</h3>
-<pre class="julia"><code>F = zzp(101)
+<pre class="julia"><code>F = PrimeField(101)
 A = F.([2 3 1; 4 1 5; 3 7 2])
 b = F.([1, 2, 3])
 
@@ -481,13 +485,13 @@ result = lll(A)  # fast by default, with exact verification
 <tbody>
 <tr class="odd">
 <td>Fast prime-field arithmetic with an <code>Int</code> modulus</td>
-<td><code>zzp(p)</code></td>
+<td><code>PrimeField(p)</code></td>
 <td>Type-level modulus, canonical <code>Int</code> representation, field
 iteration</td>
 </tr>
 <tr class="even">
 <td>Arbitrary-precision modulus, including a composite one</td>
-<td><code>ModRing(n)</code></td>
+<td><code>BigModRing(n)</code></td>
 <td>BigInt representation and explicit runtime parent</td>
 </tr>
 <tr class="odd">
@@ -507,53 +511,54 @@ iteration</td>
 </tr>
 </tbody>
 </table></div>
-<h3 id="zzp-versus-modring"><code>zzp</code> versus
-<code>ModRing</code></h3>
+<h3 id="primefield-versus-bigmodring"><code>PrimeField</code> versus
+<code>BigModRing</code></h3>
 <pre class="julia"><code>using Test
 
-F = zzp(101)             # Machine-word prime field
-R = ModRing(12)          # Arbitrary-precision modular ring
+F = PrimeField(101)             # Machine-word prime field
+R = BigModRing(12)          # Arbitrary-precision modular ring
 
 @assert R(5) * R(5) == R(1)
 @test_throws DomainError inv(R(6))</code></pre>
-<p><code>zzp</code> deliberately requires a prime modulus.
-<code>ModRing</code> also permits composite moduli, but only units are
-invertible.</p>
+<p><code>PrimeField</code> deliberately requires a prime modulus.
+<code>BigModRing</code> also permits composite moduli, but only units
+are invertible.</p>
 <p>The modular-ring interface has two primary names with distinct
 roles:</p>
 <ul>
-<li><code>ModRing(n)</code> constructs a reusable parent of type
-<code>ModRing</code>;</li>
+<li><code>BigModRing(n)</code> constructs a reusable parent of type
+<code>BigModRing</code>;</li>
 <li><code>ModInt</code> is the element type. Prefer <code>R(a)</code>
 for ordinary construction and use <code>ModInt(R, a)</code> when an
 explicit type spelling is helpful.</li>
 </ul>
-<pre class="julia"><code>R = ModRing(12)
+<pre class="julia"><code>R = BigModRing(12)
 a = R(17)
 
-@assert R isa ModRing
+@assert R isa BigModRing
 @assert a isa ModInt
 @assert a == R(5)
 @assert rep(a) == 5
 @assert ModInt(R, 17) == a</code></pre>
-<p>The older NTL-facing names remain available for compatibility:
-<code>ZZP</code> and <code>ZZPField</code> are aliases of
-<code>ModRing</code>; <code>ZZp</code> and <code>ZZ_p</code> are aliases
-of <code>ModInt</code>. They are intentionally kept out of everyday
-examples so that readers do not need to distinguish names that differ
-only by capitalization.</p>
+<p>Compatibility names are retained but kept out of everyday examples:
+<code>zzp</code> is an alias of <code>PrimeField</code>;
+<code>ModRing</code> is an alias of <code>BigModRing</code>;
+<code>ZZP</code> and <code>ZZPField</code> are also aliases of
+<code>BigModRing</code>; and <code>ZZp</code> and <code>ZZ_p</code> are
+aliases of <code>ModInt</code>. New readers therefore do not need to
+distinguish names that differ only by capitalization.</p>
 <h2 id="everyday-operations">Everyday operations</h2>
 <h3 id="construction-and-metadata">Construction and metadata</h3>
-<pre class="julia"><code>F = zzp(97)
+<pre class="julia"><code>F = PrimeField(97)
 a = F(-3)
 
 rep(a)              # 94
 Int(a)              # 94
 modulus(a)          # 97
 characteristic(a)   # 97
-parent(a)           # zzp{97}
-zero(a)             # zzp{97}(0)
-one(a)              # zzp{97}(1)
+parent(a)           # PrimeField{97}
+zero(a)             # PrimeField{97}(0)
+one(a)              # PrimeField{97}(1)
 iszero(a)           # false
 isone(a)            # false</code></pre>
 <h3 id="arithmetic">Arithmetic</h3>
@@ -635,7 +640,7 @@ c = VectorConv(F, [-1, 0, 98, big(10)^40])</code></pre>
 </table></div>
 <h2 id="polynomials">Polynomials</h2>
 <h3 id="construction">Construction</h3>
-<pre class="julia"><code>F = zzp(101)
+<pre class="julia"><code>F = PrimeField(101)
 f = poly(F, [1, 2, 3])   # 1 + 2x + 3x^2
 x = xpoly(F)              # x
 
@@ -713,7 +718,7 @@ the coefficient vector.</p>
 </table></div>
 <h3 id="factorization-and-irreducibility">Factorization and
 irreducibility</h3>
-<pre class="julia"><code>F = zzp(97)
+<pre class="julia"><code>F = PrimeField(97)
 x = xpoly(F)
 f = (x + 1)^3 * (x^2 + x + 1)
 
@@ -824,7 +829,7 @@ is irreducible over
 using Random
 using Test
 
-F = zzp(5)
+F = PrimeField(5)
 X = xpoly(F)
 m = X^2 + 2
 @assert is_irreducible(m)
@@ -1131,7 +1136,7 @@ field. It is not a different mathematical field.</p>
 <code>g^k</code>. Multiplication becomes addition of exponents modulo
 <code>q-1</code>; inversion and powering become sign change and scalar
 multiplication of exponents.</p>
-<pre class="julia"><code>F = zzp(3)
+<pre class="julia"><code>F = PrimeField(3)
 E = extension_field(F, poly(F, [2, 1, 1]))
 Z = zech_field(E)
 x = ZechElem(Z, Z._generator)
@@ -1155,7 +1160,7 @@ polynomial extension representation.</p>
 <h3 id="limits-and-requirements">Limits and requirements</h3>
 <ul>
 <li>The base must currently be a machine-word prime field
-<code>zzp</code>.</li>
+<code>PrimeField</code>.</li>
 <li>The extension order must satisfy <code>q &lt;= 65535</code>.</li>
 <li>A primitive multiplicative generator is required.
 <code>zech_field</code> searches for one automatically; an explicitly
@@ -1256,7 +1261,7 @@ but the point count is still well-defined.</p>
 <h2 id="matrices-and-exact-linear-algebra">Matrices and exact linear
 algebra</h2>
 <p>The generic matrix routines work over supported fields.</p>
-<pre class="julia"><code>F = zzp(101)
+<pre class="julia"><code>F = PrimeField(101)
 A = F.([2 3 1; 4 1 5; 3 7 2])
 b = F.([1, 2, 3])
 
@@ -1355,7 +1360,7 @@ verification pass when that trade-off is intentional.</p>
 <p><code>ntt_convolve(a,b)</code> computes convolution over a supported
 prime field. A radix-two transform of length <code>n</code> requires
 <code>n</code> to be a power of two and to divide <code>p-1</code>.</p>
-<pre class="julia"><code>F = zzp(97)  # 97-1 = 96, which is divisible by 32
+<pre class="julia"><code>F = PrimeField(97)  # 97-1 = 96, which is divisible by 32
 a = rand(MersenneTwister(1), F, 32)
 @assert intt(ntt(a)) == a
 
@@ -1366,7 +1371,7 @@ b = rand(MersenneTwister(2), F, 32)
 possible. Otherwise it selects compatible NTT primes and reconstructs
 exact coefficients with a coefficient bound and, when needed,
 multi-prime CRT.</p>
-<pre class="julia"><code>F = zzp(101)
+<pre class="julia"><code>F = PrimeField(101)
 f = random_poly(F, 1000)
 g = random_poly(F, 1000)
 
@@ -1478,8 +1483,8 @@ arithmetic</h3>
 </thead>
 <tbody>
 <tr class="odd">
-<td><code>zzp(p)</code></td>
-<td>Validate a prime and return <code>zzp{p}</code></td>
+<td><code>PrimeField(p)</code></td>
+<td>Validate a prime and return <code>PrimeField{p}</code></td>
 </tr>
 <tr class="even">
 <td><code>zzp_Min</code>, <code>zzp_Max</code></td>
@@ -1508,11 +1513,11 @@ arithmetic</h3>
 <td>Fused <code>x*y+z</code></td>
 </tr>
 <tr class="even">
-<td><code>ModRing(n)</code></td>
+<td><code>BigModRing(n)</code></td>
 <td>Construct an arbitrary-precision modular parent</td>
 </tr>
 <tr class="odd">
-<td><code>ModRing</code>, <code>ModInt</code></td>
+<td><code>BigModRing</code>, <code>ModInt</code></td>
 <td>Parent and element types; <code>ModInt(R,a)</code> is direct element
 construction</td>
 </tr>
@@ -1684,7 +1689,7 @@ polynomial</td>
 │   └── index.html
 ├── src/
 │   ├── NTL.jl              # Module entry, prime fields, low-level arithmetic
-│   ├── zzp_big.jl          # ModRing parents and ModInt elements
+│   ├── zzp_big.jl          # BigModRing parents and ModInt elements
 │   ├── numbertheory.jl     # Primality, factorization, CRT, roots, discrete logs
 │   ├── polynomial.jl       # Dense polynomials and factorization
 │   ├── polynomial_mul.jl   # Schoolbook, Karatsuba, and acceleration strategies
@@ -1974,8 +1979,8 @@ always request <code>:schoolbook</code> or <code>mode = :exact</code> to
 obtain the original behavior.</p>
 <h3 id="explicit-mathematical-parents">Explicit mathematical
 parents</h3>
-<p><code>zzp{p}</code> keeps the modulus in the type, so different
-moduli cannot be mixed accidentally. <code>ModRing</code>,
+<p><code>PrimeField{p}</code> keeps the modulus in the type, so
+different moduli cannot be mixed accidentally. <code>BigModRing</code>,
 <code>ExtensionField</code>, and <code>ZechField</code> make runtime
 parent relationships explicit.</p>
 <h3 id="canonical-and-exact-representations">Canonical and exact
@@ -2013,16 +2018,18 @@ routines.</li>
 match C++ NTL’s performance for very large inputs.</li>
 </ul>
 <h2 id="faq-for-beginners">FAQ for beginners</h2>
-<h3 id="why-does-zzp15-fail">Why does <code>zzp(15)</code> fail?</h3>
-<p><code>zzp</code> represents a prime field. Fifteen is composite. Use
-<code>ModRing(15)</code> if you intentionally need a modular ring, and
-remember that only units have inverses.</p>
-<h3 id="why-is-f2-zero-when-f-zzp2">Why is <code>F(2)</code> zero when
-<code>F = zzp(2)</code>?</h3>
+<h3 id="why-does-primefield15-fail">Why does <code>PrimeField(15)</code>
+fail?</h3>
+<p><code>PrimeField</code> represents a prime field. Fifteen is
+composite. Use <code>BigModRing(15)</code> if you intentionally need a
+modular ring, and remember that only units have inverses.</p>
+<h3 id="why-is-f2-zero-when-f-primefield2">Why is <code>F(2)</code> zero
+when <code>F = PrimeField(2)</code>?</h3>
 <p>Construction always reduces modulo the field modulus:
 <code>2 mod 2 = 0</code>.</p>
-<h3 id="why-can-i-not-add-zzp71-to-zzp111">Why can I not add
-<code>zzp{7}(1)</code> to <code>zzp{11}(1)</code>?</h3>
+<h3 id="why-can-i-not-add-primefield71-to-primefield111">Why can I not
+add <code>PrimeField{7}(1)</code> to
+<code>PrimeField{11}(1)</code>?</h3>
 <p>They belong to different fields. Choose one parent explicitly instead
 of relying on an implicit and potentially incorrect conversion.</p>
 <h3 id="why-does-collectf-use-memory-even-though-iteration-is-lazy">Why
@@ -2082,7 +2089,7 @@ root, run:</p>
 <pre class="bash"><code>julia --project=. examples/api_tour.jl</code></pre>
 <p>A successful run ends with
 <code>API tour completed successfully.</code> The tour covers all
-<strong>138 exported names</strong>, including compatibility and
+<strong>140 exported names</strong>, including compatibility and
 NTL-facing aliases, and checks results with assertions rather than
 merely printing them.</p>
 <h2 id="b.-complete-executable-api-tour">B. Complete executable API
@@ -2097,11 +2104,14 @@ using Statistics
 # Prime-field metadata and arithmetic -----------------------------------------
 @assert zzp_Min == 2
 @assert zzp_Max &gt; zzp_Min
-F = zzp(101)
+F = PrimeField(101)
+@assert PrimeField === zzp
+@assert zzp(101) === F
+@assert zzp{101}(3) == F(3)
 @assert modulus(F) == 101
 @assert characteristic(F) == 101
 @assert parent(F(1)) == F
-@assert info(zzp).minimum_modulus == 2
+@assert info(PrimeField).minimum_modulus == 2
 @assert info(F).modulus == 101
 @assert info(F(3)).representative == 3
 
@@ -2156,16 +2166,18 @@ out = zeros(Int, 3)
 @assert out == [3, 6, 9]
 
 # Arbitrary-precision modular rings -------------------------------------------
-R = ModRing(12)
-@assert R isa ModRing
+R = BigModRing(12)
+@assert R isa BigModRing
 @assert R(5) isa ModInt
 @assert ModInt(R, 5) == R(5)
 
-# NTL-compatible names remain callable, but are not used in everyday examples.
-@assert ModRing === ZZPField
-@assert ModRing === ZZP
+# Legacy names remain callable, but are not used in everyday examples.
+@assert BigModRing === ModRing
+@assert BigModRing === ZZPField
+@assert BigModRing === ZZP
 @assert ModInt === ZZp
 @assert ModInt === ZZ_p
+@assert ModRing(12) == R
 @assert ZZP(12) == R
 @assert ZZPField(12) == R
 @assert ZZp(R, 5) == R(5)
@@ -2182,7 +2194,7 @@ R = ModRing(12)
 @assert R(5) * inv(R(5)) == one(R)
 @assert R(5)^(-1) == inv(R(5))
 @test_throws DomainError inv(R(6))
-@test_throws ErrorException R(1) + zzp(7)(1)
+@test_throws ErrorException R(1) + PrimeField(7)(1)
 @assert length(VectorRandom(R, 2; rng = MersenneTwister(3))) == 2
 @assert VectorConv(R, [-1, 2, 13]) == R.([-1, 2, 13])
 @assert random_zzp(R; rng = MersenneTwister(4)) isa ModInt
@@ -2393,7 +2405,7 @@ result = lll(B)
 @assert gram_schmidt_exact(result.basis) isa Tuple
 
 # NTT, generalized FFT, and acceleration -----------------------------------------
-NTT_F = zzp(193) # 64 divides 193 - 1, so both 32- and 64-point transforms are valid.
+NTT_F = PrimeField(193) # 64 divides 193 - 1, so both 32- and 64-point transforms are valid.
 omega = root_of_unity(32, NTT_F)
 @assert omega^32 == one(omega)
 va = rand(MersenneTwister(11), NTT_F, 32)
@@ -2428,10 +2440,10 @@ call in the tour.</p>
 <tbody>
 <tr class="odd">
 <td><code>NTL.jl</code></td>
-<td>zzp, zzp_Min, zzp_Max, rep, modulus, characteristic, info, AddMod,
-SubMod, NegateMod, MulMod, SqrMod, InvMod, InvModStatus, PowerMod, add,
-sub, negate, mul, sqr, divide, power, muladd, random_zzp, VectorRandom,
-VectorConv, VectorMulMod, VectorMulMod!, swap</td>
+<td>PrimeField, zzp, zzp_Min, zzp_Max, rep, modulus, characteristic,
+info, AddMod, SubMod, NegateMod, MulMod, SqrMod, InvMod, InvModStatus,
+PowerMod, add, sub, negate, mul, sqr, divide, power, muladd, random_zzp,
+VectorRandom, VectorConv, VectorMulMod, VectorMulMod!, swap</td>
 </tr>
 <tr class="even">
 <td><code>binary.jl</code></td>
@@ -2487,25 +2499,28 @@ ntt_convolve</td>
 </tr>
 <tr class="even">
 <td><code>zzp_big.jl</code></td>
-<td>ModRing, ModInt, ZZPField, ZZp, ZZ_p, ZZP, parent</td>
+<td>BigModRing, ModRing, ModInt, ZZPField, ZZp, ZZ_p, ZZP, parent</td>
 </tr>
 </tbody>
 </table></div>
 <h2 id="d.-documentation-and-verification-checklist">D. Documentation
 and verification checklist</h2>
 <ul>
-<li>Release documented here: <strong>NTL.jl 0.9.0</strong>, targeting
+<li>Release documented here: <strong>NTL.jl 0.10.0</strong>, targeting
 Julia 1.9 or later and tested with Julia 1.11.7.</li>
-<li>Full regression suite: <strong>4,335,171 passing
+<li>Full regression suite: <strong>4,335,178 passing
 assertions</strong>.</li>
 <li>Every exported name occurs in at least one executable example in
 <code>api_tour.jl</code>.</li>
-<li><code>ModRing</code> is the arbitrary-precision modular-ring parent
-and <code>ModInt</code> is its element type. Everyday construction uses
-<code>R = ModRing(n)</code> followed by <code>R(a)</code>.</li>
-<li>The older modular-ring names are confined to the compatibility
-paragraph, the executable compatibility checks, and this complete export
-index.</li>
+<li><code>PrimeField(p)</code> is the machine-word prime-field
+constructor, with the modulus carried by <code>PrimeField{p}</code> at
+the type level.</li>
+<li><code>BigModRing(n)</code> is the arbitrary-precision modular-ring
+parent and <code>ModInt</code> is its element type. Everyday
+construction uses <code>R = BigModRing(n)</code> followed by
+<code>R(a)</code>.</li>
+<li>Legacy names are confined to the compatibility paragraph, executable
+compatibility checks, and this complete export index.</li>
 <li>The extension-field guide uses <code>E(...)</code> for ordinary
 construction and <code>ExtensionElem</code> for explicit descriptive
 type checks. Its nine code blocks cover parent construction,
@@ -2514,13 +2529,13 @@ arithmetic, inversion, powers, trace, norm, random arrays, polynomials
 over an extension, and binary fields.</li>
 <li><code>E(p)</code> and <code>ExtensionElem(E, p)</code> both reduce
 polynomial input before storing it; the regression suite checks this
-invariant over <code>zzp</code>, <code>ModRing</code>, and
+invariant over <code>PrimeField</code>, <code>BigModRing</code>, and
 <code>GF2</code> base fields.</li>
 <li>This page is self-contained: equations use MathML, styling is
 embedded, and no web framework or network connection is required.</li>
 </ul></main>
   </div>
-  <footer class="footer"><div>NTL.jl · Exact mathematical core · Version 0.9.0</div><div><a href="#top">Return to top</a> · <a href="../examples/api_tour.jl">API tour source</a></div></footer>
+  <footer class="footer"><div>NTL.jl · Exact mathematical core · Version 0.10.0</div><div><a href="#top">Return to top</a> · <a href="../examples/api_tour.jl">API tour source</a></div></footer>
 </div>
 </body>
 </html>

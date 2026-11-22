@@ -45,7 +45,7 @@ function _v_of(a::ZZpE)
     v
 end
 
-function _poly_from_v(F::Type{zzp{P}}, v::Int, d::Int) where {P}
+function _poly_from_v(F::Type{PrimeField{P}}, v::Int, d::Int) where {P}
     c = Int[]
     for _ in 1:d
         push!(c, mod(v, P))
@@ -93,7 +93,7 @@ end
 """Build a Zech representation for an extension of order at most 65535."""
 function zech_field(E::ExtensionField; primitive = nothing)
     F = base_field(E)
-    F isa Type && F <: zzp || throw(ArgumentError("Zech representation currently requires a machine-word prime base field"))
+    F isa Type && F <: PrimeField || throw(ArgumentError("Zech representation currently requires a machine-word prime base field"))
     q = Int(cardinality(E))
     q <= 65535 || throw(ArgumentError("Zech tables are limited to fields with at most 65535 elements"))
     g = primitive === nothing ? _find_generator(E, q) : _check_generator(primitive, q)

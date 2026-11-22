@@ -11,7 +11,7 @@ end
 
 # This prime does not support the required transform length, so generalized FFT
 # computes over compatible NTT primes and reconstructs exact coefficients.
-F = zzp(101)
+F = PrimeField(101)
 f = random_poly(F, 1000; rng = MersenneTwister(10))
 g = random_poly(F, 1000; rng = MersenneTwister(20))
 reference = poly_mul(f, g; method = :schoolbook)
@@ -25,7 +25,7 @@ end
 
 # A same-prime fast path avoids reconstruction when the original modulus already
 # supports the transform.
-G = zzp(998244353)
+G = PrimeField(998244353)
 a = rand(MersenneTwister(1), G, 600)
 b = rand(MersenneTwister(2), G, 600)
 @assert fft_convolve(a, b) == convolve(a, b)

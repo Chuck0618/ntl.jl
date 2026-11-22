@@ -1,25 +1,26 @@
 # Arbitrary-precision modular integers ----------------------------------------
 
-export ModRing, ModInt, ZZPField, ZZp, ZZ_p, ZZP, parent
+export BigModRing, ModRing, ModInt, ZZPField, ZZp, ZZ_p, ZZP, parent
 
 """A reusable parent object for arithmetic modulo an arbitrary positive BigInt."""
-struct ModRing
+struct BigModRing
     _modulus::BigInt
-    function ModRing(n::Integer)
+    function BigModRing(n::Integer)
         n > 0 || throw(DomainError(n, "the modulus must be positive"))
         new(BigInt(n))
     end
 end
 
-# NTL-compatible spellings; new code should use ModRing and ModInt.
-const ZZPField = ModRing
-const ZZP = ModRing
+# NTL-compatible spellings; new code should use BigModRing and ModInt.
+const ModRing = BigModRing
+const ZZPField = BigModRing
+const ZZP = BigModRing
 
-"""An arbitrary-precision modular integer. Use `R = ModRing(n); R(a)` or `ModInt(R, a)`."""
+"""An arbitrary-precision modular integer. Use `R = BigModRing(n); R(a)` or `ModInt(R, a)`."""
 struct ModInt <: Number
-    _parent::ModRing
+    _parent::BigModRing
     _rep::BigInt
-    function ModInt(F::ModRing, a::Integer)
+    function ModInt(F::BigModRing, a::Integer)
         new(F, mod(BigInt(a), modulus(F)))
     end
 end
@@ -27,32 +28,32 @@ end
 const ZZp = ModInt
 const ZZ_p = ModInt
 
-(F::ModRing)(a::Integer) = ModInt(F, a)
-(F::ModRing)(a::ModInt) = (parent(a) == F || throw(ArgumentError("modulus mismatch")); a)
+(F::BigModRing)(a::Integer) = ModInt(F, a)
+(F::BigModRing)(a::ModInt) = (parent(a) == F || throw(ArgumentError("modulus mismatch")); a)
 
-modulus(F::ModRing) = F._modulus
+modulus(F::BigModRing) = F._modulus
 modulus(a::ModInt) = modulus(parent(a))
-characteristic(F::ModRing) = modulus(F)
+characteristic(F::BigModRing) = modulus(F)
 characteristic(a::ModInt) = modulus(a)
 parent(a::ModInt) = a._parent
-parent(::zzp{P}) where {P} = zzp{P}
+parent(::PrimeField{P}) where {P} = PrimeField{P}
 rep(a::ModInt) = a._rep
 
-==(F::ModRing, G::ModRing) = modulus(F) == modulus(G)
-isequal(F::ModRing, G::ModRing) = F == G
-hash(F::ModRing, h::UInt) = hash(modulus(F), h)
+==(F::BigModRing, G::BigModRing) = modulus(F) == modulus(G)
+isequal(F::BigModRing, G::BigModRing) = F == G
+hash(F::BigModRing, h::UInt) = hash(modulus(F), h)
 
-zero(F::ModRing) = F(0)
-one(F::ModRing) = F(1)
-oneunit(F::ModRing) = F(1)
+zero(F::BigModRing) = F(0)
+one(F::BigModRing) = F(1)
+oneunit(F::BigModRing) = F(1)
 zero(a::ModInt) = zero(parent(a))
 one(a::ModInt) = one(parent(a))
 oneunit(a::ModInt) = one(a)
 iszero(a::ModInt) = iszero(rep(a))
 isone(a::ModInt) = isone(rep(a))
 
-function show(io::IO, F::ModRing)
-    print(io, "ModRing(", modulus(F), ")")
+function show(io::IO, F::BigModRing)
+    print(io, "BigModRing(", modulus(F), ")")
 end
 function show(io::IO, a::ModInt)
     print(io, "ModInt(", modulus(a), ")(", rep(a), ")")
@@ -127,20 +128,20 @@ function _random_big_below(rng::AbstractRNG, n::BigInt)
     end
 end
 
-Random.rand(F::ModRing) = Random.rand(Random.default_rng(), F)
-Random.rand(rng::AbstractRNG, F::ModRing) = F(_random_big_below(rng, modulus(F)))
-Random.rand(F::ModRing, dims::Dims) = Random.rand(Random.default_rng(), F, dims)
-Random.rand(F::ModRing, d::Integer, dims::Integer...) = Random.rand(Random.default_rng(), F, (d, dims...))
-function Random.rand(rng::AbstractRNG, F::ModRing, dims::Dims)
+Random.rand(F::BigModRing) = Random.rand(Random.default_rng(), F)
+Random.rand(rng::AbstractRNG, F::BigModRing) = F(_random_big_below(rng, modulus(F)))
+Random.rand(F::BigModRing, dims::Dims) = Random.rand(Random.default_rng(), F, dims)
+Random.rand(F::BigModRing, d::Integer, dims::Integer...) = Random.rand(Random.default_rng(), F, (d, dims...))
+function Random.rand(rng::AbstractRNG, F::BigModRing, dims::Dims)
     A = Array{ModInt}(undef, dims)
     for i in eachindex(A)
         A[i] = rand(rng, F)
     end
     A
 end
-function Random.rand(rng::AbstractRNG, F::ModRing, d::Integer, dims::Integer...)
+function Random.rand(rng::AbstractRNG, F::BigModRing, d::Integer, dims::Integer...)
     rand(rng, F, (d, dims...))
 end
-random_zzp(F::ModRing; rng::AbstractRNG = Random.default_rng()) = rand(rng, F)
-VectorRandom(F::ModRing, k::Integer; rng::AbstractRNG = Random.default_rng()) = rand(rng, F, Int(k))
-VectorConv(F::ModRing, a::AbstractVector{<:Integer}) = [F(x) for x in a]
+random_zzp(F::BigModRing; rng::AbstractRNG = Random.default_rng()) = rand(rng, F)
+VectorRandom(F::BigModRing, k::Integer; rng::AbstractRNG = Random.default_rng()) = rand(rng, F, Int(k))
+VectorConv(F::BigModRing, a::AbstractVector{<:Integer}) = [F(x) for x in a]
