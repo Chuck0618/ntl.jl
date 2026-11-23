@@ -309,4 +309,101 @@ set_polynomial_acceleration!(true)
 set_polynomial_acceleration!(false)
 @assert !polynomial_acceleration()
 set_polynomial_acceleration!(true)
+# Extended mathematical interfaces -------------------------------------------------
+A0 = BigInt[1 2; 3 4]
+cp = charpoly(A0)
+@assert cp == poly(BigInt, [-2, -5, 1])
+@assert A0^2 - 5A0 - 2one(A0) == zeros(BigInt, 2, 2)
+H0, U0 = hnf(A0)
+@assert U0 * A0 == H0
+@assert abs(det_exact(U0)) == 1
+
+K0 = kernel_integer(BigInt[2 4; 4 8])
+@assert BigInt[2 4; 4 8] * K0 == zeros(BigInt, 2, size(K0, 2))
+@assert image_integer(BigInt[6 10]) == reshape(BigInt[2], 1, 1)
+s0 = solve_integer(BigInt[2 4], BigInt[2])
+@assert s0 !== nothing && BigInt[2 4] * s0.x == BigInt[2]
+
+cp6 = content_primitive(-6 * xpoly(BigInt))
+@assert cp6.unit == -1 && cp6.content == 6 && cp6.primitive == xpoly(BigInt)
+fx = (xpoly(BigInt) + 1)^2 * (xpoly(BigInt) + 2)
+f6 = factor_integer_poly(fx)
+@assert reconstruct(f6) == fx
+@assert all(is_irreducible_integer_poly(g) for (g, _) in f6.factors)
+@assert is_irreducible_integer_poly(xpoly(BigInt)^4 + 1)
+@assert !is_irreducible_integer_poly(xpoly(BigInt)^4 - 1)
+
+E3, alpha = conway_field(2, 3; symbol = :beta)
+@assert conway_polynomial(2, 3) == defining_polynomial(E3)
+T3 = GF2E(GF2X(13))
+phi = identify(E3, T3)
+psi = identify(T3, E3; generator_map = first(b for b in NTL._field_values(E3) if phi(b) == gen(T3)))
+for v in NTL._field_values(E3)
+    @assert psi(phi(v)) == v
+    @assert phi(v + alpha) == phi(v) + phi(alpha)
+    @assert phi(v * alpha) == phi(v) * phi(alpha)
+    @test trace(v) == trace(phi(v)) && norm(v) == norm(phi(v))
+end
+@assert parent(convert(T3, alpha)) == T3
+
+@assert minpoly(alpha) == defining_polynomial(E3)
+@assert MinPolyMod(rep(alpha), modulus(alpha)) == defining_polynomial(E3)
+@assert order(alpha) == cardinality(E3) - 1
+@assert is_primitive_root(alpha)
+@assert any_primitive_root(E3) == primitive_element(E3)
+@assert minimal_primitive_root(E3) == primitive_element(E3)
+@assert exp(log(alpha), E3) == alpha
+Z3 = enable_zech_multiplication(E3)
+@assert Z3 isa ZechField
+@assert disable_zech_multiplication(Z3) == E3
+
+f2e = (xpoly(E3) + alpha)^2 * (xpoly(E3) + alpha + 1)
+@assert reconstruct(GF2EXFactoring(f2e)) == f2e
+@assert reconstruct(ZZ_pEXFactoring(f2e)) == f2e
+
+zint = ZZVec([-big(2)^75, 2, 0])
+@assert collect(zint + zint) == 2 .* collect(zint)
+@assert copy(zint) !== zint
+@assert packed_dot(zint, zint) == big(2)^150 + 4
+zgf = GF2XVec(GF2X.([3, 6]))
+@assert packed_dot(zgf, zgf) == GF2X(3)^2 + GF2X(6)^2
+
+R97 = BigModRing(97)
+v97 = packedfieldvec(R97, [0, 96, -1])
+@assert eltype(v97.data) == Int8
+@assert v97[2] == R97(-1) && v97[3] == R97(96)
+
+x = xpoly(BigInt)
+@assert resultant(x^2 + 1, x + 1) == 2
+@assert discriminant(3x^2 + 4x - 1) == 28
+@assert first(subresultants(x^2 + 1, x + 1)) == poly(BigInt, 2)
+@assert derivative(integrate(6x^2 - 2x + 1)) == 6x^2 - 2x + 1
+@assert roots(2x^2 - x - 1) == [1]
+@assert length(isolate_real_roots((x - 1)^2 * (x^2 - 2))) == 3
+@assert length(isolate_real_roots(x)) == 1
+
+@assert sqrt(RR(4)) == RR(2)
+@assert sqrt(xdouble(4)) == xdouble(2)
+@assert abs(Float64(sin(quad_float(1))) - sin(1)) < 1e-15
+@assert mat_RR([1 0; 0 1]) == BigFloat[1 0; 0 1]
+
+Ab = BigInt[28 18 -1 -6; 29 21 -7 27; -21 6 11 5; -28 -9 24 -7]
+zb = bkz(Ab; block_size = 3)
+@assert zb.verified && zb.transform * Ab == zb.basis && abs(det_exact(zb.transform)) == 1
+
+cache = ArithmeticCache()
+F97c = cached_field(cache, 97)
+ac, bc = F97c.([1, 2, 3]), F97c.([5, 6])
+@assert cached_ntt_convolve(cache, ac, bc) == convolve(ac, bc)
+@assert cached_zech(cache, E3) === cached_zech(cache, E3)
+@assert length(cache.roots.values) >= 1
+@assert length(cache.twiddles.values) >= 1
+@assert parallel_map(identity, BasicThreadPool(2), 1:6) == 1:6
+lt = LazyTable{Int, Int}()
+get!(lt, 1) do
+    19
+end
+@assert get!(()->19, lt, 1) == 19
+@assert Lazy(() -> 42)[] == 42
+
 println("API tour completed successfully.")

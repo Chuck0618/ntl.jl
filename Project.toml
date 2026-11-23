@@ -1,7 +1,7 @@
 name = "NTL"
 uuid = "8f2e4c4d-6ef4-4f9c-90a4-6d76b0f3db21"
 authors = ["NTL Julia port contributors"]
-version = "0.13.3"
+version = "0.14.0"
 
 [deps]
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
@@ -14,3 +14,11 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
 test = ["Test"]
+
+[weakdeps]
+Nemo = "2edaba10-b0f1-5616-af89-8c11ac63239a"
+Polynomials = "f27b6e38-b328-58d1-80ce-0feddd5e7a45"
+
+[extensions]
+NTLNemoExt = "Nemo"
+NTLPolynomialsExt = "Polynomials"

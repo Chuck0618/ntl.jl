@@ -1,5 +1,5 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Complete NTL.jl 0.13.3 manual with optimized exact LLL verification and random-prime performance comparisons."><link rel="icon" href="data:,"><title>NTL.jl
-0.13.3 — Complete Manual and API Tour</title><style>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Complete NTL.jl 0.14.0 manual with extended mathematical interfaces, packed storage, Conway fields, BKZ and performance benchmarks."><link rel="icon" href="data:,"><title>NTL.jl
+0.14.0 — Complete Manual and API Tour</title><style>
     :root {
       --paper: oklch(97.8% 0.002 90);
       --ink: oklch(18% 0.004 90);
@@ -229,7 +229,7 @@
       .sidebar #TOC { max-height: 320px; overflow-y: auto; margin-bottom: 24px; }
       main pre code { min-width: 0; }
     }
-</style></head><body><div class="page"><header class="masthead"><a class="brand" href="#top">NTL.jl / complete manual</a><div class="masthead-meta">Version 0.13.3 · Julia 1.9+ · Pure Julia · Offline reference</div></header><div id="top" class="hero"><div class="hero-copy"><p class="kicker">Exact arithmetic, documented from first construction to verification</p><h1>The complete NTL.jl manual.</h1><p class="lede">The full project README, optimized field / polynomial / lattice kernels, exact LLL verification with safe fixed-width fallbacks, random-prime comparisons, and an executable call for every exported interface.</p><ul class="hero-facts"><li><strong>Verified</strong><span>4,645,990 passing assertions on Julia 1.11.7</span></li><li><strong>Coverage</strong><span>131 exported names demonstrated in one API tour</span></li><li><strong>Included</strong><span>README + clean API index + full tour source</span></li></ul></div><div class="hero-demo code-panel"><div class="code-caption">Prime fields and big modular rings</div><pre><code>using NTL
+</style></head><body><div class="page"><header class="masthead"><a class="brand" href="#top">NTL.jl / complete manual</a><div class="masthead-meta">Version 0.14.0 · Julia 1.9+ · Pure Julia · Offline reference</div></header><div id="top" class="hero"><div class="hero-copy"><p class="kicker">Exact arithmetic, documented from first construction to verification</p><h1>The complete NTL.jl manual.</h1><p class="lede">The full project README, expanded field / polynomial / lattice / storage / runtime interfaces, exact verification, optional FLINT integration, random-prime comparisons, and an executable call for every exported interface.</p><ul class="hero-facts"><li><strong>Verified</strong><span>4,648,706 passing assertions plus 538 optional checks on Julia 1.11.7</span></li><li><strong>Coverage</strong><span>176 exported names demonstrated in one API tour</span></li><li><strong>Included</strong><span>README + expanded API index + full tour source</span></li></ul></div><div class="hero-demo code-panel"><div class="code-caption">Prime fields and big modular rings</div><pre><code>using NTL
 
 F = PrimeField(101)
 a = F(120)       # Machine-word prime field
@@ -264,6 +264,10 @@ counting</a></li>
 <li><a href="#matrices-and-exact-linear-algebra">Matrices and exact
 linear algebra</a></li>
 <li><a href="#lll-lattice-reduction">LLL lattice reduction</a></li>
+<li><a href="#extended-mathematical-interfaces">Extended mathematical
+interfaces</a></li>
+<li><a href="#storage-and-runtime-interfaces">Storage and runtime
+interfaces</a></li>
 <li><a href="#ntt-and-generalized-fft">NTT and generalized FFT</a></li>
 <li><a href="#number-theory">Number theory</a></li>
 <li><a href="#important-api-reference">Important API reference</a></li>
@@ -298,7 +302,7 @@ algebra, generalized FFT, and lattice reduction.</strong></p>
 clone. It is designed to be approachable for new Julia users while
 providing efficient, tested implementations for research and
 teaching.</p>
-<p>Version: <strong>0.13.3</strong><br> Tested with: <strong>Julia
+<p>Version: <strong>0.14.0</strong><br> Tested with: <strong>Julia
 1.11.7</strong><br> Compatibility target: <strong>Julia
 1.9+</strong></p>
 <h2 id="contents">Contents</h2>
@@ -319,6 +323,10 @@ for fast small-field arithmetic</a></li>
 <li><a href="#matrices-and-exact-linear-algebra">Matrices and exact
 linear algebra</a></li>
 <li><a href="#lll-lattice-reduction">LLL lattice reduction</a></li>
+<li><a href="#extended-mathematical-interfaces">Extended mathematical
+interfaces</a></li>
+<li><a href="#storage-and-runtime-interfaces">Storage and runtime
+interfaces</a></li>
 <li><a href="#ntt-and-generalized-fft">NTT and generalized FFT</a></li>
 <li><a href="#number-theory">Number theory</a></li>
 <li><a href="#important-api-reference">Important API reference</a></li>
@@ -371,8 +379,9 @@ using NTL</code></pre>
 contains <code>Project.toml</code>.</p>
 <h3 id="run-the-complete-test-suite">Run the complete test suite</h3>
 <pre class="bash"><code>julia --project=. -e &#39;using Pkg; Pkg.instantiate(); Pkg.test()&#39;</code></pre>
-<p>The current suite contains <strong>4,645,990 passing
-assertions</strong>. Runtime code depends only on Julia’s
+<p>The current suite contains <strong>4,648,706 passing
+assertions</strong>, plus <strong>538 optional third-party
+checks</strong> where available. Runtime code depends only on Julia’s
 <code>Random</code> standard library; <code>Test</code> is used only by
 the test target.</p>
 <h3 id="html-documentation">HTML documentation</h3>
@@ -1326,6 +1335,112 @@ verification</td>
 <p>If verification fails, the implementation automatically falls back to
 exact mode. <code>verify = false</code> skips the additional
 verification pass when that trade-off is intentional.</p>
+<h2 id="extended-mathematical-interfaces">Extended mathematical
+interfaces</h2>
+<h3 id="characteristic-and-minimal-polynomials">Characteristic and
+minimal polynomials</h3>
+<p><code>charpoly(A)</code> uses a division-free Berkowitz recurrence
+and supports integer, prime-field, composite-modulus, GF2, and ordinary
+extension matrices. <code>MinPolyMod(h,f)</code> computes the first
+monic dependence in a quotient algebra; <code>minpoly(a)</code> handles
+extension elements. Square matrices, reducible moduli, zero divisors,
+and characteristic two are explicit edge cases rather than hidden
+assumptions.</p>
+<pre class="julia"><code>A = BigInt[1 2; 3 4]
+@assert charpoly(A) == poly(BigInt, [-2, -5, 1])</code></pre>
+<h3 id="integer-matrices-and-exact-linear-systems">Integer matrices and
+exact linear systems</h3>
+<p><code>hnf(A; transform=true)</code> returns <code>H,U</code> with
+<code>U*A == H</code> and <code>abs(det(U)) == 1</code>. The row-Hermite
+convention uses positive pivots, nonnegative remainders above pivots,
+and trailing zero rows. <code>kernel_integer(A)</code> returns a column
+lattice basis of <code>A*x == 0</code>, <code>image_integer(A)</code>
+returns a basis of the integer column image, and
+<code>solve_integer(A,b)</code> returns <code>nothing</code> for an
+inconsistent integer system or <code>x</code> plus a kernel basis
+otherwise.</p>
+<h3 id="integer-polynomial-factorization">Integer polynomial
+factorization</h3>
+<p><code>content_primitive(f)</code> separates unit, content, and
+primitive part. <code>factor_integer_poly(f)</code> returns a
+<code>PolyFactorization</code> with irreducible factors and
+multiplicities; <code>is_irreducible_integer_poly(f)</code> checks the
+corresponding predicate, and <code>reconstruct(z)</code> verifies the
+result. The default path is exact Kronecker interpolation for small
+inputs. With Nemo loaded, <code>NTLNemoExt</code> uses FLINT as an
+optional acceleration backend without changing the return contract.</p>
+<h3 id="gf2ex-and-zz_pex-factorization">GF2EX and ZZ_pEX
+factorization</h3>
+<p><code>GF2EXFactoring</code> and <code>ZZ_pEXFactoring</code> first
+remove linear factors when <code>cardinality(E) &lt;= 32</code> and
+<code>1 &lt;= degree(f) &lt;= 12</code> with a prime base field.
+Remaining factors use generic Cantor–Zassenhaus. The specialized
+root-removal step is only a fast path; it does not change the
+mathematical factorization result.</p>
+<h3 id="conway-fields-and-isomorphisms">Conway fields and
+isomorphisms</h3>
+<p><code>conway_field(p,n;symbol=:α)</code> and
+<code>conway_polynomial(p,n)</code> provide the package’s 96 Conway
+records for <code>p ∈ {2,3,5,7,11,13,17,19}</code> and
+<code>1 &lt;= n &lt;= 12</code>.
+<code>identify(S,T;generator_map)</code> returns a transport function.
+<code>convert(T,a;generator_map)</code> applies the same rule to an
+element. Source polynomial roots, generator images, round trips, trace,
+norm, and logarithm are checked explicitly.</p>
+<h3 id="primitive-elements-and-logarithms">Primitive elements and
+logarithms</h3>
+<p><code>primitive_element</code>, <code>order</code>,
+<code>is_primitive_root</code>, <code>any_primitive_root</code>,
+<code>minimal_primitive_root</code>, <code>log</code>, and
+<code>exp</code> cover multiplicative-order and discrete-logarithm
+operations. <code>enable_zech_multiplication(E)</code> produces a table
+representation, while <code>disable_zech_multiplication(Z)</code>
+returns the ordinary extension. <code>log(a)</code> and
+<code>exp(k,F)</code> are inverses for nonzero elements.</p>
+<h2 id="storage-and-runtime-interfaces">Storage and runtime
+interfaces</h2>
+<h3 id="packed-vectors-and-modular-storage">Packed vectors and modular
+storage</h3>
+<p><code>ZZVec</code> and <code>GF2XVec</code> provide continuous-limb
+storage, copying, slicing, addition, subtraction, and
+<code>packed_dot</code>. <code>packedfieldvec(F, values; storage)</code>
+chooses <code>Int8</code> through <code>Int128</code> or
+<code>BigInt</code> based on the modulus and can enforce a requested
+storage type. These are storage choices, not free speedups: compact
+arrays reduce payload size but add reconstruction overhead.</p>
+<h3 id="polynomials.jl-interoperability">Polynomials.jl
+interoperability</h3>
+<p>Loading <code>Polynomials</code> enables <code>Polynomial(f)</code>
+and <code>ModPoly(p)</code> conversions plus <code>DivRem</code>,
+<code>GCD</code>, <code>factor</code>, <code>evaluate</code>,
+<code>derivative</code>, <code>integrate</code>, <code>resultant</code>,
+<code>discriminant</code>, <code>subresultants</code>, and
+<code>roots</code>. A zero polynomial with a runtime parent requires an
+explicit <code>ring</code> argument.</p>
+<h3 id="bkz">BKZ</h3>
+<p><code>bkz(A;block_size=20,delta=99//100,verify=true,maxiter=100000)</code>
+performs exact projected-block shortest-vector enumeration and
+unimodular insertion. It returns <code>basis</code>,
+<code>transform</code>, and <code>verified</code>. Enumeration is
+exponential in the block dimension, so block size is an explicit
+performance parameter rather than a promise of polynomial-time
+behavior.</p>
+<h3 id="real-arithmetic-and-real-roots">Real arithmetic and real
+roots</h3>
+<p><code>RR</code> is an alias for <code>BigFloat</code>;
+<code>xdouble</code> and <code>quad_float</code> provide
+software-rounded 53-bit and 106-bit real values, and <code>mat_RR</code>
+provides matrices over them. <code>isolate_real_roots(f)</code> uses a
+Sturm sequence to return disjoint open rational intervals, one for each
+distinct real root.</p>
+<h3 id="caching-and-concurrency">Caching and concurrency</h3>
+<p><code>ArithmeticCache</code>, <code>cached_field</code>,
+<code>cached_ntt_convolve</code>, and <code>cached_zech</code> let
+callers own the cache lifetime. <code>BasicThreadPool</code> and
+<code>parallel_map</code> preserve input order and propagate task
+errors. <code>Lazy</code> and <code>LazyTable</code> support thread-safe
+lazy initialization; individual BKZ and factorization routines remain
+serial unless the caller explicitly parallelizes a batch.</p>
 <h2 id="ntt-and-generalized-fft">NTT and generalized FFT</h2>
 <h3 id="same-prime-ntt">Same-prime NTT</h3>
 <p><code>ntt_convolve(a,b)</code> computes convolution over a supported
@@ -1652,6 +1767,78 @@ polynomial</td>
 </tr>
 </tbody>
 </table></div>
+<h3 id="extended-mathematical-interfaces-1">Extended mathematical
+interfaces</h3>
+<div class="table-wrap"><table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Interface</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>charpoly</code>, <code>MinPolyMod</code>,
+<code>minpoly</code></td>
+<td>Characteristic and minimal polynomials</td>
+</tr>
+<tr class="even">
+<td><code>hnf</code>, <code>kernel_integer</code>,
+<code>image_integer</code>, <code>solve_integer</code></td>
+<td>Exact integer matrix structure and integer linear systems</td>
+</tr>
+<tr class="odd">
+<td><code>factor_integer_poly</code>, <code>content_primitive</code>,
+<code>is_irreducible_integer_poly</code></td>
+<td>Integer polynomial factorization with optional FLINT
+acceleration</td>
+</tr>
+<tr class="even">
+<td><code>GF2EXFactoring</code>, <code>ZZ_pEXFactoring</code></td>
+<td>Extension-field polynomial factorization</td>
+</tr>
+<tr class="odd">
+<td><code>conway_field</code>, <code>conway_polynomial</code></td>
+<td>Conway polynomial construction and generator selection</td>
+</tr>
+<tr class="even">
+<td><code>identify</code>, <code>convert</code></td>
+<td>Isomorphism transport between extension fields</td>
+</tr>
+<tr class="odd">
+<td><code>primitive_element</code>, <code>order</code>,
+<code>is_primitive_root</code>, <code>any_primitive_root</code>,
+<code>minimal_primitive_root</code>, <code>log</code>,
+<code>exp</code></td>
+<td>Multiplicative order and discrete logarithms</td>
+</tr>
+<tr class="even">
+<td><code>ZZVec</code>, <code>GF2XVec</code>, <code>packed_dot</code>,
+<code>packedfieldvec</code></td>
+<td>Packed storage and limb operations</td>
+</tr>
+<tr class="odd">
+<td><code>bkz</code></td>
+<td>Block Korkin–Zolotarev reduction with exact verification</td>
+</tr>
+<tr class="even">
+<td><code>RR</code>, <code>xdouble</code>, <code>quad_float</code>,
+<code>mat_RR</code>, <code>isolate_real_roots</code></td>
+<td>Real arithmetic and Sturm real-root isolation</td>
+</tr>
+<tr class="odd">
+<td><code>ArithmeticCache</code>, <code>cached_field</code>,
+<code>cached_ntt_convolve</code>, <code>cached_zech</code>,
+<code>BasicThreadPool</code>, <code>parallel_map</code>,
+<code>Lazy</code>, <code>LazyTable</code></td>
+<td>Cache lifetime, lazy initialization, and ordered parallel work</td>
+</tr>
+</tbody>
+</table></div>
 <h2 id="project-architecture">Project architecture</h2>
 <pre class="text"><code>NTLJulia/
 ├── Project.toml
@@ -1670,8 +1857,25 @@ polynomial</td>
 │   ├── matrix.jl           # Determinants, RREF, solving, rank, nullspace
 │   ├── lattice.jl          # Original exact LLL implementation
 │   ├── lll_fast.jl         # Fast LLL with exact verification and fallback
+│   ├── bkz.jl              # Exact projected-block SVP enumeration and insertion
+│   ├── exact_interfaces.jl # charpoly, MinPolyMod, hnf, integer linear algebra
+│   ├── integer_polys.jl    # Integer polynomial factorization
+│   ├── finite_interfaces.jl # Conway, identify, primitive roots and logs
+│   ├── packed.jl           # Packed vectors and modular storage
+│   ├── poly_extras.jl      # Resultants, discriminants and real-root isolation
+│   ├── extras_runtime.jl   # Real arithmetic, caches and concurrency
 │   ├── transform.jl        # Same-prime NTT and optimized butterflies
 │   └── fft.jl              # Generalized FFT and CRT reconstruction
+├── ext/
+│   ├── NTLNemoExt.jl       # Optional Nemo / FLINT integration
+│   └── NTLPolynomialsExt.jl # Polynomials.jl integration
+├── data/
+│   └── conway.txt          # 96 Conway polynomial records
+├── example.jl            # HNF, solve_integer and BKZ examples
+├── extension_checks.jl   # Extension-field factorization checks
+├── storage_bench.jl      # Packed versus ordinary storage benchmark
+├── optional.jl           # Optional third-party checks
+├── setup_optional.jl     # Optional environment setup
 ├── examples/
 │   ├── 01_basic_arithmetic.jl
 │   ├── 02_vectors_and_random.jl
@@ -1693,6 +1897,9 @@ polynomial</td>
     ├── polynomial.jl
     ├── binary_extension.jl
     ├── matrix_lattice_transform.jl
+    ├── exact_interfaces.jl
+    ├── factor_smallfield.jl
+    ├── performance_regressions.jl
     ├── acceleration.jl
     ├── lll_fast.jl
     ├── lll_exact_certificates.jl
@@ -1878,8 +2085,14 @@ performance guarantees.</p>
 </tr>
 </tbody>
 </table></div>
-<p class="note"><strong>Comparison layers.</strong> The LLL rows are not at the same verification layer. Native C++ `LLL(det2,B,U)` does not perform Julia's independent exact post-verification. The default Julia row therefore measures end-to-end API cost, not a like-for-like algorithm-only benchmark. For the reduction layer, compare `verify = false` with native C++ LLL. The optional `cpp_checked.cpp` verifier is a separate custom checker, not part of upstream C++ NTL's timing.</p>
 <h3 id="what-these-results-mean">What these results mean</h3>
+<p>The LLL rows are not at the same verification layer. Native C++
+<code>LLL(det2,B,U)</code> does not perform Julia’s independent exact
+post-verification. The default Julia row therefore measures end-to-end
+API cost, not a like-for-like algorithm-only benchmark. For the
+reduction layer, compare <code>verify = false</code> with native C++
+LLL. The optional <code>cpp_checked.cpp</code> verifier is a separate
+custom checker, not part of upstream C++ NTL’s timing.</p>
 <ul>
 <li>The small-field factorization path is competitive with C++ NTL for
 the repository’s degree-8 input: 26.12 μs versus 24.99 μs. An
@@ -1899,6 +2112,68 @@ cost.</li>
 reference.</li>
 </ul>
 <h2 id="performance-optimizations">Performance optimizations</h2>
+<p>Version 0.14.0 adds the extended interfaces described above.
+Independent benchmarks on the same server measured:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr class="header">
+<th>Workload</th>
+<th style="text-align: right;">Time</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>charpoly</code> on a 2×2 matrix</td>
+<td style="text-align: right;">0.015 ms</td>
+</tr>
+<tr class="even">
+<td>HNF on a 12×12 integer matrix</td>
+<td style="text-align: right;">1.620 ms</td>
+</tr>
+<tr class="odd">
+<td>Integer factorization of the degree-8 test polynomial</td>
+<td style="text-align: right;">9.014 ms</td>
+</tr>
+<tr class="even">
+<td>The same factorization with Nemo/FLINT enabled</td>
+<td style="text-align: right;">0.076 ms</td>
+</tr>
+<tr class="odd">
+<td>GF2EX factorization</td>
+<td style="text-align: right;">0.453 ms</td>
+</tr>
+<tr class="even">
+<td>ZZ_pEX factorization</td>
+<td style="text-align: right;">0.395 ms</td>
+</tr>
+<tr class="odd">
+<td>One generator-map conversion</td>
+<td style="text-align: right;">0.031 ms</td>
+</tr>
+<tr class="even">
+<td>BKZ with block size 3</td>
+<td style="text-align: right;">0.680 ms</td>
+</tr>
+<tr class="odd">
+<td>Real-root isolation for <code>(x-1)^2*(x^2-2)</code></td>
+<td style="text-align: right;">1.901 ms</td>
+</tr>
+<tr class="even">
+<td>Packed-vector read sum</td>
+<td style="text-align: right;">25.170 ms</td>
+</tr>
+<tr class="odd">
+<td>Ordinary-vector read sum</td>
+<td style="text-align: right;">8.641 ms</td>
+</tr>
+</tbody>
+</table></div>
+<p>The optional FLINT path was approximately 119× faster than basic
+Kronecker interpolation for this input, but this is not a universal
+factorization guarantee. Packed storage used 100,000 bytes rather than
+800,000 bytes for 100,000 residues, while sequential reconstruction was
+about 2.9× slower.</p>
+<h3 id="version-0.13.3">Version 0.13.3</h3>
 <p>Version 0.13.3 accelerates exact LLL verification with bounded
 fixed-width checks and a generic BigInt fallback. The reduction now
 retains native <code>Int</code> candidates through verification before
@@ -2174,19 +2449,37 @@ exact rational GSO. Polynomial acceleration is tested by comparing every
 result with schoolbook and direct convolution.</p>
 <h2 id="limitations">Limitations</h2>
 <ul>
-<li>This is not a full replacement for every NTL module.
-Arbitrary-precision real numbers (<code>RR</code>), HNF, BKZ, complete
-integer-polynomial factorization, and C++ ABI compatibility are not
-included.</li>
+<li>The extended interfaces are functional and independently checked,
+but they are not performance-complete replacements for every NTL module.
+C++ ABI compatibility is not included.</li>
+<li>Integer factorization uses exact Kronecker interpolation for small
+inputs; optional Nemo/FLINT is recommended for large coefficients or
+higher degrees.</li>
+<li>BKZ enumeration is exponential in block size. The default
+<code>block_size = 20</code> is not a guarantee of practical runtime on
+large lattices.</li>
+<li>Conway data currently contains 96 records for
+<code>p ∈ {2,3,5,7,11,13,17,19}</code> and <code>n ∈ 1:12</code>; other
+<code>(p,n)</code> pairs raise <code>KeyError</code>.</li>
+<li>GF2EX/ZZ_pEX specialization applies only when the extension has at
+most 32 elements and degree at most 12. Other inputs retain generic
+factorization.</li>
+<li>Packed storage reduces payload size but not necessarily read time.
+Measured sequential reads are slower than ordinary vectors in this
+implementation.</li>
+<li><code>RR</code> is an alias for <code>BigFloat</code>, not a
+complete NTL <code>RR</code> compatibility layer. Real-root isolation
+currently targets integer polynomials with distinct real roots and
+returns open rational intervals.</li>
 <li>Radix-two NTT requires a power-of-two transform length and an
 appropriate root of unity.</li>
 <li>Generalized FFT currently supports scalar modular coefficients;
 extension-field coefficients require other multiplication paths.</li>
 <li>Zech tables require a primitive generator and are limited to fields
 with at most 65,535 elements.</li>
-<li>Fast LLL is intended for reproducible exact arithmetic on modest
-bases, not as a replacement for NTL’s highly tuned large-basis reduction
-routines.</li>
+<li>Fast LLL and exact verification are intended for reproducible exact
+arithmetic on modest bases, not as a replacement for NTL’s highly tuned
+large-basis reduction routines.</li>
 <li>Polynomial factorization and matrix algorithms are not claimed to
 match C++ NTL’s performance for very large inputs.</li>
 </ul>
@@ -2262,7 +2555,7 @@ root, run:</p>
 <pre class="bash"><code>julia --project=. examples/api_tour.jl</code></pre>
 <p>A successful run ends with
 <code>API tour completed successfully.</code> The tour covers all
-<strong>131 exported names</strong> and checks results with assertions
+<strong>176 exported names</strong> and checks results with assertions
 rather than merely printing them.</p>
 <h2 id="b.-complete-executable-api-tour">B. Complete executable API
 tour</h2>
@@ -2577,11 +2870,108 @@ set_polynomial_acceleration!(true)
 set_polynomial_acceleration!(false)
 @assert !polynomial_acceleration()
 set_polynomial_acceleration!(true)
+# Extended mathematical interfaces -------------------------------------------------
+A0 = BigInt[1 2; 3 4]
+cp = charpoly(A0)
+@assert cp == poly(BigInt, [-2, -5, 1])
+@assert A0^2 - 5A0 - 2one(A0) == zeros(BigInt, 2, 2)
+H0, U0 = hnf(A0)
+@assert U0 * A0 == H0
+@assert abs(det_exact(U0)) == 1
+
+K0 = kernel_integer(BigInt[2 4; 4 8])
+@assert BigInt[2 4; 4 8] * K0 == zeros(BigInt, 2, size(K0, 2))
+@assert image_integer(BigInt[6 10]) == reshape(BigInt[2], 1, 1)
+s0 = solve_integer(BigInt[2 4], BigInt[2])
+@assert s0 !== nothing &amp;&amp; BigInt[2 4] * s0.x == BigInt[2]
+
+cp6 = content_primitive(-6 * xpoly(BigInt))
+@assert cp6.unit == -1 &amp;&amp; cp6.content == 6 &amp;&amp; cp6.primitive == xpoly(BigInt)
+fx = (xpoly(BigInt) + 1)^2 * (xpoly(BigInt) + 2)
+f6 = factor_integer_poly(fx)
+@assert reconstruct(f6) == fx
+@assert all(is_irreducible_integer_poly(g) for (g, _) in f6.factors)
+@assert is_irreducible_integer_poly(xpoly(BigInt)^4 + 1)
+@assert !is_irreducible_integer_poly(xpoly(BigInt)^4 - 1)
+
+E3, alpha = conway_field(2, 3; symbol = :beta)
+@assert conway_polynomial(2, 3) == defining_polynomial(E3)
+T3 = GF2E(GF2X(13))
+phi = identify(E3, T3)
+psi = identify(T3, E3; generator_map = first(b for b in NTL._field_values(E3) if phi(b) == gen(T3)))
+for v in NTL._field_values(E3)
+    @assert psi(phi(v)) == v
+    @assert phi(v + alpha) == phi(v) + phi(alpha)
+    @assert phi(v * alpha) == phi(v) * phi(alpha)
+    @test trace(v) == trace(phi(v)) &amp;&amp; norm(v) == norm(phi(v))
+end
+@assert parent(convert(T3, alpha)) == T3
+
+@assert minpoly(alpha) == defining_polynomial(E3)
+@assert MinPolyMod(rep(alpha), modulus(alpha)) == defining_polynomial(E3)
+@assert order(alpha) == cardinality(E3) - 1
+@assert is_primitive_root(alpha)
+@assert any_primitive_root(E3) == primitive_element(E3)
+@assert minimal_primitive_root(E3) == primitive_element(E3)
+@assert exp(log(alpha), E3) == alpha
+Z3 = enable_zech_multiplication(E3)
+@assert Z3 isa ZechField
+@assert disable_zech_multiplication(Z3) == E3
+
+f2e = (xpoly(E3) + alpha)^2 * (xpoly(E3) + alpha + 1)
+@assert reconstruct(GF2EXFactoring(f2e)) == f2e
+@assert reconstruct(ZZ_pEXFactoring(f2e)) == f2e
+
+zint = ZZVec([-big(2)^75, 2, 0])
+@assert collect(zint + zint) == 2 .* collect(zint)
+@assert copy(zint) !== zint
+@assert packed_dot(zint, zint) == big(2)^150 + 4
+zgf = GF2XVec(GF2X.([3, 6]))
+@assert packed_dot(zgf, zgf) == GF2X(3)^2 + GF2X(6)^2
+
+R97 = BigModRing(97)
+v97 = packedfieldvec(R97, [0, 96, -1])
+@assert eltype(v97.data) == Int8
+@assert v97[2] == R97(-1) &amp;&amp; v97[3] == R97(96)
+
+x = xpoly(BigInt)
+@assert resultant(x^2 + 1, x + 1) == 2
+@assert discriminant(3x^2 + 4x - 1) == 28
+@assert first(subresultants(x^2 + 1, x + 1)) == poly(BigInt, 2)
+@assert derivative(integrate(6x^2 - 2x + 1)) == 6x^2 - 2x + 1
+@assert roots(2x^2 - x - 1) == [1]
+@assert length(isolate_real_roots((x - 1)^2 * (x^2 - 2))) == 3
+@assert length(isolate_real_roots(x)) == 1
+
+@assert sqrt(RR(4)) == RR(2)
+@assert sqrt(xdouble(4)) == xdouble(2)
+@assert abs(Float64(sin(quad_float(1))) - sin(1)) &lt; 1e-15
+@assert mat_RR([1 0; 0 1]) == BigFloat[1 0; 0 1]
+
+Ab = BigInt[28 18 -1 -6; 29 21 -7 27; -21 6 11 5; -28 -9 24 -7]
+zb = bkz(Ab; block_size = 3)
+@assert zb.verified &amp;&amp; zb.transform * Ab == zb.basis &amp;&amp; abs(det_exact(zb.transform)) == 1
+
+cache = ArithmeticCache()
+F97c = cached_field(cache, 97)
+ac, bc = F97c.([1, 2, 3]), F97c.([5, 6])
+@assert cached_ntt_convolve(cache, ac, bc) == convolve(ac, bc)
+@assert cached_zech(cache, E3) === cached_zech(cache, E3)
+@assert length(cache.roots.values) &gt;= 1
+@assert length(cache.twiddles.values) &gt;= 1
+@assert parallel_map(identity, BasicThreadPool(2), 1:6) == 1:6
+lt = LazyTable{Int, Int}()
+get!(lt, 1) do
+    19
+end
+@assert get!(()-&gt;19, lt, 1) == 19
+@assert Lazy(() -&gt; 42)[] == 42
+
 println(&quot;API tour completed successfully.&quot;)</code></pre>
 <h2 id="c.-exported-interface-index">C. Exported-interface index</h2>
-<p>This index contains the canonical public interface. The 0.13.3 LLL
-verification work changes implementation rather than adding public
-names.</p>
+<p>This index contains the canonical public interface, including the
+0.14.0 extended mathematical, storage, real-arithmetic and runtime
+interfaces.</p>
 <div class="table-wrap"><table>
 <colgroup>
 <col style="width: 50%" />
@@ -2611,30 +3001,65 @@ muladd, VectorRandom, VectorConv, VectorMulMod, VectorMulMod!, swap</td>
 GF2XFactorization, BuildIrredGF2X, to_modpoly, from_modpoly</td>
 </tr>
 <tr class="even">
+<td><code>bkz.jl</code></td>
+<td>bkz</td>
+</tr>
+<tr class="odd">
+<td><code>exact_interfaces.jl</code></td>
+<td>charpoly, MinPolyMod, minpoly, hnf, kernel_integer, image_integer,
+solve_integer</td>
+</tr>
+<tr class="even">
 <td><code>extension.jl</code></td>
 <td>ExtensionField, ExtensionElem, extension_field, GF2E, base_field,
 defining_polynomial, extension_degree, cardinality, gen, trace,
 norm</td>
 </tr>
 <tr class="odd">
+<td><code>extras_runtime.jl</code></td>
+<td>RR, xdouble, quad_float, mat_RR, isolate_real_roots,
+BasicThreadPool, parallel_map, Lazy, LazyTable, ArithmeticCache,
+cached_field, cached_ntt_convolve, cached_zech</td>
+</tr>
+<tr class="even">
 <td><code>fft.jl</code></td>
 <td>fft_convolve, FFT_PRIMES</td>
 </tr>
+<tr class="odd">
+<td><code>finite_interfaces.jl</code></td>
+<td>conway_field, conway_polynomial, identify, primitive_element, order,
+is_primitive_root, any_primitive_root, minimal_primitive_root,
+enable_zech_multiplication, disable_zech_multiplication, GF2EXFactoring,
+ZZ_pEXFactoring</td>
+</tr>
 <tr class="even">
+<td><code>integer_polys.jl</code></td>
+<td>factor_integer_poly, content_primitive,
+is_irreducible_integer_poly</td>
+</tr>
+<tr class="odd">
 <td><code>lattice.jl</code></td>
 <td>gram_schmidt_exact, lll</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>matrix.jl</code></td>
 <td>det, matrix_inverse, solve, rank, nullspace, rref, det_exact</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>numbertheory.jl</code></td>
 <td>ProbPrime, MillerWitness, NextPrime, PrevPrime, GenPrime,
 RandomBits, RandomLen, RandomBnd, FactorInt, EulerPhi, CRT, SqrRootMod,
 DiscreteLog, PrimitiveRoot</td>
 </tr>
+<tr class="even">
+<td><code>packed.jl</code></td>
+<td>ZZVec, GF2XVec, packedfieldvec, packed_dot</td>
+</tr>
 <tr class="odd">
+<td><code>poly_extras.jl</code></td>
+<td>resultant, discriminant, subresultants, integrate, roots</td>
+</tr>
+<tr class="even">
 <td><code>polynomial.jl</code></td>
 <td>ModPoly, poly, xpoly, field, coefficients, coeff, degree, deg,
 LeadCoeff, ConstTerm, leading, setcoeff!, monic, ismonic, DivRem, GCD,
@@ -2644,16 +3069,16 @@ CompMod, random_poly, BuildFromRoots, interpolate, SquareFreeDecomp,
 DistinctDegreeDecomp, EqualDegreeSplit, PolyFactorization, factor,
 reconstruct, is_irreducible, BuildIrred, FindRoots, FindRoot</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>polynomial_mul.jl</code></td>
 <td>set_polynomial_acceleration!, polynomial_acceleration, poly_mul</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>transform.jl</code></td>
 <td>primitive_root, root_of_unity, ntt, intt, convolve,
 ntt_convolve</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>zech.jl</code></td>
 <td>ZechField, ZechElem, zech_field, extension_element</td>
 </tr>
@@ -2662,14 +3087,16 @@ ntt_convolve</td>
 <h2 id="d.-documentation-and-verification-checklist">D. Documentation
 and verification checklist</h2>
 <ul>
-<li>Release documented here: <strong>NTL.jl 0.13.3</strong>, targeting
+<li>Release documented here: <strong>NTL.jl 0.14.0</strong>, targeting
 Julia 1.9 or later and tested with Julia 1.11.7.</li>
-<li>Full regression suite: <strong>4,645,990 passing
-assertions</strong>, including 1,987 optimized-kernel checks, 306,592
-small-modulus checks, and 536 exact LLL certificate checks.</li>
+<li>Full regression suite: <strong>4,648,706 passing
+assertions</strong>, including matrix/quotient polynomials, integer
+lattices, factorization and domain checks, storage, BKZ, real arithmetic
+and task/cache tests. An additional <strong>538 optional third-party
+checks</strong> also passed.</li>
 <li>Every exported name occurs in at least one executable example in
-<code>api_tour.jl</code>; all 14 package examples also passed on the
-optimized server build.</li>
+<code>api_tour.jl</code>; all 14 original package examples and the new
+extended tour also passed on the optimized server build.</li>
 <li><code>PrimeField(p)</code> is the machine-word prime-field
 constructor, with the modulus carried by <code>PrimeField{p}</code> at
 the type level.</li>
@@ -2678,9 +3105,20 @@ parent and <code>ModInt</code> is its element type.</li>
 <li><code>ExtensionElem</code> is the actual concrete extension-element
 type; ordinary extension construction continues to use
 <code>E(...)</code>.</li>
-<li>The LLL verification path checks the original matrix before any
-fixed-width conversion. Oversized original matrices use the generic
-BigInt verifier rather than raising <code>InexactError</code>.</li>
+<li>Conway data currently contains 96 records for
+<code>p ∈ {2,3,5,7,11,13,17,19}</code> and <code>n ∈ 1:12</code>; other
+pairs raise <code>KeyError</code>.</li>
+<li>GF2EX/ZZ_pEX specialization applies only when
+<code>cardinality(E) &lt;= 32</code> and
+<code>1 &lt;= degree(f) &lt;= 12</code> with a prime base field. Other
+inputs retain generic factorization.</li>
+<li>Packed storage reduces payload size but not necessarily read time;
+current sequential read benchmarks are slower than ordinary
+vectors.</li>
+<li>The optional Nemo/FLINT factorization path was about 119× faster
+than basic Kronecker interpolation for the tested degree-8 integer
+polynomial, but it is an optional backend rather than a universal
+guarantee.</li>
 <li>This page is self-contained: equations use MathML, styling is
 embedded, and no web framework or network connection is required.</li>
-</ul></main></div><footer class="footer"><div>NTL.jl · Exact mathematical core · Version 0.13.3</div><div><a href="#top">Return to top</a> · <a href="../examples/api_tour.jl">API tour source</a></div></footer></div></body></html>
+</ul></main></div><footer class="footer"><div>NTL.jl · Exact mathematical core · Version 0.14.0</div><div><a href="#top">Return to top</a> · <a href="../examples/api_tour.jl">API tour source</a></div></footer></div></body></html>

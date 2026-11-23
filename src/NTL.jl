@@ -513,5 +513,12 @@ include("lll_fast.jl")
 include("transform.jl")
 include("fft.jl")
 include("polynomial_mul.jl")
+include("exact_interfaces.jl")
+include("integer_polys.jl")
+include("finite_interfaces.jl")
+include("bkz.jl")
+include("packed.jl")
+include("poly_extras.jl")
+include("extras_runtime.jl")
 
 end # module NTL

@@ -8,7 +8,9 @@ export trace, norm
 struct ExtensionField{T,F}
     _base::F
     _modulus::ModPoly{T,F}
+    symbol::Symbol
 end
+ExtensionField(F, m::ModPoly) = ExtensionField(F,m,:α)
 
 # Internal marker: only the parent call may construct an already reduced rep.
 struct _UnsafeExtensionRep end
@@ -94,7 +96,7 @@ isone(a::ExtensionElem) = isone(rep(a))
 gen(E::ExtensionField) = E(xpoly(base_field(E)))
 
 function show(io::IO, E::ExtensionField)
-    print(io, "ExtensionField(", base_field(E), ", ", defining_polynomial(E), ")")
+    print(io, "ExtensionField(", base_field(E), ", ", defining_polynomial(E), E.symbol === :α ? "" : ", " * string(E.symbol), ")")
 end
 show(io::IO, a::ExtensionElem) = print(io, "ExtensionElem(", parent(a), ", ", rep(a), ")")
 

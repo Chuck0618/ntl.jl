@@ -477,7 +477,7 @@ function _pth_root_poly(f::ModPoly, p::BigInt)
         iszero(f._coeffs[i + 1]) && continue
         e = BigInt(i)
         e % p == 0 || throw(ArgumentError("polynomial is not a p-th power"))
-        c[Int(div(e, p)) + 1] = f._coeffs[i + 1]
+        c[Int(div(e, p)) + 1] = F isa ExtensionField ? f._coeffs[i+1]^div(cardinality(F),p) : f._coeffs[i+1]
     end
     _make_poly(F, c)
 end
@@ -535,8 +535,8 @@ function EqualDegreeSplit(f::ModPoly, d::Integer; rng::AbstractRNG = Random.defa
         iszero(a) && continue
         g = gcd(f, a)
         if isone(g)
-            if q == 2
-                b = _trace_power_two(a, Int(d), f)
+            if iseven(q)
+                b = _trace_power_two(a, Int(d)*(ndigits(q,base=2)-1), f)
             else
                 exponent = div(q^Int(d) - 1, 2)
                 b = PowerMod(a, exponent, f) - one(f)

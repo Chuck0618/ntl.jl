@@ -308,3 +308,4 @@ include("factor_smallfield.jl")
     @test_throws ArgumentError collect(PrimeField{4})
     @test_throws DomainError length(PrimeField{1})
 end
+include("exact_interfaces.jl")

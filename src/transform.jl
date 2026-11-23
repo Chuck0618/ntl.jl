@@ -135,7 +135,7 @@ function _convolution_inverse!(A::Vector{PrimeField{P}}, table::Vector{Int}) whe
     end
 end
 
-function ntt_convolve(a::Vector{PrimeField{P}}, b::Vector{PrimeField{P}}) where {P}
+function _ntt_convolve_plan(cache, a::Vector{PrimeField{P}}, b::Vector{PrimeField{P}}) where {P}
     isempty(a) && return copy(a)
     isempty(b) && return copy(b)
     total = length(a) + length(b) - 1
@@ -146,14 +146,14 @@ function ntt_convolve(a::Vector{PrimeField{P}}, b::Vector{PrimeField{P}}) where 
     B = fill(z, n)
     copyto!(A, 1, a, 1, length(a))
     copyto!(B, 1, b, 1, length(b))
-    omega = _convolution_root(Val{P}(), n)
-    forward = _convolution_twiddles(omega, n)
+    omega = _plan_root(cache, Val{P}(), n)
+    forward = _plan_twiddles(cache, omega, n)
     _convolution_forward!(A, forward)
     _convolution_forward!(B, forward)
     @inbounds for i in 1:n
         A[i] *= B[i]
     end
-    _convolution_inverse!(A, _convolution_twiddles(inv(omega), n))
+    _convolution_inverse!(A, _plan_twiddles(cache, inv(omega), n))
     resize!(A, total)
     scale = _raw(Val{P}(), _invmod_reduced(n, P))
     @inbounds for i in eachindex(A)
@@ -161,6 +161,10 @@ function ntt_convolve(a::Vector{PrimeField{P}}, b::Vector{PrimeField{P}}) where 
     end
     A
 end
+_plan_root(::Nothing,v,n)=_convolution_root(v,n)
+_plan_twiddles(::Nothing,w,n)=_convolution_twiddles(w,n)
+ntt_convolve(a::Vector{PrimeField{P}},b::Vector{PrimeField{P}}) where P = _ntt_convolve_plan(nothing,a,b)
+
 
 """In-place iterative radix-two Cooley–Tukey NTT on a copied vector."""
 function ntt(a::AbstractVector)

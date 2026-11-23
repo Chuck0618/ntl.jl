@@ -19,13 +19,14 @@ struct ZechElem{F} <: Number
 end
 
 const _ZECH_REGISTRY = Dict{Int,Any}()
+const _ZECH_LOCK = ReentrantLock()
 const _ZECH_NEXT_ID = Ref(0)
 function _next_zech_id()
-    _ZECH_NEXT_ID[] += 1
+    lock(() -> (_ZECH_NEXT_ID[] += 1), _ZECH_LOCK)
 end
 
 ZechElem(F::ZechField, v::Int) = ZechElem{typeof(F)}(v, F._id)
-@inline parent(a::ZechElem{F}) where {F} = _ZECH_REGISTRY[a._parent_id]::F
+@inline parent(a::ZechElem{F}) where {F} = lock(() -> _ZECH_REGISTRY[a._parent_id], _ZECH_LOCK)::F
 @inline rep(a::ZechElem) = a._rep
 modulus(F::ZechField) = modulus(F._extension)
 modulus(a::ZechElem) = modulus(parent(a))
@@ -53,7 +54,7 @@ function _poly_from_v(F::Type{PrimeField{P}}, v::Int, d::Int) where {P}
     end
     poly(F, c)
 end
-_poly_from_v(F, v::Int, d::Int) = poly(F, [mod(v, modulus(F)) for _ in 1:d])
+_poly_from_v(F, v::Int, d::Int) = poly(F, [div(v,Int(characteristic(F))^i)%Int(characteristic(F)) for i in 0:d-1])
 
 function _extension_elements(E::ExtensionField)
     F = base_field(E)
@@ -93,10 +94,10 @@ end
 """Build a Zech representation for an extension of order at most 65535."""
 function zech_field(E::ExtensionField; primitive = nothing)
     F = base_field(E)
-    F isa Type && F <: PrimeField || throw(ArgumentError("Zech representation currently requires a machine-word prime base field"))
+    (F === GF2 || F isa Type && F <: PrimeField) || throw(ArgumentError("Zech representation currently requires a machine-word prime base field"))
+    cardinality(E) <= 65535 || throw(ArgumentError("Zech tables are limited to fields with at most 65535 elements"))
     q = Int(cardinality(E))
-    q <= 65535 || throw(ArgumentError("Zech tables are limited to fields with at most 65535 elements"))
-    g = primitive === nothing ? _find_generator(E, q) : _check_generator(primitive, q)
+    g = primitive === nothing ? primitive_element(E) : _check_generator(primitive, q)
     gv = _v_of(g)
     exp = Int[]
     log = zeros(Int, q)
@@ -110,7 +111,7 @@ function zech_field(E::ExtensionField; primitive = nothing)
     y == one(E) || error("internal error while building the Zech table")
     id = _next_zech_id()
     F = ZechField(E, exp, log, gv, [Int(characteristic(E))^i for i in 0:(extension_degree(E) - 1)], id, Int(characteristic(E)), extension_degree(E))
-    _ZECH_REGISTRY[id] = F
+    lock(() -> (_ZECH_REGISTRY[id] = F), _ZECH_LOCK)
     F
 end
 
